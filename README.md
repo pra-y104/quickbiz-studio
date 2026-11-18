@@ -11,20 +11,22 @@ contracts, database migrations, documentation and CI.
 
 ## Status
 
-**Stage 4 - secure authentication and user accounts.** Registration, email
-verification, sign-in, sign-out, password recovery and a profile foundation are
-implemented against Supabase Auth. The API verifies access tokens and derives identity
-from them; profiles are protected by Row Level Security and column-level grants.
+**Stage 5 - ordinary tools.** Eight free utilities are live at `/tools`: a calculator,
+percentage calculator, unit converter, date calculator, invoice maker, quotation maker,
+word and character counter, and a text formatter. They run entirely in the browser, need
+no account and cost no credits. Invoices and quotations download as real PDFs generated
+on the device.
 
-Authentication stays disabled - and says so - until a Supabase project is connected and
-`VITE_SUPABASE_URL` / `VITE_SUPABASE_ANON_KEY` are set. See
+Stage 4 authentication (registration, email verification, sign-in, password recovery,
+profiles) remains in place. It stays disabled - and says so - until a Supabase project is
+connected and `VITE_SUPABASE_URL` / `VITE_SUPABASE_ANON_KEY` are set. See
 [docs/16-supabase-setup.md](./docs/16-supabase-setup.md).
 
-Not built yet: tool implementations, AI provider calls, credits, wallet and payments.
+Not built yet: AI provider calls, credits, wallet and payments.
 
-Current verification: 119 automated tests passing, typecheck clean, lint clean, web
-build and worker bundle both validated locally. Initial bundle ~139 kB gzipped, with auth
-and the mobile drawer split into their own lazy chunks.
+Current verification: 262 automated tests passing, typecheck clean, lint clean, web
+build and worker bundle both validated locally. Initial bundle ~140 kB gzipped, with each
+tool, the document engine, auth and the mobile drawer split into their own lazy chunks.
 
 ## Stack
 

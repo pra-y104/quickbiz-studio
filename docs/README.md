@@ -20,6 +20,7 @@ Read in this order if you are new to the project.
 | [14-handover.md](./14-handover.md) | Clone, run, maintain, transfer ownership |
 | [15-stage-3-homepage.md](./15-stage-3-homepage.md) | Homepage sections, content model, brand renaming |
 | [16-supabase-setup.md](./16-supabase-setup.md) | Create the project, apply migrations, env vars, smoke test |
+| [17-stage-5-tools.md](./17-stage-5-tools.md) | Ordinary tools: logic layout, PDF writer, edge cases, tests |
 
 Status language used throughout:
 

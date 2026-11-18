@@ -1,4 +1,5 @@
 import { ArrowRight } from 'lucide-react';
+import { Link } from 'react-router';
 import { HOMEPAGE } from '../../../content/homepage';
 import { Button } from '../../ui/button';
 import { Container } from '../../ui/container';
@@ -20,10 +21,10 @@ export function FinalCtaSection() {
         </p>
         <div className="mt-8 flex flex-col justify-center gap-3 sm:flex-row">
           <Button asChild size="lg">
-            <a href="#free-tools">
+            <Link to="/tools">
               {content.cta}
               <ArrowRight className="size-4" aria-hidden="true" />
-            </a>
+            </Link>
           </Button>
           <Button
             asChild

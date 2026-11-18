@@ -117,7 +117,7 @@ export const HOMEPAGE: HomepageContent = {
     title: 'Everyday utilities, always free',
     description:
       'Calculators, converters, invoice and quotation builders, counters and text clean-up. No credits, no paywall, no sign-up wall between you and the result.',
-    note: 'Free tools ship in the next build stage. They are designed to work without an account and will not require credits.',
+    note: 'These eight tools are live now, free and without an account. Each one runs entirely in your browser, and nothing you type is uploaded.',
   },
   howItWorks: {
     eyebrow: 'How it works',
@@ -295,9 +295,9 @@ export const HOMEPAGE: HomepageContent = {
   },
   finalCta: {
     title: 'Start with the tools that cost nothing',
-    body: 'Free utilities will open without an account. Add credits only when you want AI help with the writing.',
+    body: 'Free utilities open without an account. Add credits only when you want AI help with the writing.',
     cta: 'Browse the free tools',
-    note: 'Pre-launch preview: AI generation, accounts and payments are not live in this build.',
+    note: 'Free tools are live now. AI generation and payments are not available in this build.',
   },
 };
 
@@ -311,4 +311,4 @@ export const HOMEPAGE_NAV = [
 ] as const;
 
 export const HOMEPAGE_ANNOUNCEMENT =
-  'Pre-launch preview — AI tools, accounts and payments arrive in upcoming builds.';
+  'Free everyday tools are live now — AI tools and payments arrive in upcoming builds.';

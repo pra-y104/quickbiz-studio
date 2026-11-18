@@ -19,7 +19,8 @@ describe('SiteHeader', () => {
     const header = screen.getByRole('banner');
 
     expect(within(header).getByRole('navigation', { name: 'Primary' })).toBeInTheDocument();
-    expect(screen.getByText(/Pre-launch preview/i)).toBeInTheDocument();
+    expect(screen.getByText(/Free everyday tools are live/i)).toBeInTheDocument();
+    expect(within(header).getByRole('link', { name: 'Tools' })).toHaveAttribute('href', '/tools');
     expect(within(header).getByRole('link', { name: 'Pricing' })).toHaveAttribute(
       'href',
       '#pricing',

@@ -42,6 +42,13 @@ export function MobileMenu({ open, onOpenChange }: MobileMenuProps) {
           </Dialog.Description>
 
           <nav aria-label="Mobile" className="mt-8 flex flex-col gap-1">
+            <Link
+              to="/tools"
+              onClick={() => onOpenChange(false)}
+              className="rounded-lg px-3 py-3 text-base font-medium text-ink transition-colors hover:bg-surface-muted"
+            >
+              All tools
+            </Link>
             {HOMEPAGE_NAV.map((item) => (
               <a
                 key={item.href}

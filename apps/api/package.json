@@ -1,0 +1,26 @@
+{
+  "name": "@quickbiz/api",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "QuickBiz Studio API - Cloudflare Worker built with Hono.",
+  "scripts": {
+    "dev": "wrangler dev",
+    "build": "wrangler deploy --dry-run --outdir dist --env=\"\"",
+    "deploy": "wrangler deploy --env production",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "dependencies": {
+    "@quickbiz/shared": "workspace:*",
+    "hono": "4.13.19",
+    "zod": "4.6.7"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "5.20261118.1",
+    "typescript": "5.9.3",
+    "vitest": "5.1.1",
+    "wrangler": "4.164.0"
+  }
+}

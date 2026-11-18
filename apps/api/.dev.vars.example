@@ -1,0 +1,16 @@
+# Local-only secrets for `wrangler dev`. Copy to .dev.vars (gitignored).
+# These are never committed and never bundled into the frontend.
+ENVIRONMENT=development
+APP_VERSION=0.1.0
+ALLOWED_ORIGINS=http://localhost:5173,http://127.0.0.1:5173
+RATE_LIMIT_ENABLED=true
+RATE_LIMIT_WINDOW_SECONDS=60
+RATE_LIMIT_MAX_REQUESTS=120
+
+# Stage 4+ (leave empty for now)
+SUPABASE_URL=
+SUPABASE_SERVICE_ROLE_KEY=
+
+# Stage 6+ (leave empty for now - no provider is activated in Stage 2)
+AI_PROVIDER=
+AI_API_KEY=

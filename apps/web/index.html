@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <title>QuickBiz Studio</title>
+    <meta
+      name="description"
+      content="QuickBiz Studio - AI-powered and everyday digital tools that help you finish useful work quickly and affordably."
+    />
+    <meta name="theme-color" content="#0B1222" />
+    <meta property="og:title" content="QuickBiz Studio" />
+    <meta property="og:description" content="Powerful Tools. Fair Pricing. No Surprises." />
+    <meta property="og:type" content="website" />
+    <script>
+      // Apply the saved theme before first paint to avoid a colour flash.
+      try {
+        var stored = localStorage.getItem('qb-theme');
+        var theme =
+          stored === 'light' || stored === 'dark'
+            ? stored
+            : window.matchMedia('(prefers-color-scheme: dark)').matches
+              ? 'dark'
+              : 'light';
+        document.documentElement.dataset.theme = theme;
+      } catch (_error) {
+        /* Theme preference is optional. */
+      }
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

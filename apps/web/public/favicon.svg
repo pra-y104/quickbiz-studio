@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="QuickBiz Studio">
+  <defs>
+    <linearGradient id="qb" x1="0" y1="0" x2="64" y2="64" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#7C5CFF" />
+      <stop offset="1" stop-color="#2E8DFF" />
+    </linearGradient>
+  </defs>
+  <rect width="64" height="64" rx="16" fill="url(#qb)" />
+  <path
+    d="M32 16a16 16 0 1 0 10.2 28.3l4.4 4.4a3 3 0 0 0 4.2-4.2l-4.4-4.4A16 16 0 0 0 32 16Zm0 6a10 10 0 1 1 0 20 10 10 0 0 1 0-20Z"
+    fill="#FFFFFF"
+  />
+</svg>

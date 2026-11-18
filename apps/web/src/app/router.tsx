@@ -19,6 +19,45 @@ const DesignSystemPage = lazy(() =>
 const SupabaseSetupPage = lazy(() =>
   import('../pages/setup-supabase').then((module) => ({ default: module.SupabaseSetupPage })),
 );
+const ToolsPage = lazy(() =>
+  import('../pages/tools').then((module) => ({ default: module.ToolsPage })),
+);
+const CalculatorPage = lazy(() =>
+  import('../pages/tools/calculator').then((module) => ({ default: module.CalculatorPage })),
+);
+const PercentageCalculatorPage = lazy(() =>
+  import('../pages/tools/percentage-calculator').then((module) => ({
+    default: module.PercentageCalculatorPage,
+  })),
+);
+const UnitConverterPage = lazy(() =>
+  import('../pages/tools/unit-converter').then((module) => ({
+    default: module.UnitConverterPage,
+  })),
+);
+const DateCalculatorPage = lazy(() =>
+  import('../pages/tools/date-calculator').then((module) => ({
+    default: module.DateCalculatorPage,
+  })),
+);
+const InvoiceMakerPage = lazy(() =>
+  import('../pages/tools/invoice-maker').then((module) => ({
+    default: module.InvoiceMakerPage,
+  })),
+);
+const QuotationMakerPage = lazy(() =>
+  import('../pages/tools/quotation-maker').then((module) => ({
+    default: module.QuotationMakerPage,
+  })),
+);
+const WordCounterPage = lazy(() =>
+  import('../pages/tools/word-counter').then((module) => ({ default: module.WordCounterPage })),
+);
+const TextFormatterPage = lazy(() =>
+  import('../pages/tools/text-formatter').then((module) => ({
+    default: module.TextFormatterPage,
+  })),
+);
 const RegisterPage = lazy(() =>
   import('../pages/auth/register').then((module) => ({ default: module.RegisterPage })),
 );
@@ -85,6 +124,21 @@ export const router = createBrowserRouter([
   { path: '/', element: withShell(AppShell, <HomePage />) },
   { path: '/design-system', element: withShell(UtilityShell, <DesignSystemPage />) },
   { path: '/setup/supabase', element: withShell(UtilityShell, <SupabaseSetupPage />) },
+
+  // Ordinary tools. Free, anonymous and entirely client-side, so they sit
+  // outside every auth guard and keep working while Supabase is unconfigured.
+  { path: '/tools', element: withShell(UtilityShell, <ToolsPage />) },
+  { path: '/tools/calculator', element: withShell(UtilityShell, <CalculatorPage />) },
+  {
+    path: '/tools/percentage-calculator',
+    element: withShell(UtilityShell, <PercentageCalculatorPage />),
+  },
+  { path: '/tools/unit-converter', element: withShell(UtilityShell, <UnitConverterPage />) },
+  { path: '/tools/date-calculator', element: withShell(UtilityShell, <DateCalculatorPage />) },
+  { path: '/tools/invoice-maker', element: withShell(UtilityShell, <InvoiceMakerPage />) },
+  { path: '/tools/quotation-maker', element: withShell(UtilityShell, <QuotationMakerPage />) },
+  { path: '/tools/word-counter', element: withShell(UtilityShell, <WordCounterPage />) },
+  { path: '/tools/text-formatter', element: withShell(UtilityShell, <TextFormatterPage />) },
 
   { path: '/register', element: guest(<RegisterPage />) },
   { path: '/login', element: guest(<LoginPage />) },

@@ -1,4 +1,5 @@
 import { ArrowRight, Sparkles } from 'lucide-react';
+import { Link } from 'react-router';
 import { HOMEPAGE } from '../../content/homepage';
 import { cn } from '../../lib/cn';
 import { Button } from '../ui/button';
@@ -39,10 +40,10 @@ export function Hero() {
 
             <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:items-center">
               <Button asChild size="lg">
-                <a href="#ai-tools">
+                <Link to="/tools">
                   {hero.primaryCta}
                   <ArrowRight className="size-4" aria-hidden="true" />
-                </a>
+                </Link>
               </Button>
               <Button
                 asChild

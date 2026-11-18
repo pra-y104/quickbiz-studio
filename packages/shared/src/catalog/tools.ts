@@ -7,10 +7,10 @@ import type { ToolDefinition, ToolKind } from '../types/tool';
  * requirement and credit pricing. Routes, dashboards and the API all read from
  * here instead of duplicating lists.
  *
- * Stage 2 state: every tool is `planned`. Nothing is executable yet, and AI
- * tools deliberately have `creditCost: null` because the credit economy has not
- * been approved. `isToolExecutable()` returns false until a tool is both live
- * and priced, which prevents accidental charging.
+ * Stage 5 state: the eight ordinary utilities are `live`, free and anonymous.
+ * Every AI tool is still `planned` with `creditCost: null` because the credit
+ * economy arrives in Stage 7. `isToolExecutable()` returns false until a tool is
+ * both live and priced, which prevents accidental charging.
  */
 export const TOOL_CATALOGUE: readonly ToolDefinition[] = [
   {
@@ -107,7 +107,7 @@ export const TOOL_CATALOGUE: readonly ToolDefinition[] = [
     summary: 'A fast everyday calculator that works offline.',
     category: 'calculators',
     kind: 'utility',
-    status: 'planned',
+    status: 'live',
     requiresAuth: false,
     creditCost: 0,
     icon: 'calculator',
@@ -118,7 +118,7 @@ export const TOOL_CATALOGUE: readonly ToolDefinition[] = [
     summary: 'Work out percentages, increases and discounts.',
     category: 'calculators',
     kind: 'utility',
-    status: 'planned',
+    status: 'live',
     requiresAuth: false,
     creditCost: 0,
     icon: 'percent',
@@ -129,7 +129,7 @@ export const TOOL_CATALOGUE: readonly ToolDefinition[] = [
     summary: 'Convert length, weight and temperature units.',
     category: 'calculators',
     kind: 'utility',
-    status: 'planned',
+    status: 'live',
     requiresAuth: false,
     creditCost: 0,
     icon: 'ruler',
@@ -140,7 +140,7 @@ export const TOOL_CATALOGUE: readonly ToolDefinition[] = [
     summary: 'Count days between dates and add date intervals.',
     category: 'calculators',
     kind: 'utility',
-    status: 'planned',
+    status: 'live',
     requiresAuth: false,
     creditCost: 0,
     icon: 'calendar-days',
@@ -151,7 +151,7 @@ export const TOOL_CATALOGUE: readonly ToolDefinition[] = [
     summary: 'Build a clean invoice and download it as a PDF.',
     category: 'documents',
     kind: 'utility',
-    status: 'planned',
+    status: 'live',
     requiresAuth: false,
     creditCost: 0,
     icon: 'file-text',
@@ -162,7 +162,7 @@ export const TOOL_CATALOGUE: readonly ToolDefinition[] = [
     summary: 'Prepare a professional quotation for a client.',
     category: 'documents',
     kind: 'utility',
-    status: 'planned',
+    status: 'live',
     requiresAuth: false,
     creditCost: 0,
     icon: 'receipt',
@@ -173,7 +173,7 @@ export const TOOL_CATALOGUE: readonly ToolDefinition[] = [
     summary: 'Count words, characters and reading time.',
     category: 'productivity',
     kind: 'utility',
-    status: 'planned',
+    status: 'live',
     requiresAuth: false,
     creditCost: 0,
     icon: 'type',
@@ -184,7 +184,7 @@ export const TOOL_CATALOGUE: readonly ToolDefinition[] = [
     summary: 'Clean up spacing, case and line breaks instantly.',
     category: 'productivity',
     kind: 'utility',
-    status: 'planned',
+    status: 'live',
     requiresAuth: false,
     creditCost: 0,
     icon: 'align-left',

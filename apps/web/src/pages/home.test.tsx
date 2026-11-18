@@ -1,10 +1,16 @@
 import { render, screen, within } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
+import { MemoryRouter } from 'react-router';
+import { TOOL_SLUGS } from '@quickbiz/shared';
 import { HOMEPAGE } from '../content/homepage';
 import { HomePage } from './home';
 
 function renderHome() {
-  return render(<HomePage />);
+  return render(
+    <MemoryRouter>
+      <HomePage />
+    </MemoryRouter>,
+  );
 }
 
 describe('Homepage', () => {
@@ -62,12 +68,12 @@ describe('Homepage', () => {
     renderHome();
     expect(screen.getByText(/Not a live generation/i)).toBeInTheDocument();
     expect(
-      screen.getByText(/AI generation, accounts and payments are not live/i),
+      screen.getByText(/AI generation and payments are not available in this build/i),
     ).toBeInTheDocument();
     expect(screen.getByText(HOMEPAGE.aiTools.note)).toBeInTheDocument();
   });
 
-  it('keeps internal links on anchors that exist, so there are no dead routes', () => {
+  it('links every live free tool to a real route', () => {
     const { container } = renderHome();
     const hrefs = Array.from(container.querySelectorAll('a'))
       .map((anchor) => anchor.getAttribute('href') ?? '')
@@ -75,8 +81,12 @@ describe('Homepage', () => {
 
     expect(hrefs.length).toBeGreaterThan(0);
     for (const href of hrefs) {
-      expect(href).toMatch(/^#/);
-      expect(container.querySelector(href)).not.toBeNull();
+      if (href.startsWith('#')) {
+        expect(container.querySelector(href)).not.toBeNull();
+        continue;
+      }
+
+      expect(href === '/tools' || TOOL_SLUGS.some((slug) => href === `/tools/${slug}`)).toBe(true);
     }
   });
 });

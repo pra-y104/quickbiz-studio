@@ -5,11 +5,13 @@
 | Suite | Tool | Location | Purpose |
 |---|---|---|---|
 | Shared contracts | Vitest | `packages/shared/src/__tests__` | catalogue invariants, brand config, currency math, date formatting, schemas |
+| Shared tool logic | Vitest | `packages/shared/src/__tests__` | calculator parser, percentages, units, calendar maths, text statistics and transforms, document totals |
 | API integration | Vitest | `apps/api/src/__tests__` | real Hono middleware chain: health, catalogue, validation, CORS, headers, rate limit, error hygiene |
 | Web components | Vitest + Testing Library | `apps/web/src/**/*.test.tsx` | button states, api client contract, homepage sections, navigation drawer, theme toggle |
 | Auth screens and guards | Vitest + Testing Library | `apps/web/src/pages/auth`, `src/components/auth`, `src/lib/auth` | validation, provider state, protected redirects, logout, recovery states, safe next paths, profile payload |
+| Ordinary tools | Vitest + Testing Library | `apps/web/src/pages/tools`, `src/components/tools`, `src/lib/tools` | every tool interaction, validation states, PDF structure and printed totals |
 
-Current result: **119 tests passing** (35 shared, 18 API, 66 web).
+Current result: **262 tests passing** (126 shared, 18 API, 118 web).
 
 ## Commands
 
@@ -28,7 +30,7 @@ pnpm verify        # everything above, in order
 | 3 | homepage render, navigation drawer, theme switching, no dead links (done) |
 | 4 | registration/login validation, auth state, protected routes, logout, recovery, profile fields (done) |
 | 4 | register/verify/login/reset flows, free grant idempotency, JWT rejection |
-| 5 | every calculator edge case (0, negative, huge, leap year, absolute zero) |
+| 5 | every calculator edge case (0, negative, huge, leap year, absolute zero) (done) |
 | 6 | provider adapter mapping, timeout, credit reservation and reversal |
 | 7 | atomic spend under concurrency, ledger reconciliation, idempotent replay |
 | 8 | webhook signature failure, replay rejection, amount mismatch, sandbox purchase |

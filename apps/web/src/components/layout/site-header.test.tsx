@@ -1,16 +1,12 @@
-import { render, screen, waitFor, within } from '@testing-library/react';
+import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { MemoryRouter } from 'react-router';
 import { afterEach, describe, expect, it } from 'vitest';
 import '../../i18n';
 import { SiteHeader } from './site-header';
+import { FakeAuthGateway, makeSession, renderWithAuth } from '../../test/auth-harness';
 
-function renderHeader() {
-  return render(
-    <MemoryRouter>
-      <SiteHeader />
-    </MemoryRouter>,
-  );
+function renderHeader(gateway = new FakeAuthGateway()) {
+  return renderWithAuth(<SiteHeader />, { gateway });
 }
 
 afterEach(() => {
@@ -18,7 +14,7 @@ afterEach(() => {
 });
 
 describe('SiteHeader', () => {
-  it('shows the primary navigation and the pre-launch notice', () => {
+  it('shows the primary navigation, account actions and the pre-launch notice', async () => {
     renderHeader();
     const header = screen.getByRole('banner');
 
@@ -28,6 +24,21 @@ describe('SiteHeader', () => {
       'href',
       '#pricing',
     );
+    expect(await within(header).findByRole('link', { name: 'Sign in' })).toHaveAttribute(
+      'href',
+      '/login',
+    );
+  });
+
+  it('swaps the account action for a dashboard link when signed in', async () => {
+    const gateway = new FakeAuthGateway({ session: makeSession() });
+    renderHeader(gateway);
+
+    expect(await screen.findByRole('link', { name: /dashboard/i })).toHaveAttribute(
+      'href',
+      '/dashboard',
+    );
+    expect(screen.queryByRole('link', { name: 'Sign in' })).not.toBeInTheDocument();
   });
 
   it('opens and closes the mobile navigation dialog', async () => {

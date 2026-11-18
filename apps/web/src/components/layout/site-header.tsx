@@ -6,6 +6,7 @@ import { Logo } from '../brand/logo';
 import { Button } from '../ui/button';
 import { Container } from '../ui/container';
 import { ThemeToggle } from '../ui/theme-toggle';
+import { useAuth } from '../../lib/auth/auth-context';
 
 /** Loaded on first open (and warmed during idle) to keep the first paint light. */
 const MobileMenu = lazy(() =>
@@ -30,6 +31,7 @@ function AnnouncementBar() {
 }
 
 export function SiteHeader() {
+  const { session } = useAuth();
   const [menuRequested, setMenuRequested] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
 
@@ -64,12 +66,29 @@ export function SiteHeader() {
 
           <div className="flex items-center gap-2">
             <ThemeToggle />
-            <Button asChild size="sm" className="hidden sm:inline-flex">
-              <a href="#ai-tools">
-                Explore tools
-                <ArrowRight className="size-3.5" aria-hidden="true" />
-              </a>
-            </Button>
+
+            {session ? (
+              <Button asChild size="sm">
+                <Link to="/dashboard">
+                  <span className="hidden sm:inline">Dashboard</span>
+                  <span className="sm:hidden">Account</span>
+                  <ArrowRight className="size-3.5" aria-hidden="true" />
+                </Link>
+              </Button>
+            ) : (
+              <>
+                <Button asChild size="sm" variant="ghost" className="hidden sm:inline-flex">
+                  <Link to="/login">Sign in</Link>
+                </Button>
+                <Button asChild size="sm">
+                  <Link to="/register">
+                    <span className="hidden sm:inline">Get started</span>
+                    <span className="sm:hidden">Join</span>
+                    <ArrowRight className="size-3.5" aria-hidden="true" />
+                  </Link>
+                </Button>
+              </>
+            )}
 
             <Button
               variant="ghost"

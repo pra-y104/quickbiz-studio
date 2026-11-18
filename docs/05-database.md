@@ -87,6 +87,26 @@ No table is left without RLS, and no policy uses `using (true)` for user data.
 
 ## What exists today
 
-`0001_extensions.sql` (pgcrypto, citext, pg_trgm) and `0002_conventions.sql`
-(`touch_updated_at`, `reject_mutation`). No user or financial tables exist yet,
-which is intentional: they arrive with the stage that implements their rules.
+- `0001_extensions.sql`: pgcrypto, citext, pg_trgm.
+- `0002_conventions.sql`: `touch_updated_at`, `reject_mutation`.
+- `0003_profiles.sql`: `public.profiles`.
+
+### `public.profiles`
+
+| Column | Type | Client writable |
+|---|---|---|
+| `id` | uuid, FK to `auth.users`, primary key | no |
+| `email` | citext (mirrored for display) | no |
+| `display_name` | text, max 60 | yes |
+| `avatar_url` | text, https only | yes |
+| `preferred_locale` | text, constrained to supported locales | yes |
+| `created_at`, `updated_at` | timestamptz | no |
+
+RLS is enabled. Policies allow `select` and `update` only where
+`auth.uid() = id`; there is no client insert or delete path. Rows are created by the
+`handle_new_user` trigger on `auth.users` and removed by cascade. `updated_at` is
+maintained by `touch_updated_at`. Column grants restrict updates to the three editable
+columns listed above.
+
+No wallet, credit or payment tables exist yet, which is intentional: they arrive with
+the stage that implements their rules.

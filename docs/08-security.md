@@ -2,6 +2,22 @@
 
 Security is a product feature. Nothing in this document may be traded away for speed.
 
+## Authentication (Stage 4)
+
+- Identity comes only from a verified Supabase access token. Request bodies, query
+  strings and custom headers cannot name a user.
+- The API fails closed: no verification configuration means 503, never an implicit
+  anonymous identity.
+- The browser holds the public anon key only. The service-role key bypasses RLS and is
+  never referenced by the web app.
+- Profile rows are readable and writable only by their owner; updates are limited by
+  column grants to display name, avatar URL and preferred locale.
+- Recovery and registration responses are identical for known and unknown addresses, so
+  neither screen can enumerate accounts.
+- All post-auth redirects pass through `safeNextPath`, which rejects external URLs,
+  protocol-relative URLs and control characters.
+- Sign-out clears local state even when the provider call fails.
+
 ## Controls in place today (Stage 2)
 
 | Area | Control | Where |

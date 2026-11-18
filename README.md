@@ -11,16 +11,20 @@ contracts, database migrations, documentation and CI.
 
 ## Status
 
-**Stage 3 - premium homepage and brand presentation.** The marketing homepage,
-responsive navigation, mobile drawer, footer, pricing introduction, customer promise and
-trust sections are complete, built on the Stage 2 design system.
+**Stage 4 - secure authentication and user accounts.** Registration, email
+verification, sign-in, sign-out, password recovery and a profile foundation are
+implemented against Supabase Auth. The API verifies access tokens and derives identity
+from them; profiles are protected by Row Level Security and column-level grants.
 
-Not built yet: authentication, tool implementations, AI provider calls, credits and
-payments. The homepage states this plainly instead of implying live features.
+Authentication stays disabled - and says so - until a Supabase project is connected and
+`VITE_SUPABASE_URL` / `VITE_SUPABASE_ANON_KEY` are set. See
+[docs/16-supabase-setup.md](./docs/16-supabase-setup.md).
 
-Current verification: 53 automated tests passing, typecheck clean, lint clean, web
-build and worker bundle both validated locally. Initial bundle ~168 kB gzipped, with the
-mobile drawer split into its own lazy chunk.
+Not built yet: tool implementations, AI provider calls, credits, wallet and payments.
+
+Current verification: 115 automated tests passing, typecheck clean, lint clean, web
+build and worker bundle both validated locally. Initial bundle ~139 kB gzipped, with auth
+and the mobile drawer split into their own lazy chunks.
 
 ## Stack
 
@@ -28,10 +32,10 @@ mobile drawer split into its own lazy chunk.
 |---|---|
 | Frontend | React 19, TypeScript, Vite, Tailwind CSS v4, React Router, TanStack Query |
 | UI | Custom components on Radix primitives, CSS design tokens |
-| Forms | React Hook Form + Zod |
+| Forms | Controlled React state + shared Zod schemas |
+| Auth | Supabase Auth (official client) + jose token verification in the API |
 | API | Cloudflare Workers, Hono |
 | Database | PostgreSQL (Supabase) |
-| Auth | Supabase Auth |
 | Shared | TypeScript types + Zod schemas in `packages/shared` |
 | Monorepo | pnpm workspaces |
 | CI | GitHub Actions |
@@ -96,6 +100,7 @@ Start with [docs/README.md](./docs/README.md). The most useful entries:
 - [Architecture](./docs/01-architecture.md)
 - [Design system](./docs/02-design-system.md)
 - [Stage 3 homepage](./docs/15-stage-3-homepage.md)
+- [Supabase setup](./docs/16-supabase-setup.md)
 - [Database strategy](./docs/05-database.md)
 - [Security](./docs/08-security.md)
 - [Roadmap](./docs/13-roadmap.md)

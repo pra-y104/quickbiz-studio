@@ -5,22 +5,7 @@
   },
   "nav": {
     "home": "Home",
-    "designSystem": "Design system",
     "skipToContent": "Skip to content"
-  },
-  "home": {
-    "eyebrow": "Stage 2 - Foundation",
-    "title": "A premium home for everyday tools and real AI.",
-    "subtitle": "QuickBiz Studio is being built in controlled stages. This build establishes the design system, the secure API foundation and the shared contracts that every later feature depends on.",
-    "primaryCta": "Review the design system",
-    "statusTitle": "What is in place",
-    "nextTitle": "What comes next",
-    "honesty": "No AI generation and no payments are enabled in this build. Nothing on this page represents a live feature that does not exist."
-  },
-  "status": {
-    "done": "Ready",
-    "inProgress": "In progress",
-    "planned": "Planned"
   },
   "notFound": {
     "title": "This page does not exist.",
@@ -33,7 +18,6 @@
     "dark": "Dark"
   },
   "footer": {
-    "rights": "All rights reserved.",
-    "build": "Foundation build"
+    "rights": "All rights reserved."
   }
 }

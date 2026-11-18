@@ -57,6 +57,27 @@ Never below 12 px. Inputs use at least 16 px on mobile to prevent iOS zoom.
 - Elevation is subtle: one hairline border plus a soft shadow. No heavy drop shadows.
 - Breakpoints: 360 px (small Android) → 640 → 768 → 1024 → 1280.
 
+## Brand presentation
+
+- The wordmark is **temporary but consistent**: a violet-to-electric rounded tile with a
+  geometric "Q" aperture, plus a two-part wordmark (primary word in ink, suffix in muted
+  ink or lighter weight).
+- All brand strings come from `BRAND` in `packages/shared/src/constants/brand.ts`.
+  Renaming the product means editing that one file, replacing the favicon and rebuilding.
+- The name is not permanently approved. No component may hard-code it, and no legal
+  document may assume it before the owner signs off.
+
+## Dark band convention
+
+The hero and the closing call to action use a fixed `navy-950` surface in both themes.
+This is the only place where a component deliberately ignores the active theme, and it
+is allowed because:
+
+1. It frames the product preview as a single, memorable moment.
+2. Text on it uses fixed `white/…` opacities, not semantic ink tokens.
+3. The aura (`.qb-aura`) and grid (`.qb-grid`) layers are decorative, hidden from
+   assistive technology, and never used elsewhere in the page.
+
 ## Components
 
 Primitives live in `apps/web/src/components/ui/`:

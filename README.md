@@ -11,14 +11,16 @@ contracts, database migrations, documentation and CI.
 
 ## Status
 
-**Stage 2 - repository foundation.** The design system, API skeleton, shared
-contracts, database conventions, CI and documentation are in place and tested.
+**Stage 3 - premium homepage and brand presentation.** The marketing homepage,
+responsive navigation, mobile drawer, footer, pricing introduction, customer promise and
+trust sections are complete, built on the Stage 2 design system.
 
 Not built yet: authentication, tool implementations, AI provider calls, credits and
-payments. Nothing in this build pretends those features exist.
+payments. The homepage states this plainly instead of implying live features.
 
-Current verification: 41 automated tests passing, typecheck clean, lint clean, web
-build and worker bundle both validated locally.
+Current verification: 53 automated tests passing, typecheck clean, lint clean, web
+build and worker bundle both validated locally. Initial bundle ~168 kB gzipped, with the
+mobile drawer split into its own lazy chunk.
 
 ## Stack
 
@@ -37,7 +39,7 @@ build and worker bundle both validated locally.
 ## Repository structure
 
 ```
-apps/web            React SPA (Cloudflare Pages target)
+apps/web            React SPA (Cloudflare Pages target): pages, marketing sections, content
 apps/api            Worker API (Cloudflare Workers target)
 packages/shared     types, Zod schemas, tool catalogue, formatters
 packages/config     shared tsconfig bases
@@ -93,6 +95,7 @@ Start with [docs/README.md](./docs/README.md). The most useful entries:
 
 - [Architecture](./docs/01-architecture.md)
 - [Design system](./docs/02-design-system.md)
+- [Stage 3 homepage](./docs/15-stage-3-homepage.md)
 - [Database strategy](./docs/05-database.md)
 - [Security](./docs/08-security.md)
 - [Roadmap](./docs/13-roadmap.md)

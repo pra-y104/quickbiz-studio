@@ -4,11 +4,11 @@
 
 | Suite | Tool | Location | Purpose |
 |---|---|---|---|
-| Shared contracts | Vitest | `packages/shared/src/__tests__` | catalogue invariants, currency math, date formatting, schema behaviour |
+| Shared contracts | Vitest | `packages/shared/src/__tests__` | catalogue invariants, brand config, currency math, date formatting, schemas |
 | API integration | Vitest | `apps/api/src/__tests__` | real Hono middleware chain: health, catalogue, validation, CORS, headers, rate limit, error hygiene |
-| Web components | Vitest + Testing Library | `apps/web/src/**/*.test.tsx` | button states, api client contract, foundation page copy and links |
+| Web components | Vitest + Testing Library | `apps/web/src/**/*.test.tsx` | button states, api client contract, homepage sections, navigation drawer, theme toggle |
 
-Current result: **41 tests passing** (19 shared, 12 API, 10 web).
+Current result: **53 tests passing** (22 shared, 12 API, 19 web).
 
 ## Commands
 
@@ -24,7 +24,7 @@ pnpm verify        # everything above, in order
 
 | Stage | New tests |
 |---|---|
-| 3 | homepage render, navigation, theme switching, responsive smoke |
+| 3 | homepage render, navigation drawer, theme switching, no dead links (done) |
 | 4 | register/verify/login/reset flows, free grant idempotency, JWT rejection |
 | 5 | every calculator edge case (0, negative, huge, leap year, absolute zero) |
 | 6 | provider adapter mapping, timeout, credit reservation and reversal |

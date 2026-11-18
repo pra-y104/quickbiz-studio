@@ -7,8 +7,8 @@ starts before the previous one is reviewed.
 |---|---|---|
 | 1 | Architecture report and decisions | Complete - approved |
 | 2 | Repository foundation, design system, API skeleton, CI, docs | Complete - awaiting review |
-| 3 | Brand identity, homepage, navigation, footer, pricing/legal shells | Next |
-| 4 | Auth (register, verify, login, reset), profile, dashboard shell | Planned |
+| 3 | Brand identity, homepage, navigation, footer | Complete - awaiting review |
+| 4 | Auth (register, verify, login, reset), profile, dashboard shell | Next |
 | 5 | Ordinary tools: calculator, percentage, unit, date, word count, text formatter, invoice, quotation | Planned |
 | 6 | AI tools behind the provider adapter, credit cost display | Planned |
 | 7 | Wallet: ledger, atomic spend, reversals, history, saved results | Planned |
@@ -23,6 +23,14 @@ starts before the previous one is reviewed.
 - Navigation works on 360 px width; light and dark themes reviewed.
 - Customer promise section is present and accurate.
 - No claim about AI or payments that the build cannot honour.
+
+**Stage 3 (delivered)**
+- Homepage covers hero, both tool showcases, how it works, pricing introduction,
+  customer promise, trust, questions and closing CTA.
+- Navigation works at 360 px with a keyboard-accessible mobile drawer.
+- Light and dark themes reviewed; the dark hero band is intentional.
+- No invented prices, testimonials, customer counts or legal links.
+- 53 automated tests pass across shared, API and web.
 
 **Stage 4**
 - A real account can be created, verified and used to log in on an Android phone.

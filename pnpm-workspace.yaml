@@ -1,0 +1,23 @@
+packages:
+  - 'apps/*'
+  - 'packages/*'
+
+# pnpm blocks dependency lifecycle scripts by default. These packages need their
+# install scripts to fetch or link platform binaries, so they are explicitly
+# allowed to build: esbuild (Vite/Vitest), workerd (Wrangler), Tailwind's native
+# oxide binary, and sharp if image tooling is added later.
+allowBuilds:
+  esbuild: true
+  '@tailwindcss/oxide': true
+  workerd: true
+  sharp: true
+
+# Freshly published versions used by this project. pnpm asks for confirmation
+# before adopting very new releases; these are pinned and reviewed.
+minimumReleaseAgeExclude:
+  - '@cloudflare/workers-types@5.20261118.1'
+  - '@vitest/mocker@5.1.1'
+  - '@vitest/spy@5.1.1'
+  - lucide-react@1.75.0
+  - react-router@8.5.2
+  - vitest@5.1.1

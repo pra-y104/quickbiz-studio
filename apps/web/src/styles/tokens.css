@@ -1,0 +1,110 @@
+/*
+ * QuickBiz Studio design tokens.
+ *
+ * Raw values live here as CSS custom properties so a theme can be swapped by
+ * changing one attribute (`data-theme`) on <html>. Semantic names describe
+ * purpose, not colour, so components never hard-code a hex value.
+ *
+ * Brand direction: midnight navy foundations, refined violet primary,
+ * restrained electric blue accent, calm neutral surfaces.
+ */
+
+:root {
+  color-scheme: light;
+
+  /* Brand palette (static across themes) */
+  --qb-brand-50: #f4f1ff;
+  --qb-brand-100: #e9e3ff;
+  --qb-brand-200: #d5c9ff;
+  --qb-brand-300: #b9a6ff;
+  --qb-brand-400: #9a7dff;
+  --qb-brand-500: #7c5cff;
+  --qb-brand-600: #6741e8;
+  --qb-brand-700: #5332c0;
+  --qb-brand-800: #422798;
+  --qb-brand-900: #35206f;
+  --qb-brand-950: #1f1345;
+
+  --qb-navy-50: #f4f6fb;
+  --qb-navy-100: #e7ebf5;
+  --qb-navy-200: #ccd4e6;
+  --qb-navy-300: #a5b1ca;
+  --qb-navy-400: #6f7d99;
+  --qb-navy-500: #4a5468;
+  --qb-navy-600: #38415a;
+  --qb-navy-700: #28304a;
+  --qb-navy-800: #182033;
+  --qb-navy-900: #0e1526;
+  --qb-navy-950: #070b14;
+
+  --qb-electric-300: #8fc2ff;
+  --qb-electric-400: #5aa9ff;
+  --qb-electric-500: #2e8dff;
+  --qb-electric-600: #1f6fe0;
+
+  /* Semantic surfaces and text (light theme) */
+  --qb-canvas: #f6f7fb;
+  --qb-surface: #ffffff;
+  --qb-surface-muted: #f1f3f9;
+  --qb-elevated: #ffffff;
+  --qb-border: #e3e7f0;
+  --qb-border-strong: #cbd2e1;
+  --qb-ink: #0b1222;
+  --qb-ink-muted: #4a5468;
+  --qb-ink-subtle: #6b7688;
+
+  /* Actions */
+  --qb-primary: #6741e8;
+  --qb-primary-hover: #5332c0;
+  --qb-primary-soft: #efeaff;
+  --qb-on-primary: #ffffff;
+  --qb-accent: #1f6fe0;
+  --qb-accent-soft: #e7f1ff;
+  --qb-focus: #7c5cff;
+
+  /* Status */
+  --qb-success: #0f7a58;
+  --qb-success-soft: #e3f6ee;
+  --qb-warning: #8a5500;
+  --qb-warning-soft: #fdf1dc;
+  --qb-danger: #b32d35;
+  --qb-danger-soft: #fdeaea;
+
+  /* Elevation */
+  --qb-shadow-1: 0 1px 2px rgba(11, 18, 34, 0.06);
+  --qb-shadow-2: 0 1px 1px rgba(11, 18, 34, 0.04), 0 8px 24px -12px rgba(11, 18, 34, 0.18);
+  --qb-shadow-3: 0 2px 4px rgba(11, 18, 34, 0.04), 0 24px 48px -24px rgba(11, 18, 34, 0.28);
+}
+
+[data-theme='dark'] {
+  color-scheme: dark;
+
+  --qb-canvas: #070b14;
+  --qb-surface: #0d1424;
+  --qb-surface-muted: #121a2c;
+  --qb-elevated: #131c30;
+  --qb-border: #1e2942;
+  --qb-border-strong: #2c3a5c;
+  --qb-ink: #eef1f8;
+  --qb-ink-muted: #a7b1c7;
+  --qb-ink-subtle: #8590a8;
+
+  --qb-primary: #9a7dff;
+  --qb-primary-hover: #b9a6ff;
+  --qb-primary-soft: #1d1840;
+  --qb-on-primary: #0b0f1b;
+  --qb-accent: #5aa9ff;
+  --qb-accent-soft: #0f2036;
+  --qb-focus: #b9a6ff;
+
+  --qb-success: #4ecfa6;
+  --qb-success-soft: #0c2a22;
+  --qb-warning: #f0b866;
+  --qb-warning-soft: #2a1f0c;
+  --qb-danger: #ff8b90;
+  --qb-danger-soft: #2c1216;
+
+  --qb-shadow-1: 0 1px 2px rgba(0, 0, 0, 0.4);
+  --qb-shadow-2: 0 1px 1px rgba(0, 0, 0, 0.3), 0 10px 30px -16px rgba(0, 0, 0, 0.7);
+  --qb-shadow-3: 0 2px 6px rgba(0, 0, 0, 0.35), 0 28px 56px -28px rgba(0, 0, 0, 0.8);
+}

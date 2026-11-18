@@ -1,9 +1,15 @@
-import type { HTMLAttributes } from 'react';
+import type { ElementType, HTMLAttributes } from 'react';
 import { cn } from '../../lib/cn';
 
-export function Card({ className, ...props }: HTMLAttributes<HTMLDivElement>) {
+export interface CardProps extends HTMLAttributes<HTMLElement> {
+  /** Semantic element for the card surface. Defaults to a div. */
+  as?: 'div' | 'article' | 'li' | 'section';
+}
+
+export function Card({ as = 'div', className, ...props }: CardProps) {
+  const Component = as as ElementType;
   return (
-    <div
+    <Component
       className={cn(
         'rounded-card border border-border bg-surface shadow-elev-1',
         'transition-shadow duration-200',

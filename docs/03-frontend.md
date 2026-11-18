@@ -12,9 +12,11 @@ apps/web/src/
   app/          router, providers, app entry wiring
   components/
     brand/      logo and brand marks
-    layout/     app shell, header, footer
+    layout/     app shell, utility shell, header, mobile menu, footer
+    marketing/  hero, tool showcase, section heading, cards, sections/
+    tools/      catalogue icon mapping
     ui/         design-system primitives
-  features/     (Stage 3+) one folder per feature
+  content/      typed page copy (homepage.ts)
   i18n/         i18next setup and locale catalogues
   lib/          api client, env, query client, helpers
   pages/        route-level screens
@@ -28,6 +30,12 @@ apps/web/src/
 3. Add copy to `src/i18n/locales/en.json`, not inline strings, unless the text is
    internal tooling.
 4. Design all four async states before you consider the page done.
+
+## Page copy
+
+Long marketing prose lives in `src/content/` as typed objects so section shapes are
+checked by the compiler. Short interface labels stay in `src/i18n/locales/en.json`.
+See `docs/15-stage-3-homepage.md` for the homepage content model.
 
 ## Data fetching
 
@@ -71,9 +79,9 @@ const { data, isPending, error } = useQuery({
 - Avoid layout shift: reserve space for images, skeletons and results.
 - Test on a throttled connection before Stage 9 sign-off.
 
-Known issue carried into Stage 9: the shared vendor chunk is ~520 kB raw / ~160 kB
-gzipped. Route chunks are small. Vendor splitting and preload tuning are scheduled
-in the performance pass.
+Known issue carried into Stage 9: the shared vendor chunk is ~540 kB raw / ~168 kB
+gzipped. Route chunks are small and the mobile navigation drawer loads as its own
+lazy chunk. Vendor splitting and preload tuning are scheduled in the performance pass.
 
 ## Environment
 

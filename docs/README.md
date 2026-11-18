@@ -18,6 +18,7 @@ Read in this order if you are new to the project.
 | [12-environment-variables.md](./12-environment-variables.md) | Every variable, where it lives, who can see it |
 | [13-roadmap.md](./13-roadmap.md) | Stage-by-stage plan with acceptance criteria |
 | [14-handover.md](./14-handover.md) | Clone, run, maintain, transfer ownership |
+| [15-stage-3-homepage.md](./15-stage-3-homepage.md) | Homepage sections, content model, brand renaming |
 
 Status language used throughout:
 

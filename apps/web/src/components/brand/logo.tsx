@@ -1,4 +1,5 @@
 import { useId } from 'react';
+import { BRAND } from '@quickbiz/shared';
 import { cn } from '../../lib/cn';
 
 export interface LogoMarkProps {
@@ -14,12 +15,7 @@ export function LogoMark({ className }: LogoMarkProps) {
   const gradientId = useId();
 
   return (
-    <svg
-      viewBox="0 0 48 48"
-      className={cn('size-8', className)}
-      role="img"
-      aria-label="QuickBiz Studio"
-    >
+    <svg viewBox="0 0 48 48" className={cn('size-8', className)} role="img" aria-label={BRAND.name}>
       <defs>
         <linearGradient
           id={gradientId}
@@ -54,7 +50,10 @@ export function Logo({ className, showWordmark = true }: LogoProps) {
       <LogoMark />
       {showWordmark ? (
         <span className="text-[15px] font-semibold tracking-tight text-ink">
-          QuickBiz<span className="font-normal text-ink-muted"> Studio</span>
+          {BRAND.wordmark.primary}
+          {BRAND.wordmark.secondary ? (
+            <span className="font-normal text-ink-muted"> {BRAND.wordmark.secondary}</span>
+          ) : null}
         </span>
       ) : null}
     </span>

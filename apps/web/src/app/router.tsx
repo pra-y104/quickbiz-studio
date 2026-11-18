@@ -1,6 +1,8 @@
+/* eslint-disable react-refresh/only-export-components -- this module is the route table, not a hot-reload boundary */
 import { lazy, Suspense, type ReactNode } from 'react';
 import { createBrowserRouter } from 'react-router';
 import { AppShell } from '../components/layout/app-shell';
+import { UtilityShell } from '../components/layout/utility-shell';
 import { Spinner } from '../components/ui/spinner';
 
 /**
@@ -29,16 +31,16 @@ function RouteFallback() {
   );
 }
 
-function withShell(element: ReactNode) {
+function withShell(Shell: typeof AppShell, element: ReactNode) {
   return (
-    <AppShell>
+    <Shell>
       <Suspense fallback={<RouteFallback />}>{element}</Suspense>
-    </AppShell>
+    </Shell>
   );
 }
 
 export const router = createBrowserRouter([
-  { path: '/', element: withShell(<HomePage />) },
-  { path: '/design-system', element: withShell(<DesignSystemPage />) },
-  { path: '*', element: withShell(<NotFoundPage />) },
+  { path: '/', element: withShell(AppShell, <HomePage />) },
+  { path: '/design-system', element: withShell(UtilityShell, <DesignSystemPage />) },
+  { path: '*', element: withShell(UtilityShell, <NotFoundPage />) },
 ]);

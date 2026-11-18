@@ -1,4 +1,5 @@
 import { Inbox, Plus } from 'lucide-react';
+import { getToolBySlug } from '@quickbiz/shared';
 import type { ReactNode } from 'react';
 import { Alert } from '../components/ui/alert';
 import { Badge, type BadgeTone } from '../components/ui/badge';
@@ -10,6 +11,8 @@ import { Input } from '../components/ui/input';
 import { Skeleton } from '../components/ui/skeleton';
 import { Spinner } from '../components/ui/spinner';
 import { Textarea } from '../components/ui/textarea';
+import { Disclosure } from '../components/ui/disclosure';
+import { ToolCard } from '../components/marketing/tool-card';
 
 const BRAND_SWATCHES = [
   { name: 'brand-100', className: 'bg-brand-100' },
@@ -65,6 +68,8 @@ function Section({
 }
 
 export function DesignSystemPage() {
+  const sampleTool = getToolBySlug('ai-writer');
+
   return (
     <Container className="py-12 sm:py-16">
       <header className="max-w-2xl">
@@ -266,6 +271,24 @@ export function DesignSystemPage() {
                 </div>
               </CardContent>
             </Card>
+          </div>
+        </Section>
+        <Section
+          title="Marketing primitives"
+          description="Homepage blocks compose the base tokens rather than introducing new styles."
+        >
+          <div className="grid gap-4 lg:grid-cols-2">
+            {sampleTool ? <ToolCard tool={sampleTool} /> : null}
+            <div className="space-y-3">
+              <Disclosure
+                question="Do free tools need an account?"
+                answer="No. Everyday utilities are designed to work without signing up."
+              />
+              <Disclosure
+                question="What is a credit?"
+                answer="A unit of paid AI usage. The cost is shown before every run."
+              />
+            </div>
           </div>
         </Section>
       </div>

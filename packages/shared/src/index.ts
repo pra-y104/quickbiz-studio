@@ -1,4 +1,5 @@
 export * from './constants/app';
+export * from './constants/brand';
 export * from './types/api';
 export * from './types/currency';
 export * from './types/locale';

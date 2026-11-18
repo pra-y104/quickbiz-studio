@@ -1,11 +1,12 @@
+import { BRAND } from './brand';
+
 /**
- * Core brand constants. Single source of truth for names used across web and API.
- * Values here are public and safe to ship in the browser bundle.
+ * Legacy convenience constants derived from BRAND.
+ * New code should import BRAND directly so a rename only touches one file.
  */
-export const APP_NAME = 'QuickBiz Studio';
-export const APP_TAGLINE = 'Powerful Tools. Fair Pricing. No Surprises.';
-export const APP_SHORT_DESCRIPTION =
-  'AI-powered and everyday digital tools that help you finish useful work quickly and affordably.';
+export const APP_NAME = BRAND.name;
+export const APP_TAGLINE = BRAND.tagline;
+export const APP_SHORT_DESCRIPTION = BRAND.shortDescription;
 
 /** Market configuration is data, not assumptions. Nigeria is the first payment market. */
 export const DEFAULT_CURRENCY = 'NGN' as const;

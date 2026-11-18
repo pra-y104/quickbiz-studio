@@ -22,7 +22,7 @@ Authentication stays disabled - and says so - until a Supabase project is connec
 
 Not built yet: tool implementations, AI provider calls, credits, wallet and payments.
 
-Current verification: 115 automated tests passing, typecheck clean, lint clean, web
+Current verification: 119 automated tests passing, typecheck clean, lint clean, web
 build and worker bundle both validated locally. Initial bundle ~139 kB gzipped, with auth
 and the mobile drawer split into their own lazy chunks.
 

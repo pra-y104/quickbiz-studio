@@ -44,7 +44,7 @@ starts before the previous one is reviewed.
 - Auth is inert without a Supabase project: forms are disabled and the reason is shown.
 - Protected routes wait for session restoration, then redirect with a safe `next` path.
 - Profiles are protected by RLS and column grants; privileged fields are not writable.
-- 115 automated tests pass across shared, API and web.
+- 119 automated tests pass across shared, API and web.
 - Free allowance granting is intentionally deferred; it belongs with credits (Stage 7).
 
 **Stage 5**

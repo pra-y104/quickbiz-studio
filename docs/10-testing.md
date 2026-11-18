@@ -9,7 +9,7 @@
 | Web components | Vitest + Testing Library | `apps/web/src/**/*.test.tsx` | button states, api client contract, homepage sections, navigation drawer, theme toggle |
 | Auth screens and guards | Vitest + Testing Library | `apps/web/src/pages/auth`, `src/components/auth`, `src/lib/auth` | validation, provider state, protected redirects, logout, recovery states, safe next paths, profile payload |
 
-Current result: **115 tests passing** (35 shared, 18 API, 62 web).
+Current result: **119 tests passing** (35 shared, 18 API, 66 web).
 
 ## Commands
 

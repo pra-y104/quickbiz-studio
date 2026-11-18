@@ -9,12 +9,13 @@ worker, which holds the service-role key server-side.
 - `migrations/` - forward-only SQL migrations, applied in filename order.
   - `0001_extensions.sql` - extensions used by later stages.
   - `0002_conventions.sql` - shared helper functions and append-only guards.
+  - `0003_profiles.sql` - user profiles, RLS policies, column grants, signup trigger.
 
 Table migrations land with the stage that needs them:
 
 | Stage | Migrations |
 |---|---|
-| 4 | `profiles`, `platform_settings`, RLS policies for profile access |
+| 4 | `profiles` with RLS policies and column grants (done) |
 | 5 | `tool_runs` (utility usage, anonymous allowed) |
 | 6 | `tool_runs` AI columns, `saved_results` |
 | 7 | `wallets`, `credit_transactions`, `credit_packages`, reconciliation views |

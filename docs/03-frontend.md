@@ -14,12 +14,14 @@ apps/web/src/
     brand/      logo and brand marks
     layout/     app shell, utility shell, header, mobile menu, footer
     marketing/  hero, tool showcase, section heading, cards, sections/
+    auth/       auth shell, password field/strength, config notice, route guards
+    account/    signed-in chrome
     tools/      catalogue icon mapping
     ui/         design-system primitives
   content/      typed page copy (homepage.ts)
   i18n/         i18next setup and locale catalogues
-  lib/          api client, env, query client, helpers
-  pages/        route-level screens
+  lib/          api client, env, query client, auth gateway/provider, helpers
+  pages/        route-level screens (auth/, dashboard, profile, setup)
   styles/       tokens.css, globals.css
 ```
 
@@ -79,9 +81,9 @@ const { data, isPending, error } = useQuery({
 - Avoid layout shift: reserve space for images, skeletons and results.
 - Test on a throttled connection before Stage 9 sign-off.
 
-Known issue carried into Stage 9: the shared vendor chunk is ~540 kB raw / ~168 kB
-gzipped. Route chunks are small and the mobile navigation drawer loads as its own
-lazy chunk. Vendor splitting and preload tuning are scheduled in the performance pass.
+Stage 4 split the Supabase client into its own chunk, so the initial vendor chunk is
+now ~483 kB raw / ~139 kB gzipped. Route chunks stay small (auth screens 5-7 kB each)
+and the mobile drawer loads lazily. Further preload tuning is scheduled for Stage 9.
 
 ## Environment
 

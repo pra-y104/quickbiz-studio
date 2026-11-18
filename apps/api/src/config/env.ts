@@ -11,8 +11,13 @@ export interface Bindings {
   readonly RATE_LIMIT_ENABLED?: string;
   readonly RATE_LIMIT_WINDOW_SECONDS?: string;
   readonly RATE_LIMIT_MAX_REQUESTS?: string;
-  /** Server-only. Reserved for Stage 4+ and never sent to the browser. */
+  /** Server-only. Used to derive the JWKS endpoint and token issuer. */
   readonly SUPABASE_URL?: string;
+  /** Server-only. Explicit JWKS override for non-standard deployments. */
+  readonly SUPABASE_JWKS_URL?: string;
+  /** Legacy HS256 shared secret. Server-only; never exposed to the browser. */
+  readonly SUPABASE_JWT_SECRET?: string;
+  /** Server-only, reserved for Stage 7 privileged database work. */
   readonly SUPABASE_SERVICE_ROLE_KEY?: string;
   /** Server-only. Reserved for Stage 6+. */
   readonly AI_PROVIDER?: string;

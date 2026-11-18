@@ -1,6 +1,8 @@
 import * as Dialog from '@radix-ui/react-dialog';
-import { ArrowRight, X } from 'lucide-react';
+import { ArrowRight, LayoutDashboard, LogIn, UserPlus, X } from 'lucide-react';
+import { Link } from 'react-router';
 import { HOMEPAGE_NAV } from '../../content/homepage';
+import { useAuth } from '../../lib/auth/auth-context';
 import { Logo } from '../brand/logo';
 import { Button } from '../ui/button';
 import { ThemeToggle } from '../ui/theme-toggle';
@@ -18,6 +20,8 @@ export interface MobileMenuProps {
  * first open.
  */
 export function MobileMenu({ open, onOpenChange }: MobileMenuProps) {
+  const { session } = useAuth();
+
   return (
     <Dialog.Root open={open} onOpenChange={onOpenChange}>
       <Dialog.Portal>
@@ -51,12 +55,31 @@ export function MobileMenu({ open, onOpenChange }: MobileMenuProps) {
           </nav>
 
           <div className="mt-auto space-y-4 border-t border-border pt-5">
-            <Button asChild className="w-full">
-              <a href="#ai-tools" onClick={() => onOpenChange(false)}>
-                Browse the tools
-                <ArrowRight className="size-4" aria-hidden="true" />
-              </a>
-            </Button>
+            {session ? (
+              <Button asChild className="w-full">
+                <Link to="/dashboard" onClick={() => onOpenChange(false)}>
+                  <LayoutDashboard className="size-4" aria-hidden="true" />
+                  Go to dashboard
+                  <ArrowRight className="size-4" aria-hidden="true" />
+                </Link>
+              </Button>
+            ) : (
+              <>
+                <Button asChild className="w-full">
+                  <Link to="/register" onClick={() => onOpenChange(false)}>
+                    <UserPlus className="size-4" aria-hidden="true" />
+                    Create an account
+                    <ArrowRight className="size-4" aria-hidden="true" />
+                  </Link>
+                </Button>
+                <Button asChild variant="outline" className="w-full">
+                  <Link to="/login" onClick={() => onOpenChange(false)}>
+                    <LogIn className="size-4" aria-hidden="true" />
+                    Sign in
+                  </Link>
+                </Button>
+              </>
+            )}
             <div className="flex items-center justify-between">
               <span className="text-xs text-ink-subtle">Colour theme</span>
               <ThemeToggle />

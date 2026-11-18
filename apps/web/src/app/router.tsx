@@ -1,6 +1,7 @@
 /* eslint-disable react-refresh/only-export-components -- this module is the route table, not a hot-reload boundary */
 import { lazy, Suspense, type ReactNode } from 'react';
 import { createBrowserRouter } from 'react-router';
+import { RedirectIfAuthenticated, RequireAuth } from '../components/auth/route-guards';
 import { AppShell } from '../components/layout/app-shell';
 import { UtilityShell } from '../components/layout/utility-shell';
 import { Spinner } from '../components/ui/spinner';
@@ -14,6 +15,37 @@ const HomePage = lazy(() =>
 );
 const DesignSystemPage = lazy(() =>
   import('../pages/design-system').then((module) => ({ default: module.DesignSystemPage })),
+);
+const SupabaseSetupPage = lazy(() =>
+  import('../pages/setup-supabase').then((module) => ({ default: module.SupabaseSetupPage })),
+);
+const RegisterPage = lazy(() =>
+  import('../pages/auth/register').then((module) => ({ default: module.RegisterPage })),
+);
+const LoginPage = lazy(() =>
+  import('../pages/auth/login').then((module) => ({ default: module.LoginPage })),
+);
+const ForgotPasswordPage = lazy(() =>
+  import('../pages/auth/forgot-password').then((module) => ({
+    default: module.ForgotPasswordPage,
+  })),
+);
+const ResetPasswordPage = lazy(() =>
+  import('../pages/auth/reset-password').then((module) => ({
+    default: module.ResetPasswordPage,
+  })),
+);
+const VerifyEmailPage = lazy(() =>
+  import('../pages/auth/verify-email').then((module) => ({ default: module.VerifyEmailPage })),
+);
+const AuthCallbackPage = lazy(() =>
+  import('../pages/auth/callback').then((module) => ({ default: module.AuthCallbackPage })),
+);
+const DashboardPage = lazy(() =>
+  import('../pages/dashboard').then((module) => ({ default: module.DashboardPage })),
+);
+const ProfilePage = lazy(() =>
+  import('../pages/profile').then((module) => ({ default: module.ProfilePage })),
 );
 const NotFoundPage = lazy(() =>
   import('../pages/not-found').then((module) => ({ default: module.NotFoundPage })),
@@ -31,16 +63,43 @@ function RouteFallback() {
   );
 }
 
+function withSuspense(element: ReactNode) {
+  return <Suspense fallback={<RouteFallback />}>{element}</Suspense>;
+}
+
 function withShell(Shell: typeof AppShell, element: ReactNode) {
-  return (
-    <Shell>
-      <Suspense fallback={<RouteFallback />}>{element}</Suspense>
-    </Shell>
-  );
+  return <Shell>{withSuspense(element)}</Shell>;
+}
+
+/** Signed-out-only screens: register, sign in, password recovery request. */
+function guest(element: ReactNode) {
+  return <RedirectIfAuthenticated>{withSuspense(element)}</RedirectIfAuthenticated>;
+}
+
+/** Account screens. The guard renders a loading state until the session resolves. */
+function protectedRoute(element: ReactNode) {
+  return <RequireAuth>{withSuspense(element)}</RequireAuth>;
 }
 
 export const router = createBrowserRouter([
   { path: '/', element: withShell(AppShell, <HomePage />) },
   { path: '/design-system', element: withShell(UtilityShell, <DesignSystemPage />) },
+  { path: '/setup/supabase', element: withShell(UtilityShell, <SupabaseSetupPage />) },
+
+  { path: '/register', element: guest(<RegisterPage />) },
+  { path: '/login', element: guest(<LoginPage />) },
+  { path: '/forgot-password', element: guest(<ForgotPasswordPage />) },
+
+  // Recovery and verification routes deliberately sit outside the guest guard:
+  // opening a reset or confirmation link establishes a short-lived session, and
+  // redirecting away from that session would break the flow.
+  { path: '/verify-email', element: withSuspense(<VerifyEmailPage />) },
+  { path: '/auth/reset-password', element: withSuspense(<ResetPasswordPage />) },
+  { path: '/reset-password', element: withSuspense(<ResetPasswordPage />) },
+  { path: '/auth/callback', element: withSuspense(<AuthCallbackPage />) },
+
+  { path: '/dashboard', element: protectedRoute(<DashboardPage />) },
+  { path: '/profile', element: protectedRoute(<ProfilePage />) },
+
   { path: '*', element: withShell(UtilityShell, <NotFoundPage />) },
 ]);

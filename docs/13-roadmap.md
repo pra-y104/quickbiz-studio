@@ -8,8 +8,8 @@ starts before the previous one is reviewed.
 | 1 | Architecture report and decisions | Complete - approved |
 | 2 | Repository foundation, design system, API skeleton, CI, docs | Complete - awaiting review |
 | 3 | Brand identity, homepage, navigation, footer | Complete - awaiting review |
-| 4 | Auth (register, verify, login, reset), profile, dashboard shell | Next |
-| 5 | Ordinary tools: calculator, percentage, unit, date, word count, text formatter, invoice, quotation | Planned |
+| 4 | Auth (register, verify, login, reset), profile, dashboard shell | Complete - awaiting review |
+| 5 | Ordinary tools: calculator, percentage, unit, date, word count, text formatter, invoice, quotation | Next |
 | 6 | AI tools behind the provider adapter, credit cost display | Planned |
 | 7 | Wallet: ledger, atomic spend, reversals, history, saved results | Planned |
 | 8 | Paystack integration (sandbox first), webhook verification, purchase flow | Blocked on owner decision and business onboarding |
@@ -33,10 +33,19 @@ starts before the previous one is reviewed.
 - 53 automated tests pass across shared, API and web.
 
 **Stage 4**
-- A real account can be created, verified and used to log in on an Android phone.
-- Free allowance is granted exactly once per verified account.
+- A real account can be created, verified and used to sign in on an Android phone.
 - Password reset works end to end.
 - API rejects unauthenticated and forged-token requests.
+- Users can read and update only their own profile, and only editable columns.
+
+**Stage 4 (delivered)**
+- Register, verify, sign in, resend, forgot and reset screens are built on the Stage 2/3
+  design system and work at 360 px in both themes.
+- Auth is inert without a Supabase project: forms are disabled and the reason is shown.
+- Protected routes wait for session restoration, then redirect with a safe `next` path.
+- Profiles are protected by RLS and column grants; privileged fields are not writable.
+- 119 automated tests pass across shared, API and web.
+- Free allowance granting is intentionally deferred; it belongs with credits (Stage 7).
 
 **Stage 5**
 - Every ordinary tool produces correct output, verified by unit tests.

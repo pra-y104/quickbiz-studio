@@ -7,8 +7,9 @@
 | Shared contracts | Vitest | `packages/shared/src/__tests__` | catalogue invariants, brand config, currency math, date formatting, schemas |
 | API integration | Vitest | `apps/api/src/__tests__` | real Hono middleware chain: health, catalogue, validation, CORS, headers, rate limit, error hygiene |
 | Web components | Vitest + Testing Library | `apps/web/src/**/*.test.tsx` | button states, api client contract, homepage sections, navigation drawer, theme toggle |
+| Auth screens and guards | Vitest + Testing Library | `apps/web/src/pages/auth`, `src/components/auth`, `src/lib/auth` | validation, provider state, protected redirects, logout, recovery states, safe next paths, profile payload |
 
-Current result: **53 tests passing** (22 shared, 12 API, 19 web).
+Current result: **119 tests passing** (35 shared, 18 API, 66 web).
 
 ## Commands
 
@@ -25,6 +26,7 @@ pnpm verify        # everything above, in order
 | Stage | New tests |
 |---|---|
 | 3 | homepage render, navigation drawer, theme switching, no dead links (done) |
+| 4 | registration/login validation, auth state, protected routes, logout, recovery, profile fields (done) |
 | 4 | register/verify/login/reset flows, free grant idempotency, JWT rejection |
 | 5 | every calculator edge case (0, negative, huge, leap year, absolute zero) |
 | 6 | provider adapter mapping, timeout, credit reservation and reversal |

@@ -29,11 +29,17 @@ export function UtilityShell({ children }: { children: ReactNode }) {
           </Link>
           <div className="flex items-center gap-2">
             <Link
+              to="/tools"
+              className="inline-flex items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-medium text-ink-muted transition-colors hover:bg-surface-muted hover:text-ink"
+            >
+              All tools
+            </Link>
+            <Link
               to="/"
               className="inline-flex items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-medium text-ink-muted transition-colors hover:bg-surface-muted hover:text-ink"
             >
               <ArrowLeft className="size-3.5" aria-hidden="true" />
-              Back to homepage
+              Home
             </Link>
             <ThemeToggle />
           </div>
@@ -49,7 +55,7 @@ export function UtilityShell({ children }: { children: ReactNode }) {
           <p>
             &copy; {year} {BRAND.name}
           </p>
-          <p>Pre-launch build · Stage 3</p>
+          <p>Stage 5 · Free tools live</p>
         </Container>
       </footer>
     </div>

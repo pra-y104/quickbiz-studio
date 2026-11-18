@@ -9,7 +9,7 @@ starts before the previous one is reviewed.
 | 2 | Repository foundation, design system, API skeleton, CI, docs | Complete - awaiting review |
 | 3 | Brand identity, homepage, navigation, footer | Complete - awaiting review |
 | 4 | Auth (register, verify, login, reset), profile, dashboard shell | Complete - awaiting review |
-| 5 | Ordinary tools: calculator, percentage, unit, date, word count, text formatter, invoice, quotation | Next |
+| 5 | Ordinary tools: calculator, percentage, unit, date, word count, text formatter, invoice, quotation | Complete - awaiting review |
 | 6 | AI tools behind the provider adapter, credit cost display | Planned |
 | 7 | Wallet: ledger, atomic spend, reversals, history, saved results | Planned |
 | 8 | Paystack integration (sandbox first), webhook verification, purchase flow | Blocked on owner decision and business onboarding |
@@ -51,6 +51,15 @@ starts before the previous one is reviewed.
 - Every ordinary tool produces correct output, verified by unit tests.
 - Tools work without an account and without credits.
 - Invoice output downloads as a usable file.
+
+**Stage 5 (delivered)**
+- Eight tools are live at `/tools` with a searchable, filtrable directory.
+- All calculation logic is pure and unit-tested in `packages/shared/src/tools`.
+- Invoices and quotations share one totals engine and one PDF layout; the downloaded
+  file is a real PDF with a verified cross-reference table.
+- No tool requires an account, a credit, a network request or an environment variable.
+- 262 automated tests pass across shared, API and web.
+- AI tools remain `planned` and unpriced, so nothing can be charged yet.
 
 **Stage 6**
 - All eight AI tools return real provider output.

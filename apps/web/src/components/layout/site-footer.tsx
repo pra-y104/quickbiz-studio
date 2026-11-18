@@ -66,6 +66,14 @@ export function SiteFooter() {
             <ul className="mt-3 space-y-2.5">
               <li>
                 <Link
+                  to="/tools"
+                  className="text-sm text-ink-muted transition-colors hover:text-ink"
+                >
+                  All free tools
+                </Link>
+              </li>
+              <li>
+                <Link
                   to="/design-system"
                   className="text-sm text-ink-muted transition-colors hover:text-ink"
                 >
@@ -95,7 +103,7 @@ export function SiteFooter() {
           <p>
             &copy; {year} {BRAND.name}. All rights reserved.
           </p>
-          <p>Stage 3 · Built with React, TypeScript and Cloudflare Workers.</p>
+          <p>Stage 5 · Built with React, TypeScript and Cloudflare Workers.</p>
         </div>
       </Container>
     </footer>

@@ -173,4 +173,20 @@
       transparent
     );
   }
+
+  /* Small, once-only entrance used by tool headers and result panels. */
+  .qb-enter {
+    animation: qb-enter 180ms ease-out both;
+  }
+
+  @keyframes qb-enter {
+    from {
+      opacity: 0;
+      transform: translateY(4px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
 }

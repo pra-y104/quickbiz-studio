@@ -16,12 +16,13 @@ apps/web/src/
     marketing/  hero, tool showcase, section heading, cards, sections/
     auth/       auth shell, password field/strength, config notice, route guards
     account/    signed-in chrome
-    tools/      catalogue icon mapping
+    tools/      catalogue icon mapping, tool chrome, result panels, document editor
     ui/         design-system primitives
-  content/      typed page copy (homepage.ts)
+  content/      typed page copy (homepage.ts, auth.ts, tools.ts)
   i18n/         i18next setup and locale catalogues
   lib/          api client, env, query client, auth gateway/provider, helpers
-  pages/        route-level screens (auth/, dashboard, profile, setup)
+    tools/      PDF writer, document layout, download helpers
+  pages/        route-level screens (auth/, tools/, dashboard, profile, setup)
   styles/       tokens.css, globals.css
 ```
 

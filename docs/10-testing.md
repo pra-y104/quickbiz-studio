@@ -12,7 +12,7 @@
 | Ordinary tools | Vitest + Testing Library | `apps/web/src/pages/tools`, `src/components/tools`, `src/lib/tools` | every tool interaction, validation states, PDF structure and printed totals |
 | AI foundation | Vitest | `packages/shared/src/__tests__/ai-contracts.test.ts`, `apps/api/src/__tests__/ai-*.test.ts` | contract parity, prompt versions, provider registry, fake-provider pipeline, timeout, cancellation, output validation, isolation guards |
 
-Current result: **333 tests passing** (145 shared, 70 API, 118 web).
+Current result: **346 tests passing** (146 shared, 82 API, 118 web).
 
 ## Commands
 

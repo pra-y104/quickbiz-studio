@@ -6,8 +6,9 @@
  *
  * Rules an adapter must honour:
  *
- * 1. `generate` must reject with `AiProviderError` and never leak a raw provider
- *    body, key or stack to the caller.
+ * 1. `generate` must reject with `AiProviderError`. The message is for server
+ *    logs only: the pipeline discards it and returns a fixed message chosen by
+ *    `code`, so provider text can never reach a caller.
  * 2. `generate` must abort promptly when `request.signal` fires. The pipeline
  *    also enforces its own timeout, so a slow adapter cannot hang a request.
  * 3. `isConfigured()` is capability, not intent: true only when the adapter can
@@ -17,15 +18,6 @@
  */
 
 import type { AiFinishReason, AiProviderErrorCode, AiToolSlug, AiUsage } from '@quickbiz/shared';
-
-/**
- * Per-run limits the adapter must respect. These come from the shared tool
- * contract (`AI_TOOL_LIMITS`) so cost ceilings are decided in one place.
- */
-export interface AiGenerationLimits {
-  readonly maxOutputTokens: number;
-  readonly temperature: number;
-}
 
 export interface AiMessage {
   readonly role: 'user' | 'assistant';

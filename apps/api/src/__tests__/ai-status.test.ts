@@ -39,6 +39,13 @@ describe('GET /api/v1/ai/status', () => {
     expect(body.model).toBeNull();
   });
 
+  it('treats a missing value as unset', async () => {
+    const body = await getStatus();
+
+    expect(body.requestedProvider).toBeNull();
+    expect(body.model).toBeNull();
+  });
+
   it('lists all eight AI tools as planned and unpriced', async () => {
     const body = await getStatus();
 

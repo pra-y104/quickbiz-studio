@@ -6,8 +6,6 @@
  * key, prompt or raw provider payload.
  */
 
-import type { AiToolSlug } from './contracts';
-
 /**
  * Why generation stopped.
  *
@@ -49,9 +47,4 @@ export interface AiRunMetadata {
 export interface AiToolRunResult<T> {
   readonly output: T;
   readonly metadata: AiRunMetadata;
-}
-
-/** Pointer to which tool a request is for. Kept separate from the request body. */
-export interface AiToolIdentity {
-  readonly tool: AiToolSlug;
 }

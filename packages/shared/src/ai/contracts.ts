@@ -58,6 +58,19 @@ export function isAiToolSlug(value: unknown): value is AiToolSlug {
 }
 
 /**
+ * One definition of a valid provider identifier.
+ *
+ * Configuration validation, the registry and price tables all use this pattern
+ * so an id accepted in one place cannot be rejected in another. Lowercase only:
+ * ids end up in logs and price-table keys.
+ */
+export const AI_PROVIDER_ID_PATTERN = /^[a-z][a-z0-9-]{0,39}$/;
+
+export function isAiProviderId(value: unknown): value is string {
+  return typeof value === 'string' && AI_PROVIDER_ID_PATTERN.test(value);
+}
+
+/**
  * Prompt versions are owned here so the API prompts cannot drift from the
  * version recorded on a run. Bump a version whenever the wording changes.
  */

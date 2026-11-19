@@ -15,10 +15,12 @@ import {
   getAiToolSchemas,
   type AiErrorReason,
   type AiFinishReason,
+  type AiProviderErrorCode,
   type AiToolOutput,
   type AiToolRunResult,
   type AiToolSlug,
 } from '@quickbiz/shared';
+import { ZodError } from 'zod';
 import { getPrompt } from './prompts';
 import {
   composeSystemPrompt,
@@ -31,6 +33,37 @@ import {
 export const DEFAULT_AI_TIMEOUT_MS = 20_000;
 /** Hard ceiling for a caller-supplied budget, so no request can hang forever. */
 export const MAX_AI_TIMEOUT_MS = 120_000;
+
+/**
+ * Fixed, caller-safe text per provider error code.
+ *
+ * Adapter messages are for server logs only; nothing a provider returns or an
+ * adapter interpolates is ever forwarded to a caller.
+ */
+const SAFE_PROVIDER_MESSAGES: Readonly<Record<AiProviderErrorCode, string>> = {
+  'not-configured': 'No AI provider is configured.',
+  timeout: 'The AI provider did not answer in time.',
+  cancelled: 'The AI request was cancelled.',
+  'rate-limited': 'The AI provider asked us to slow down. Try again shortly.',
+  blocked: 'The AI provider blocked this request.',
+  'invalid-response': 'The AI provider returned a response that could not be used.',
+  upstream: 'The AI provider failed.',
+};
+
+/**
+ * The caller's input did not satisfy the tool's input schema.
+ *
+ * Field paths are safe to return; the submitted values are not repeated.
+ */
+export class AiInputError extends Error {
+  readonly issues: readonly string[];
+
+  constructor(issues: readonly string[]) {
+    super('The AI request did not match the tool contract.');
+    this.name = 'AiInputError';
+    this.issues = issues;
+  }
+}
 
 /**
  * A failure the caller can act on.
@@ -73,17 +106,17 @@ export interface ExecuteAiToolOptions<S extends AiToolSlug> {
   readonly timeoutMs?: number;
 }
 
-/** Translate any adapter failure into the shared vocabulary. */
+/** Translate any adapter failure into the shared vocabulary with safe text. */
 function toExecutionError(error: unknown): AiExecutionError {
   if (error instanceof AiExecutionError) return error;
   if (isAiProviderError(error)) {
-    return new AiExecutionError(error.code, error.message, {
+    return new AiExecutionError(error.code, SAFE_PROVIDER_MESSAGES[error.code], {
       ...(error.retryAfterSeconds === undefined
         ? {}
         : { retryAfterSeconds: error.retryAfterSeconds }),
     });
   }
-  return new AiExecutionError('upstream', 'The AI provider failed.');
+  return new AiExecutionError('upstream', SAFE_PROVIDER_MESSAGES.upstream);
 }
 
 function assertTimeout(timeoutMs: number | undefined): number {
@@ -223,7 +256,15 @@ export async function executeAiTool<S extends AiToolSlug>(
   const timeoutMs = assertTimeout(options.timeoutMs);
 
   // 1. Input first: an invalid request never becomes a provider call.
-  const input = getAiToolSchemas(tool).input.parse(options.input);
+  let input: unknown;
+  try {
+    input = getAiToolSchemas(tool).input.parse(options.input);
+  } catch (error) {
+    if (error instanceof ZodError) {
+      throw new AiInputError(error.issues.map((issue) => issue.path.join('.') || '(root)'));
+    }
+    throw error;
+  }
 
   if (!provider.isConfigured()) {
     throw new AiExecutionError('not-configured', 'No AI provider is configured.');
@@ -278,4 +319,51 @@ export async function executeAiTool<S extends AiToolSlug>(
       latencyMs,
     },
   };
+}
+
+/** How a future route should classify a pipeline failure. */
+export type AiFailureKind = 'validation' | 'unavailable' | 'provider';
+
+export interface AiFailureDescription {
+  readonly kind: AiFailureKind;
+  /** Present for provider failures. */
+  readonly reason?: AiErrorReason;
+  /** Field paths only, for validation failures. */
+  readonly issues?: readonly string[];
+  readonly retryAfterSeconds?: number;
+}
+
+/**
+ * Map a pipeline failure to a transport-level decision.
+ *
+ * Returns `null` for anything unrecognised — including the `RangeError` from an
+ * invalid timeout, which is a programming error. A route must treat `null` as an
+ * internal error and return a generic 500, never the original message or stack.
+ *
+ * Suggested HTTP mapping: `validation` → 422, `unavailable` → 503,
+ * `provider` → 502 (or 429 when `reason` is `rate-limited`).
+ */
+export function describeAiFailure(error: unknown): AiFailureDescription | null {
+  if (error instanceof AiInputError) {
+    return { kind: 'validation', issues: error.issues };
+  }
+  if (error instanceof AiExecutionError) {
+    return {
+      kind: error.reason === 'not-configured' ? 'unavailable' : 'provider',
+      reason: error.reason,
+      ...(error.issues === undefined ? {} : { issues: error.issues }),
+      ...(error.retryAfterSeconds === undefined
+        ? {}
+        : { retryAfterSeconds: error.retryAfterSeconds }),
+    };
+  }
+  // Defensive: the pipeline converts ZodError already, but a future caller may
+  // pass one straight through and it must not leak schema internals.
+  if (error instanceof ZodError) {
+    return {
+      kind: 'validation',
+      issues: error.issues.map((issue) => issue.path.join('.') || '(root)'),
+    };
+  }
+  return null;
 }

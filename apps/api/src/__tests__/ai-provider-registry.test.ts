@@ -75,6 +75,52 @@ describe('describeAiAvailability', () => {
     expect(availability.configured).toBe(true);
     expect(availability.reason).toBe('ready');
   });
+
+  it('does not let a different configured adapter make the requested one ready', () => {
+    const registry = new AiProviderRegistry();
+    registry.register(new FakeProvider({ id: 'alpha' }));
+
+    const availability = describeAiAvailability(
+      resolveConfig(testEnv({ AI_PROVIDER: 'beta' })),
+      registry,
+    );
+
+    expect(availability.configured).toBe(false);
+    expect(availability.reason).toBe('provider-not-configured');
+    expect(availability.requestedProvider).toBe('beta');
+  });
+
+  it('reports ready only for the requested provider', () => {
+    const registry = new AiProviderRegistry();
+    registry.register(new FakeProvider({ id: 'alpha' }));
+    registry.register(new FakeProvider({ id: 'beta' }));
+
+    const availability = describeAiAvailability(
+      resolveConfig(testEnv({ AI_PROVIDER: 'beta', AI_MODEL: 'model-b' })),
+      registry,
+    );
+
+    expect(availability).toMatchObject({
+      configured: true,
+      reason: 'ready',
+      requestedProvider: 'beta',
+      model: 'model-b',
+    });
+  });
+
+  it('keeps the requested provider unavailable when it exists but has no credential', () => {
+    const registry = new AiProviderRegistry();
+    registry.register(new FakeProvider({ id: 'alpha' }));
+    registry.register(new FakeProvider({ id: 'beta', configured: false }));
+
+    const availability = describeAiAvailability(
+      resolveConfig(testEnv({ AI_PROVIDER: 'beta' })),
+      registry,
+    );
+
+    expect(availability.configured).toBe(false);
+    expect(availability.reason).toBe('provider-not-configured');
+  });
 });
 
 describe('AI configuration safety', () => {

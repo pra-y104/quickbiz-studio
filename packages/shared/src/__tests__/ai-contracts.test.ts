@@ -12,6 +12,7 @@ import {
   isAiErrorReason,
   isAiFinishReason,
   isAiProviderErrorCode,
+  isAiProviderId,
   isAiToolSlug,
 } from '../index';
 
@@ -165,6 +166,16 @@ describe('AI vocabulary guards', () => {
     expect(isAiToolSlug('translator')).toBe(true);
     expect(isAiToolSlug('invoice-maker')).toBe(false);
     expect(isAiToolSlug(undefined)).toBe(false);
+  });
+
+  it('validates provider ids from one shared pattern', () => {
+    expect(isAiProviderId('gemini')).toBe(true);
+    expect(isAiProviderId('work-ai-2')).toBe(true);
+    expect(isAiProviderId('Gemini')).toBe(false);
+    expect(isAiProviderId('gemini pro')).toBe(false);
+    expect(isAiProviderId('')).toBe(false);
+    expect(isAiProviderId('a'.repeat(41))).toBe(false);
+    expect(isAiProviderId(undefined)).toBe(false);
   });
 
   it('narrows known error reasons only', () => {

@@ -41,22 +41,29 @@ allowance is a platform decision, never a provider one.
 
 ## Registry and configuration
 
-- `AiProviderRegistry` is an allow-list with duplicate-id and id-format guards.
-- `productionRegistry` is empty. No configuration path can register an adapter.
+- `AiProviderRegistry` is an allow-list with duplicate-id and id-format guards. The
+  id pattern is defined once in `packages/shared/src/ai/contracts.ts` and reused by
+  configuration, the registry and price tables.
+- Production adapters are registered only inside `apps/api/src/ai/registry.ts`
+  (`PRODUCTION_ADAPTERS`, empty in M1A). `productionRegistry` is a frozen object with
+  no `register` method, so importing the singleton cannot add a provider.
 - `require(id)` fails closed: a missing or unconfigured provider throws, and there is
   no fallback to another provider.
-- `describeAiAvailability(config, registry)` derives `configured` and `reason` from
-  the registry only. `AI_PROVIDER` / `AI_MODEL` are echoed as a preference and cannot
-  make AI available.
-- Invalid configuration fails at startup (`ConfigurationError`), and the worker
-  returns a generic 500 without echoing the bad value.
+- Availability is registry-driven. When `AI_PROVIDER` is set, that provider must be
+  registered **and** configured for `configured: true`; a different configured adapter
+  cannot make the requested one look ready. Without a request, any configured adapter
+  is enough. `AI_PROVIDER` / `AI_MODEL` are echoed as a preference only.
+- A missing or empty `AI_PROVIDER` / `AI_MODEL` normalises to `null`. Invalid
+  configuration fails at startup (`ConfigurationError`), and the worker returns a
+  generic 500 without echoing the bad value.
 
 ## Execution pipeline
 
 `executeAiTool({ tool, input, provider, model?, signal?, timeoutMs? })`:
 
-1. **Validate input** with the tool's input schema. An invalid request throws a
-   `ZodError` before any provider call is made.
+1. **Validate input** with the tool's input schema, before any provider call. A
+   mismatch throws `AiInputError` carrying field paths only; submitted values are not
+   repeated.
 2. **Build the prompt** from the versioned template; the output contract is appended
    to the immutable system instruction. Templates are unchanged from M0.
 3. **Call the provider** with one budget: caller cancellation or the timeout aborts a
@@ -70,8 +77,14 @@ allowance is a platform decision, never a provider one.
 6. **Return** `{ output, metadata }` with provider id, model, prompt version, finish
    reason, usage when reported, and measured latency.
 
-Error mapping is total: any unexpected adapter failure becomes `upstream` with a
-generic message, so internal hostnames or stack text never reach a caller.
+Error mapping is total and text-safe: adapter messages are discarded, and each
+provider error code maps to a fixed message. `retryAfterSeconds` is preserved only
+when the adapter supplied it.
+
+`describeAiFailure(error)` lets a route classify a pipeline failure without parsing
+messages: `validation` (422), `unavailable` (503), `provider` (502, or 429 for
+`rate-limited`). It returns `null` for programmer errors such as an invalid timeout
+(`RangeError`), so the route answers with a generic 500.
 
 ## Timeout and cancellation
 
@@ -111,23 +124,41 @@ Safety rules a future real adapter must satisfy:
 1. Owner approval for the provider and its pricing/terms (D1, D2, D3).
 2. Add the adapter under `apps/api/src/ai/adapters/<id>.ts`, implementing
    `AiProvider` and importing no Node networking.
-3. Update the ESLint `ai-provider-boundary` rule to permit the reviewed client, and
-   only that client.
-4. Register it explicitly in `productionRegistry` in `registry.ts`.
+3. Update the ESLint `ai-provider-boundary` rule to permit the reviewed transport, and
+   only that transport. The current rule is deliberately strict.
+4. Register it in `PRODUCTION_ADAPTERS` inside `registry.ts`. This is the only place a
+   production adapter can be added; the exported registry has no `register` method.
 5. Add offline tests using the fake for the pipeline, plus adapter tests with a
    stubbed transport. No live call in CI.
-6. Confirm `/api/v1/ai/status` reports `ready` only when the adapter has a credential.
+6. Confirm `/api/v1/ai/status` reports `ready` only for the requested, configured
+   provider.
 7. Wire `POST /api/v1/ai/run` in a separate reviewed milestone, behind auth and quota
-   design (M2).
+   design (M2), using `describeAiFailure` for safe error mapping.
 
 ## How isolation is proven
 
-- Tests assert `productionRegistry.list()` is empty, the production barrel exports no
-  `FakeProvider`, and `POST /api/v1/ai/run` still returns 501 even with `AI_PROVIDER`
-  set.
-- A test asserts no provider SDK dependency is declared in `apps/api/package.json`.
-- ESLint rules ban `fetch`, vendor SDK imports and Node networking inside
-  `apps/api/src/ai/`, and ban importing test doubles from production modules.
+Primary control: the production registry is empty, created inside `registry.ts` from a
+local adapter list, and exposed as a frozen read-only object with no `register`
+method. Tests assert it is empty and that `'register' in productionRegistry` is false.
+
+Secondary control: ESLint rules, verified with `--stdin` probes, block inside
+`apps/api/src/ai/`:
+
+- bare `fetch`, `globalThis.fetch`, `WebSocket`, `XMLHttpRequest`, `EventSource`;
+- dynamic `import()` of `http(s)://` URLs and template-literal import specifiers;
+- `openai`, `@google/*`, `@anthropic-ai/*`, `groq-sdk`, `axios`, `undici`, `ky`,
+  `got`, `node-fetch`, `node:*` and the `http`, `https`, `net`, `tls`, `dgram`
+  builtins.
+
+Test-double imports are blocked everywhere under `apps/api/src` except
+`apps/api/src/__tests__/**` and `apps/api/src/ai/testing/**`. ESLint is
+defence-in-depth, not a sandbox: it is a lint gate over reviewed source, so the empty
+registry remains the load-bearing control.
+
+Tests also assert the production barrel exports no `FakeProvider`, the built worker
+bundle contains no fake or pipeline code, no provider SDK or HTTP client is declared in
+`apps/api/package.json`, and `POST /api/v1/ai/run` still returns 501 with `AI_PROVIDER`
+set.
 
 ## Still absent
 

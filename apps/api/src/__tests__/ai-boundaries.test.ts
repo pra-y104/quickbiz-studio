@@ -12,17 +12,32 @@ describe('production isolation', () => {
     expect(productionRegistry.configured()).toHaveLength(0);
   });
 
+  it('exposes production registration as a frozen read-only view', () => {
+    expect('register' in productionRegistry).toBe(false);
+    expect(Object.isFrozen(productionRegistry)).toBe(true);
+  });
+
   it('does not expose a test double from the production barrel', () => {
     expect(Object.keys(aiModule)).not.toContain('FakeProvider');
     expect('FakeProvider' in aiModule).toBe(false);
   });
 
-  it('declares no provider SDK dependency', () => {
+  it('declares no provider SDK or HTTP client dependency', () => {
     const installed = Object.keys({
       ...apiPackage.dependencies,
       ...apiPackage.devDependencies,
     });
-    const forbidden = ['openai', '@google/generative-ai', '@anthropic-ai/sdk', 'groq-sdk', 'axios'];
+    const forbidden = [
+      'openai',
+      '@google/generative-ai',
+      '@anthropic-ai/sdk',
+      'groq-sdk',
+      'axios',
+      'undici',
+      'ky',
+      'got',
+      'node-fetch',
+    ];
 
     expect(installed.filter((name) => forbidden.includes(name))).toEqual([]);
   });

@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { AI_PROVIDER_ID_PATTERN } from '@quickbiz/shared';
 
 /**
  * Worker environment contract. Values arrive as strings from wrangler vars and
@@ -57,15 +58,17 @@ export interface AppConfig {
 const nullableIdentifier = z
   .string()
   .trim()
-  .transform((value) => (value.length === 0 ? null : value))
-  .refine((value) => value === null || /^[a-z][a-z0-9-]{0,39}$/.test(value), {
+  .optional()
+  .transform((value) => (value === undefined || value.length === 0 ? null : value))
+  .refine((value) => value === null || AI_PROVIDER_ID_PATTERN.test(value), {
     message: 'must be a lowercase identifier of at most 40 characters',
   });
 
 const nullableModelId = z
   .string()
   .trim()
-  .transform((value) => (value.length === 0 ? null : value))
+  .optional()
+  .transform((value) => (value === undefined || value.length === 0 ? null : value))
   .refine((value) => value === null || /^[A-Za-z0-9][A-Za-z0-9._:-]{0,119}$/.test(value), {
     message: 'must be a model id of at most 120 characters',
   });
@@ -89,8 +92,8 @@ const rawEnvSchema = z.object({
   RATE_LIMIT_WINDOW_SECONDS: z.coerce.number().int().min(1).max(3600).default(60),
   RATE_LIMIT_MAX_REQUESTS: z.coerce.number().int().min(1).max(10_000).default(120),
   /** Preferred provider/model. Not a capability switch: see `AppConfig.ai`. */
-  AI_PROVIDER: nullableIdentifier.default(''),
-  AI_MODEL: nullableModelId.default(''),
+  AI_PROVIDER: nullableIdentifier,
+  AI_MODEL: nullableModelId,
 });
 
 /** Cache keyed by the env object so parsing happens once per isolate. */

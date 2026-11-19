@@ -9,10 +9,9 @@
  * Stage 7 concerns and are deliberately absent.
  */
 
-import type { AiUsage } from '@quickbiz/shared';
+import { AI_PROVIDER_ID_PATTERN, type AiUsage } from '@quickbiz/shared';
 
 const CURRENCY_PATTERN = /^[A-Z]{3}$/;
-const PROVIDER_ID_PATTERN = /^[a-z][a-z0-9-]{0,39}$/;
 
 /** Owner-provided rates for one provider/model pair. */
 export interface AiPriceTable {
@@ -49,7 +48,7 @@ export interface AiCostEstimator {
 }
 
 function assertPriceTable(table: AiPriceTable): void {
-  if (!PROVIDER_ID_PATTERN.test(table.providerId)) {
+  if (!AI_PROVIDER_ID_PATTERN.test(table.providerId)) {
     throw new Error(`Invalid AI price table provider id: ${table.providerId}`);
   }
   if (table.model.length === 0) {

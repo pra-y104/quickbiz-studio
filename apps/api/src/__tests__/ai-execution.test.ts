@@ -1,7 +1,13 @@
 import { describe, expect, it, vi } from 'vitest';
-import { ZodError } from 'zod';
 import { AI_TOOL_LIMITS, type AiErrorReason } from '@quickbiz/shared';
-import { AiExecutionError, DEFAULT_AI_TIMEOUT_MS, executeAiTool } from '../ai/execution';
+import {
+  AiExecutionError,
+  AiInputError,
+  DEFAULT_AI_TIMEOUT_MS,
+  describeAiFailure,
+  executeAiTool,
+} from '../ai/execution';
+import { AiProviderError } from '../ai/provider';
 import { FakeProvider } from '../ai/testing/fake-provider';
 
 const writerInput = {
@@ -78,9 +84,15 @@ describe('executeAiTool: input handling', () => {
   it('rejects invalid input before calling the provider', async () => {
     const provider = new FakeProvider({ text: JSON.stringify(writerOutput) });
 
-    await expect(
-      executeAiTool({ tool: 'ai-writer', input: { topic: 'too short' }, provider }),
-    ).rejects.toBeInstanceOf(ZodError);
+    const error = await executeAiTool({
+      tool: 'ai-writer',
+      input: { topic: 'too short' },
+      provider,
+    }).catch((value: unknown) => value);
+
+    expect(error).toBeInstanceOf(AiInputError);
+    expect((error as AiInputError).issues).toContain('topic');
+    expect((error as Error).message).not.toContain('too short');
     expect(provider.calls).toHaveLength(0);
   });
 
@@ -183,6 +195,42 @@ describe('executeAiTool: provider failures', () => {
     expect(error).toMatchObject({ reason: 'upstream' });
     expect((error as Error).message).not.toContain('10.0.0.1');
   });
+
+  it('never forwards adapter message text, even for a typed provider error', async () => {
+    const provider: FakeProvider = new FakeProvider({ text: JSON.stringify(writerOutput) });
+    provider.generate = () =>
+      Promise.reject(
+        new AiProviderError(
+          'upstream',
+          'request failed: Authorization sk-live-secret-12345 body={"prompt":"private"}',
+        ),
+      );
+
+    const error = await executeAiTool({ tool: 'ai-writer', input: writerInput, provider }).catch(
+      (value: unknown) => value,
+    );
+
+    expect(error).toBeInstanceOf(AiExecutionError);
+    expect(error).toMatchObject({ reason: 'upstream', message: 'The AI provider failed.' });
+    expect((error as Error).message).not.toMatch(/sk-live-secret|Authorization|prompt/);
+  });
+
+  it('keeps retry hints but not provider wording', async () => {
+    const provider: FakeProvider = new FakeProvider({ text: JSON.stringify(writerOutput) });
+    provider.generate = () =>
+      Promise.reject(
+        new AiProviderError('rate-limited', 'quota for project 42 exhausted', {
+          retryAfterSeconds: 30,
+        }),
+      );
+
+    const error = await executeAiTool({ tool: 'ai-writer', input: writerInput, provider }).catch(
+      (value: unknown) => value,
+    );
+
+    expect(error).toMatchObject({ reason: 'rate-limited', retryAfterSeconds: 30 });
+    expect((error as Error).message).not.toContain('project 42');
+  });
 });
 
 describe('executeAiTool: timeout and cancellation', () => {
@@ -249,5 +297,56 @@ describe('executeAiTool: cost metadata', () => {
     const provider = new FakeProvider({ text: JSON.stringify(writerOutput) });
     const result = await executeAiTool({ tool: 'ai-writer', input: writerInput, provider });
     expect(result.metadata.usage).toBeUndefined();
+  });
+});
+
+describe('describeAiFailure', () => {
+  it('classifies input failures as validation with safe paths', async () => {
+    const error = await executeAiTool({
+      tool: 'ai-writer',
+      input: { topic: 'too short' },
+      provider: new FakeProvider(),
+    }).catch((value: unknown) => value);
+
+    const description = describeAiFailure(error);
+    expect(description).toMatchObject({ kind: 'validation' });
+    expect(description?.issues).toEqual(
+      expect.arrayContaining(['documentType', 'topic', 'tone', 'length', 'language']),
+    );
+  });
+
+  it('classifies an unconfigured provider as unavailable', () => {
+    const description = describeAiFailure(
+      new AiExecutionError('not-configured', 'No AI provider is configured.'),
+    );
+    expect(description).toEqual({ kind: 'unavailable', reason: 'not-configured' });
+  });
+
+  it('classifies provider failures with their reason and retry hint', () => {
+    const description = describeAiFailure(
+      new AiExecutionError('rate-limited', 'Slow down.', { retryAfterSeconds: 20 }),
+    );
+    expect(description).toEqual({
+      kind: 'provider',
+      reason: 'rate-limited',
+      retryAfterSeconds: 20,
+    });
+  });
+
+  it('keeps output issue paths for invalid responses', () => {
+    const description = describeAiFailure(
+      new AiExecutionError('invalid-response', 'Bad shape.', { issues: ['sections.0.body'] }),
+    );
+    expect(description).toMatchObject({
+      kind: 'provider',
+      reason: 'invalid-response',
+      issues: ['sections.0.body'],
+    });
+  });
+
+  it('returns null for programmer errors so a route can answer with a generic 500', () => {
+    expect(describeAiFailure(new RangeError('timeoutMs must be between 1 and 120000'))).toBeNull();
+    expect(describeAiFailure(new Error('database password rotation failed'))).toBeNull();
+    expect(describeAiFailure('string failure')).toBeNull();
   });
 });

@@ -42,26 +42,21 @@ export default tseslint.config(
     },
   },
   {
-    // M1A guard: no AI module may reach the network or a vendor SDK.
-    // A reviewed adapter in M1B updates this rule deliberately, not silently.
-    name: 'quickbiz/ai-provider-boundary',
-    files: ['apps/api/src/ai/**/*.ts'],
-    ignores: ['apps/api/src/ai/testing/**'],
+    // Test doubles stay out of every production module. Tests and the approved
+    // testing directory are exempt, so the fake remains usable offline.
+    // Declared before the AI boundary block: flat config replaces rule options
+    // when two blocks configure the same rule for the same file.
+    name: 'quickbiz/no-ai-test-doubles',
+    files: ['apps/api/src/**/*.ts'],
+    ignores: ['apps/api/src/__tests__/**', 'apps/api/src/ai/testing/**'],
     rules: {
-      'no-restricted-globals': [
-        'error',
-        {
-          name: 'fetch',
-          message: 'AI modules must not call the network directly in M1A.',
-        },
-      ],
       'no-restricted-imports': [
         'error',
         {
           patterns: [
             {
-              group: ['openai', '@google/*', '@anthropic-ai/*', 'groq-sdk', 'axios', 'node:*'],
-              message: 'Provider SDKs and Node networking are not allowed in AI modules.',
+              group: ['**/ai/testing/*', '**/ai/testing/**', '**/testing/*'],
+              message: 'Test doubles must not be imported by production modules.',
             },
           ],
         },
@@ -69,22 +64,78 @@ export default tseslint.config(
     },
   },
   {
-    // Test doubles stay out of every production module.
-    name: 'quickbiz/no-ai-test-doubles',
-    files: [
-      'apps/api/src/app.ts',
-      'apps/api/src/routes/**/*.ts',
-      'apps/api/src/middleware/**/*.ts',
-      'apps/api/src/lib/**/*.ts',
-      'apps/api/src/config/**/*.ts',
-    ],
+    // M1A guard: no AI module may reach the network or a vendor SDK.
+    // A reviewed adapter in M1B updates this rule deliberately, not silently.
+    // The import list repeats the test-double patterns because a later block
+    // for the same files would otherwise replace this rule's options.
+    name: 'quickbiz/ai-provider-boundary',
+    files: ['apps/api/src/ai/**/*.ts'],
+    ignores: ['apps/api/src/ai/testing/**'],
     rules: {
+      'no-restricted-globals': [
+        'error',
+        { name: 'fetch', message: 'AI modules must not call the network directly in M1A.' },
+        { name: 'WebSocket', message: 'AI modules must not open sockets in M1A.' },
+        {
+          name: 'XMLHttpRequest',
+          message: 'AI modules must not call the network directly in M1A.',
+        },
+        { name: 'EventSource', message: 'AI modules must not open event streams in M1A.' },
+      ],
+      'no-restricted-syntax': [
+        'error',
+        {
+          selector: "MemberExpression[object.name='globalThis'][property.name='fetch']",
+          message: 'AI modules must not call globalThis.fetch in M1A.',
+        },
+        {
+          selector: "MemberExpression[object.name='globalThis'][property.name='WebSocket']",
+          message: 'AI modules must not open sockets in M1A.',
+        },
+        {
+          selector: "MemberExpression[object.name='globalThis'][property.name='XMLHttpRequest']",
+          message: 'AI modules must not call the network directly in M1A.',
+        },
+        {
+          selector: "MemberExpression[object.name='globalThis'][property.name='EventSource']",
+          message: 'AI modules must not open event streams in M1A.',
+        },
+        {
+          selector: 'ImportExpression[source.value=/^https?:/]',
+          message: 'AI modules must not import remote modules by URL.',
+        },
+        {
+          selector: "ImportExpression[source.type='TemplateLiteral']",
+          message: 'AI modules must not build import specifiers dynamically in M1A.',
+        },
+      ],
       'no-restricted-imports': [
         'error',
         {
           patterns: [
             {
-              group: ['**/ai/testing/*', '**/testing/*'],
+              group: [
+                'openai',
+                '@google/*',
+                '@anthropic-ai/*',
+                'groq-sdk',
+                'axios',
+                'undici',
+                'ky',
+                'got',
+                'node-fetch',
+                'node:*',
+                'http',
+                'https',
+                'net',
+                'tls',
+                'dgram',
+              ],
+              message:
+                'Provider SDKs, HTTP clients and Node networking are not allowed in AI modules.',
+            },
+            {
+              group: ['**/ai/testing/*', '**/ai/testing/**', '**/testing/*'],
               message: 'Test doubles must not be imported by production modules.',
             },
           ],

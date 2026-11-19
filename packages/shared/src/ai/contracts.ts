@@ -28,6 +28,14 @@ import {
   aiTranslatorOutputSchema,
   aiWriterInputSchema,
   aiWriterOutputSchema,
+  type AiAdvertOutput,
+  type AiBusinessNameOutput,
+  type AiBusinessPlanOutput,
+  type AiProductDescriptionOutput,
+  type AiSocialCaptionOutput,
+  type AiTextImproverOutput,
+  type AiTranslatorOutput,
+  type AiWriterOutput,
 } from './schemas';
 import type { AiAvailabilityReason } from './errors';
 import type { ToolStatus } from '../types/tool';
@@ -162,6 +170,25 @@ export function getAiToolLimits(slug: AiToolSlug): AiToolLimits {
 export function getAiToolSchemas(slug: AiToolSlug) {
   return AI_TOOL_SCHEMAS[slug];
 }
+
+/**
+ * Typed output for each tool slug.
+ *
+ * This is the type-level counterpart of `AI_TOOL_SCHEMAS` so the execution
+ * pipeline can return a concrete type per tool instead of `unknown`.
+ */
+export interface AiToolOutputBySlug {
+  readonly 'ai-writer': AiWriterOutput;
+  readonly 'ad-generator': AiAdvertOutput;
+  readonly translator: AiTranslatorOutput;
+  readonly 'text-improver': AiTextImproverOutput;
+  readonly 'product-description': AiProductDescriptionOutput;
+  readonly 'business-name-generator': AiBusinessNameOutput;
+  readonly 'social-caption': AiSocialCaptionOutput;
+  readonly 'business-plan-assistant': AiBusinessPlanOutput;
+}
+
+export type AiToolOutput<S extends AiToolSlug> = AiToolOutputBySlug[S];
 
 /* -------------------------------------------------------------------------- */
 /* Availability contract                                                      */

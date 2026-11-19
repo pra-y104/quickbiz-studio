@@ -22,6 +22,7 @@ Read in this order if you are new to the project.
 | [16-supabase-setup.md](./16-supabase-setup.md) | Create the project, apply migrations, env vars, smoke test |
 | [17-stage-5-tools.md](./17-stage-5-tools.md) | Ordinary tools: logic layout, PDF writer, edge cases, tests |
 | [18-stage-6-ai-tools.md](./18-stage-6-ai-tools.md) | AI contracts, prompt versions, status endpoint, deferred decisions |
+| [19-stage-6-m1a-ai-foundation.md](./19-stage-6-m1a-ai-foundation.md) | Provider contract, fake provider, execution pipeline, cost interfaces |
 
 Status language used throughout:
 

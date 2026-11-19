@@ -6,7 +6,7 @@
  * client can switch on it safely and a test can prove every path is covered.
  *
  * Nothing here executes a provider call. Stage 6 M0 declares the vocabulary
- * only; the adapters that produce these reasons arrive in M1.
+ * only; M1A adds the provider-error subset used by the execution pipeline.
  */
 
 export const AI_ERROR_REASONS = [
@@ -14,6 +14,8 @@ export const AI_ERROR_REASONS = [
   'not-configured',
   /** The provider did not answer inside the per-run budget. */
   'timeout',
+  /** The caller aborted the request (navigation, new submission, shutdown). */
+  'cancelled',
   /** The provider refused the request because of its own rate limit. */
   'rate-limited',
   /** A safety filter blocked the prompt or the response. */
@@ -27,6 +29,24 @@ export const AI_ERROR_REASONS = [
 ] as const;
 
 export type AiErrorReason = (typeof AI_ERROR_REASONS)[number];
+
+/**
+ * The subset that a provider adapter may raise.
+ *
+ * `quota` is deliberately excluded: an allowance is a wallet decision made by
+ * the platform, never by a provider adapter. Stage 7 owns it.
+ */
+export const AI_PROVIDER_ERROR_CODES = [
+  'not-configured',
+  'timeout',
+  'cancelled',
+  'rate-limited',
+  'blocked',
+  'invalid-response',
+  'upstream',
+] as const;
+
+export type AiProviderErrorCode = (typeof AI_PROVIDER_ERROR_CODES)[number];
 
 /** Lifecycle value stored for every run once persistence exists (M2). */
 export const AI_RUN_STATUSES = ['succeeded', 'failed', 'blocked', 'cancelled'] as const;
@@ -50,6 +70,12 @@ export type AiAvailabilityReason = (typeof AI_AVAILABILITY_REASONS)[number];
 
 export function isAiErrorReason(value: unknown): value is AiErrorReason {
   return typeof value === 'string' && (AI_ERROR_REASONS as readonly string[]).includes(value);
+}
+
+export function isAiProviderErrorCode(value: unknown): value is AiProviderErrorCode {
+  return (
+    typeof value === 'string' && (AI_PROVIDER_ERROR_CODES as readonly string[]).includes(value)
+  );
 }
 
 export function isAiRunStatus(value: unknown): value is AiRunStatus {

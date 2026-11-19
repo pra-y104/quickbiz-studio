@@ -12,11 +12,12 @@ user and needs no server maintenance. The bundle is validated with
 apps/api/src/
   app.ts              middleware chain + route mounting
   index.ts            worker entry point
-  ai/                 provider contract and registry (no provider in Stage 2)
+  ai/                 provider contract, registry, execution pipeline, cost interfaces
+  ai/testing/         offline test double (never imported by production modules)
   config/env.ts       validated bindings and defaults
   lib/                errors, responses, logging, validation
   middleware/         request context, cors, security headers, rate limit, error handler
-  routes/             health, meta, tools
+  routes/             health, meta, tools, ai status
   types/              request context types
   __tests__/          integration tests against the real middleware chain
 ```

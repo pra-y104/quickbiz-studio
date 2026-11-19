@@ -42,6 +42,57 @@ export default tseslint.config(
     },
   },
   {
+    // M1A guard: no AI module may reach the network or a vendor SDK.
+    // A reviewed adapter in M1B updates this rule deliberately, not silently.
+    name: 'quickbiz/ai-provider-boundary',
+    files: ['apps/api/src/ai/**/*.ts'],
+    ignores: ['apps/api/src/ai/testing/**'],
+    rules: {
+      'no-restricted-globals': [
+        'error',
+        {
+          name: 'fetch',
+          message: 'AI modules must not call the network directly in M1A.',
+        },
+      ],
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            {
+              group: ['openai', '@google/*', '@anthropic-ai/*', 'groq-sdk', 'axios', 'node:*'],
+              message: 'Provider SDKs and Node networking are not allowed in AI modules.',
+            },
+          ],
+        },
+      ],
+    },
+  },
+  {
+    // Test doubles stay out of every production module.
+    name: 'quickbiz/no-ai-test-doubles',
+    files: [
+      'apps/api/src/app.ts',
+      'apps/api/src/routes/**/*.ts',
+      'apps/api/src/middleware/**/*.ts',
+      'apps/api/src/lib/**/*.ts',
+      'apps/api/src/config/**/*.ts',
+    ],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            {
+              group: ['**/ai/testing/*', '**/testing/*'],
+              message: 'Test doubles must not be imported by production modules.',
+            },
+          ],
+        },
+      ],
+    },
+  },
+  {
     name: 'quickbiz/web',
     files: ['apps/web/**/*.{ts,tsx}'],
     languageOptions: {

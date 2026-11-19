@@ -3,11 +3,10 @@ import {
   AI_PROMPT_VERSIONS,
   AI_TOOL_SLUGS,
   TOOL_CATALOGUE,
-  type AiAvailabilityReason,
   type AiStatus,
   type AiToolStatus,
 } from '@quickbiz/shared';
-import { providerRegistry } from '../ai/provider';
+import { describeAiAvailability, productionRegistry } from '../ai/registry';
 import { AppError } from '../lib/errors';
 import { ok } from '../lib/response';
 import type { AppContext } from '../types/context';
@@ -27,15 +26,7 @@ export const aiRoutes = new Hono<AppContext>();
  */
 aiRoutes.get('/status', (c) => {
   const config = c.get('config');
-  const registered = providerRegistry.list();
-  const configured = providerRegistry.configured();
-
-  const reason: AiAvailabilityReason =
-    registered.length === 0
-      ? 'no-adapters-registered'
-      : configured.length === 0
-        ? 'provider-not-configured'
-        : 'ready';
+  const availability = describeAiAvailability(config, productionRegistry);
 
   const tools: AiToolStatus[] = AI_TOOL_SLUGS.map((slug) => {
     const entry = TOOL_CATALOGUE.find((tool) => tool.slug === slug);
@@ -48,10 +39,10 @@ aiRoutes.get('/status', (c) => {
   });
 
   const body: AiStatus = {
-    configured: configured.length > 0,
-    reason,
-    requestedProvider: config.ai.providerId,
-    model: config.ai.model,
+    configured: availability.configured,
+    reason: availability.reason,
+    requestedProvider: availability.requestedProvider,
+    model: availability.model,
     quota: null,
     tools,
     total: tools.length,
@@ -61,9 +52,9 @@ aiRoutes.get('/status', (c) => {
 });
 
 /**
- * Generation is intentionally absent in M0. The route exists so a client gets a
- * stable, explicit answer instead of an ambiguous 404 from the router, and so a
- * test can prove nothing in this build can spend money on a provider call.
+ * Generation is intentionally absent in M1A. The route exists so a client gets
+ * a stable, explicit answer instead of an ambiguous 404 from the router, and so
+ * a test can prove no HTTP path in this build can spend money on a provider.
  */
 aiRoutes.post('/run', () => {
   throw AppError.notImplemented('AI generation is not available in this build.');

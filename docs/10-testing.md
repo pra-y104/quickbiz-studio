@@ -10,8 +10,9 @@
 | Web components | Vitest + Testing Library | `apps/web/src/**/*.test.tsx` | button states, api client contract, homepage sections, navigation drawer, theme toggle |
 | Auth screens and guards | Vitest + Testing Library | `apps/web/src/pages/auth`, `src/components/auth`, `src/lib/auth` | validation, provider state, protected redirects, logout, recovery states, safe next paths, profile payload |
 | Ordinary tools | Vitest + Testing Library | `apps/web/src/pages/tools`, `src/components/tools`, `src/lib/tools` | every tool interaction, validation states, PDF structure and printed totals |
+| AI foundation | Vitest | `packages/shared/src/__tests__/ai-contracts.test.ts`, `apps/api/src/__tests__/ai-*.test.ts` | contract parity, prompt versions, provider registry, fake-provider pipeline, timeout, cancellation, output validation, isolation guards |
 
-Current result: **262 tests passing** (126 shared, 18 API, 118 web).
+Current result: **333 tests passing** (145 shared, 70 API, 118 web).
 
 ## Commands
 
@@ -31,7 +32,7 @@ pnpm verify        # everything above, in order
 | 4 | registration/login validation, auth state, protected routes, logout, recovery, profile fields (done) |
 | 4 | register/verify/login/reset flows, free grant idempotency, JWT rejection |
 | 5 | every calculator edge case (0, negative, huge, leap year, absolute zero) (done) |
-| 6 | provider adapter mapping, timeout, credit reservation and reversal |
+| 6 | provider contract, registry fail-closed, fake-provider pipeline, timeout, cancellation, malformed output (M0 and M1A done); adapter mapping in M1B; credit reservation and reversal in Stage 7 |
 | 7 | atomic spend under concurrency, ledger reconciliation, idempotent replay |
 | 8 | webhook signature failure, replay rejection, amount mismatch, sandbox purchase |
 | 9 | Playwright end-to-end on phone viewport, accessibility audit, performance budget |

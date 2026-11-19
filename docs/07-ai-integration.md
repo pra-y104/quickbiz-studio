@@ -13,7 +13,7 @@
 
 ## Contract
 
-`apps/api/src/ai/provider.ts` defines:
+`apps/api/src/ai/provider.ts` defines the provider-independent boundary:
 
 ```ts
 interface AiProvider {
@@ -21,13 +21,21 @@ interface AiProvider {
   label: string;
   defaultModel: string;
   isConfigured(): boolean;
-  generate(request: AiGenerationRequest): Promise<AiGenerationResult>;
+  generate(request: AiGenerateRequest): Promise<AiGenerateResponse>;
 }
 ```
 
-`ProviderRegistry` holds registered providers. In Stage 2 the registry is empty on
-purpose: nothing can generate, so nothing can pretend to. That is still true after
-Stage 6 M0, which adds contracts and prompts but no adapter.
+Requests carry the tool, system instruction, delimited user turn, output limits and
+an `AbortSignal`. Responses are normalised to text, provider id, model, finish reason
+and optional usage. Adapters may only throw `AiProviderError` with a code from the
+shared `AI_PROVIDER_ERROR_CODES` list.
+
+`AiProviderRegistry` holds registered providers. It is empty in this build on
+purpose: nothing can generate, so nothing can pretend to. `executeAiTool()` is the one
+pipeline that validates input, applies timeout and cancellation, and validates the
+response against the tool's output schema. See
+[19-stage-6-m1a-ai-foundation.md](./19-stage-6-m1a-ai-foundation.md) for the
+adapter requirements.
 
 `GET /api/v1/ai/status` derives availability from this registry, not from
 configuration. Naming `AI_PROVIDER` and `AI_MODEL` records a preference; with an empty

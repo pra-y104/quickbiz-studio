@@ -1,13 +1,17 @@
 import { describe, expect, it } from 'vitest';
 import {
   AI_ERROR_REASONS,
+  AI_FINISH_REASONS,
   AI_LANGUAGE_CODES,
   AI_PROMPT_VERSIONS,
+  AI_PROVIDER_ERROR_CODES,
   AI_TOOL_SCHEMAS,
   AI_TOOL_SLUGS,
   TOOL_CATALOGUE,
   getAiToolLimits,
   isAiErrorReason,
+  isAiFinishReason,
+  isAiProviderErrorCode,
   isAiToolSlug,
 } from '../index';
 
@@ -179,5 +183,31 @@ describe('AI vocabulary guards', () => {
   it('keeps every prompt version distinct', () => {
     const versions = Object.values(AI_PROMPT_VERSIONS);
     expect(new Set(versions).size).toBe(versions.length);
+  });
+});
+
+describe('AI execution vocabulary', () => {
+  it('limits provider error codes to shared reasons, without quota', () => {
+    for (const code of AI_PROVIDER_ERROR_CODES) {
+      expect(AI_ERROR_REASONS).toContain(code);
+    }
+    expect(AI_PROVIDER_ERROR_CODES).not.toContain('quota');
+    expect(AI_PROVIDER_ERROR_CODES).toContain('cancelled');
+  });
+
+  it('narrows provider error codes only', () => {
+    for (const code of AI_PROVIDER_ERROR_CODES) {
+      expect(isAiProviderErrorCode(code)).toBe(true);
+    }
+    expect(isAiProviderErrorCode('quota')).toBe(false);
+    expect(isAiProviderErrorCode('timeout!')).toBe(false);
+  });
+
+  it('narrows finish reasons only', () => {
+    for (const reason of AI_FINISH_REASONS) {
+      expect(isAiFinishReason(reason)).toBe(true);
+    }
+    expect(isAiFinishReason('done')).toBe(false);
+    expect(isAiFinishReason(undefined)).toBe(false);
   });
 });

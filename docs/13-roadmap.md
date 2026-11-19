@@ -10,7 +10,7 @@ starts before the previous one is reviewed.
 | 3 | Brand identity, homepage, navigation, footer | Complete - awaiting review |
 | 4 | Auth (register, verify, login, reset), profile, dashboard shell | Complete - awaiting review |
 | 5 | Ordinary tools: calculator, percentage, unit, date, word count, text formatter, invoice, quotation | Complete - awaiting review |
-| 6 | AI tools behind the provider adapter (M0 contracts complete) | In progress - M0 complete, awaiting review |
+| 6 | AI tools behind the provider adapter (M0 + M1A foundation complete) | In progress - M1A complete, awaiting review |
 | 7 | Wallet: ledger, atomic spend, reversals, history, saved results, AI credit settlement | Planned |
 | 8 | Paystack integration (sandbox first), webhook verification, purchase flow | Blocked on owner decision and business onboarding |
 | 9 | QA, accessibility, performance, CSP, deployment, monitoring | Planned |
@@ -77,6 +77,19 @@ starts before the previous one is reviewed.
 - `POST /api/v1/ai/run` returns 501; no adapter, key, network call or migration exists.
 - All eight AI tools remain `planned` with `creditCost: null`.
 - 291 automated tests pass across shared, API and web.
+
+**Stage 6 (M1A delivered)**
+- A provider-independent contract supports cancellation, a hard timeout, normalised
+  finish reason and usage metadata.
+- `executeAiTool()` validates input, applies the budget, and validates output against
+  the tool schema; malformed responses are rejected with a shared reason.
+- A deterministic fake provider exercises the pipeline offline and is excluded from
+  the production barrel; ESLint bans network calls, vendor SDKs and test-double
+  imports in production AI code.
+- The production registry is empty, so `/api/v1/ai/status` stays unavailable and
+  `POST /api/v1/ai/run` stays 501 even when `AI_PROVIDER` is set.
+- Cost interfaces exist with no prices; no wallet, credits or billing code is added.
+- 333 automated tests pass across shared, API and web.
 
 **Stage 7**
 - Concurrent spend cannot overdraw a wallet.

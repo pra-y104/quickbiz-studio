@@ -1,75 +1,107 @@
 /**
- * Provider-independent AI interface.
+ * Provider-independent AI contract.
  *
- * Stage 2 defines the contract only. No provider is registered and no network
- * call is made anywhere in this build, so it is impossible for the app to
- * present fabricated "AI" output. Stage 6 adds concrete adapters (Gemini first,
- * behind owner approval) plus credit reservation in the API layer.
+ * Adapters (M1B and later) implement `AiProvider`. Everything here is about the
+ * boundary, not about a vendor: no SDK, no URL, no key and no network call.
+ *
+ * Rules an adapter must honour:
+ *
+ * 1. `generate` must reject with `AiProviderError` and never leak a raw provider
+ *    body, key or stack to the caller.
+ * 2. `generate` must abort promptly when `request.signal` fires. The pipeline
+ *    also enforces its own timeout, so a slow adapter cannot hang a request.
+ * 3. `isConfigured()` is capability, not intent: true only when the adapter can
+ *    actually reach its provider with a usable credential.
+ * 4. Reported `usage` and `finishReason` must come from the provider. Never
+ *    estimate a token count to fill a field.
  */
+
+import type { AiFinishReason, AiProviderErrorCode, AiToolSlug, AiUsage } from '@quickbiz/shared';
+
+/**
+ * Per-run limits the adapter must respect. These come from the shared tool
+ * contract (`AI_TOOL_LIMITS`) so cost ceilings are decided in one place.
+ */
+export interface AiGenerationLimits {
+  readonly maxOutputTokens: number;
+  readonly temperature: number;
+}
+
 export interface AiMessage {
   readonly role: 'user' | 'assistant';
   readonly content: string;
 }
 
-export interface AiGenerationRequest {
-  readonly system?: string;
+export interface AiGenerateRequest {
+  /** Which tool is running. Adapters never branch on this beyond logging. */
+  readonly tool: AiToolSlug;
+  /** Immutable template instruction, already composed with its output contract. */
+  readonly system: string;
   readonly messages: readonly AiMessage[];
-  readonly temperature?: number;
-  readonly maxOutputTokens?: number;
+  /** Adapter default when omitted. */
+  readonly model?: string;
+  readonly temperature: number;
+  readonly maxOutputTokens: number;
+  /** Cancellation from the caller and from the pipeline's timeout. */
+  readonly signal?: AbortSignal;
 }
 
-export interface AiGenerationResult {
+/** Normalised response. Extra provider fields are dropped at the adapter edge. */
+export interface AiGenerateResponse {
   readonly text: string;
-  readonly provider: string;
+  readonly providerId: string;
   readonly model: string;
-  readonly inputTokens?: number;
-  readonly outputTokens?: number;
-  readonly latencyMs: number;
+  readonly finishReason: AiFinishReason;
+  readonly usage?: AiUsage;
 }
 
 export interface AiProvider {
+  /** Stable lowercase identifier, e.g. `fake` in tests. */
   readonly id: string;
   readonly label: string;
   readonly defaultModel: string;
-  /** True only when the server holds a usable key for this provider. */
   isConfigured(): boolean;
-  generate(request: AiGenerationRequest): Promise<AiGenerationResult>;
+  generate(request: AiGenerateRequest): Promise<AiGenerateResponse>;
 }
 
-export class AiProviderUnavailableError extends Error {
-  constructor(message = 'No AI provider is configured.') {
-    super(message);
-    this.name = 'AiProviderUnavailableError';
-  }
-}
+/**
+ * The only error an adapter may throw across the boundary.
+ *
+ * `code` is a member of the shared `AI_PROVIDER_ERROR_CODES` list so the
+ * interface can switch on it without knowing the provider. `retryAfterSeconds`
+ * is advisory and set only when the provider actually supplied one.
+ */
+export class AiProviderError extends Error {
+  readonly code: AiProviderErrorCode;
+  readonly retryAfterSeconds?: number;
 
-export class ProviderRegistry {
-  readonly #providers = new Map<string, AiProvider>();
-
-  register(provider: AiProvider): void {
-    this.#providers.set(provider.id, provider);
-  }
-
-  get(id: string): AiProvider | undefined {
-    return this.#providers.get(id);
-  }
-
-  list(): AiProvider[] {
-    return [...this.#providers.values()];
-  }
-
-  /** Providers with a usable key. Empty in Stage 2 by design. */
-  configured(): AiProvider[] {
-    return this.list().filter((provider) => provider.isConfigured());
-  }
-
-  require(id: string): AiProvider {
-    const provider = this.get(id);
-    if (!provider || !provider.isConfigured()) {
-      throw new AiProviderUnavailableError();
+  constructor(
+    code: AiProviderErrorCode,
+    message: string,
+    options: { readonly cause?: unknown; readonly retryAfterSeconds?: number } = {},
+  ) {
+    super(message, options.cause === undefined ? undefined : { cause: options.cause });
+    this.name = 'AiProviderError';
+    this.code = code;
+    if (options.retryAfterSeconds !== undefined) {
+      this.retryAfterSeconds = options.retryAfterSeconds;
     }
-    return provider;
   }
 }
 
-export const providerRegistry = new ProviderRegistry();
+export function isAiProviderError(error: unknown): error is AiProviderError {
+  return error instanceof AiProviderError;
+}
+
+/**
+ * Compose the system instruction with the tool's JSON contract.
+ *
+ * The templates stay untouched; the contract is appended here so a preview tool
+ * and the pipeline cannot disagree about the required shape.
+ */
+export function composeSystemPrompt(template: {
+  readonly system: string;
+  readonly outputContract: string;
+}): string {
+  return `${template.system}\n\nReturn JSON matching this contract:\n${template.outputContract}`;
+}

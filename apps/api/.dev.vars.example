@@ -16,5 +16,7 @@ SUPABASE_JWT_SECRET=
 SUPABASE_SERVICE_ROLE_KEY=
 
 # Stage 6+ (leave empty for now - no provider is activated in Stage 2)
+# Naming a provider/model here does not enable AI: no adapter is compiled in.
 AI_PROVIDER=
+AI_MODEL=
 AI_API_KEY=

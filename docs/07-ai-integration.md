@@ -6,7 +6,9 @@
    AI output.
 2. Provider keys exist only as Worker secrets.
 3. The provider is swappable through an adapter; tools never import a vendor SDK.
-4. Credits are reserved before the call and returned automatically on technical failure.
+4. Credits will be reserved before the call and returned automatically on technical
+   failure. That mechanism belongs to Stage 7 (decision D6); nothing in Stage 6
+   charges or refunds.
 5. No paid AI account is activated without the owner's explicit approval.
 
 ## Contract
@@ -24,13 +26,20 @@ interface AiProvider {
 ```
 
 `ProviderRegistry` holds registered providers. In Stage 2 the registry is empty on
-purpose: nothing can generate, so nothing can pretend to.
+purpose: nothing can generate, so nothing can pretend to. That is still true after
+Stage 6 M0, which adds contracts and prompts but no adapter.
+
+`GET /api/v1/ai/status` derives availability from this registry, not from
+configuration. Naming `AI_PROVIDER` and `AI_MODEL` records a preference; with an empty
+registry the endpoint keeps reporting `configured: false` and
+`reason: "no-adapters-registered"`. See
+[18-stage-6-ai-tools.md](./18-stage-6-ai-tools.md).
 
 ## Planned adapters
 
 | Adapter | Stage | Notes |
 |---|---|---|
-| Gemini (Google AI Studio) | 6 | Free tier for development; terms and data-use disclosure must be reviewed |
+| Provider choice deferred | 6+ | Owner has not approved a provider (decision D1). Gemini is one candidate, not a commitment. |
 | OpenAI | later | Paid; requires owner approval |
 | Anthropic | later | Paid; requires owner approval |
 | OpenRouter | optional | Useful for model comparison in admin tooling |
@@ -38,31 +47,38 @@ purpose: nothing can generate, so nothing can pretend to.
 Each adapter normalises: text output, token usage, model name, latency. Provider-specific
 errors are mapped to `PROVIDER_ERROR` with a retry hint, never surfaced raw.
 
-## Request lifecycle (Stage 6)
+## Request lifecycle (once an adapter exists)
 
 ```mermaid
 sequenceDiagram
   B->>API: POST /api/v1/ai/run
   API->>API: verify JWT, validate input, rate limit
-  API->>DB: reserve credits (ledger row, status=reserved)
   API->>Provider: generate(prompt)
   alt success
-    API->>DB: settle + save tool_run
-    API-->>B: result + new balance
+    API->>DB: save tool_run
+    API-->>B: result
   else timeout / provider error / safety block
-    API->>DB: refund reversal (+ reason)
-    API-->>B: honest error, credits returned
+    API-->>B: honest error
   end
 ```
 
-Reserving before calling prevents a user with one credit from firing ten parallel
-requests. Reversal is what makes the "no charge for technical failures" promise real.
+Credit reservation and automatic reversal are **not** part of this flow yet. They
+arrive with the Stage 7 wallet (decision D6). Reserving before calling prevents a user
+with one credit from firing ten parallel requests, which is why the order matters when
+it is added.
 
 ## Prompt design
 
-- Prompts live in `apps/api/src/ai/prompts/<tool>.ts` with typed variables and a
-  version string stored on the usage row.
-- System instructions set language, tone, length and safety boundaries.
+- Prompts live in `apps/api/src/ai/prompts/<tool>.ts` and are registered in
+  `prompts/index.ts`. Each carries a version string; the versions are owned by
+  `AI_PROMPT_VERSIONS` in shared code so a run cannot record a version that differs
+  from the wording used.
+- `buildUser` re-parses the input with the tool's schema, so a prompt cannot be built
+  from invalid data.
+- System instructions set language, tone, length and safety boundaries. They never
+  contain user text.
+- A test asserts that a pasted `</user_input>` is escaped and the data block has
+  exactly one closing marker.
 - Output length is capped per tool to keep cost predictable.
 - Input length is capped and validated before the provider is called.
 - User text is treated as data, never as instructions that can change credit or
@@ -77,7 +93,8 @@ requests. Reversal is what makes the "no charge for technical failures" promise 
 ## Honesty rules
 
 - If no provider is configured, the tool UI says so and no credits are deducted.
-- If a request is blocked by provider safety filters, the user is told plainly and
-  credits are returned.
+  `/api/v1/ai/status` is the contract for that statement.
+- If a request is blocked by provider safety filters, the user is told plainly. Once
+  credits exist (Stage 7), they are returned.
 - Free-tier provider terms that allow training on inputs must be disclosed in the
   privacy policy before public launch, or the project moves to a no-training tier.

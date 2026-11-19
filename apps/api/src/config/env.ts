@@ -21,6 +21,8 @@ export interface Bindings {
   readonly SUPABASE_SERVICE_ROLE_KEY?: string;
   /** Server-only. Reserved for Stage 6+. */
   readonly AI_PROVIDER?: string;
+  /** Server-only. Preferred model id for the requested provider. */
+  readonly AI_MODEL?: string;
   readonly AI_API_KEY?: string;
 }
 
@@ -37,7 +39,36 @@ export interface AppConfig {
     readonly windowSeconds: number;
     readonly maxRequests: number;
   };
+  /**
+   * Requested AI provider and model, if the environment names them.
+   *
+   * These values are a preference, never proof that the feature works: an
+   * adapter must also be compiled in. No adapter exists in this build, so
+   * `/api/v1/ai/status` reports the feature as unavailable regardless of these
+   * values. Keys and quota limits are intentionally not part of this object.
+   */
+  readonly ai: {
+    readonly providerId: string | null;
+    readonly model: string | null;
+  };
 }
+
+/** Empty string from a var or secret means "not set", not "set to empty". */
+const nullableIdentifier = z
+  .string()
+  .trim()
+  .transform((value) => (value.length === 0 ? null : value))
+  .refine((value) => value === null || /^[a-z][a-z0-9-]{0,39}$/.test(value), {
+    message: 'must be a lowercase identifier of at most 40 characters',
+  });
+
+const nullableModelId = z
+  .string()
+  .trim()
+  .transform((value) => (value.length === 0 ? null : value))
+  .refine((value) => value === null || /^[A-Za-z0-9][A-Za-z0-9._:-]{0,119}$/.test(value), {
+    message: 'must be a model id of at most 120 characters',
+  });
 
 const rawEnvSchema = z.object({
   ENVIRONMENT: z.enum(ENVIRONMENTS).default('development'),
@@ -57,6 +88,9 @@ const rawEnvSchema = z.object({
   RATE_LIMIT_ENABLED: z.enum(['true', 'false']).default('true'),
   RATE_LIMIT_WINDOW_SECONDS: z.coerce.number().int().min(1).max(3600).default(60),
   RATE_LIMIT_MAX_REQUESTS: z.coerce.number().int().min(1).max(10_000).default(120),
+  /** Preferred provider/model. Not a capability switch: see `AppConfig.ai`. */
+  AI_PROVIDER: nullableIdentifier.default(''),
+  AI_MODEL: nullableModelId.default(''),
 });
 
 /** Cache keyed by the env object so parsing happens once per isolate. */
@@ -89,6 +123,10 @@ export function resolveConfig(bindings: Bindings): AppConfig {
       enabled: parsed.RATE_LIMIT_ENABLED === 'true',
       windowSeconds: parsed.RATE_LIMIT_WINDOW_SECONDS,
       maxRequests: parsed.RATE_LIMIT_MAX_REQUESTS,
+    },
+    ai: {
+      providerId: parsed.AI_PROVIDER,
+      model: parsed.AI_MODEL,
     },
   };
 

@@ -30,7 +30,8 @@ Anything prefixed `VITE_` is compiled into the JavaScript bundle. Treat it as pu
 | `SUPABASE_JWKS_URL` | no | no | explicit JWKS override for non-standard deployments |
 | `SUPABASE_JWT_SECRET` | legacy | **secret** | HS256 verification for older projects |
 | `SUPABASE_SERVICE_ROLE_KEY` | not used yet | **secret** | bypasses RLS; server only |
-| `AI_PROVIDER` | Stage 6 | no | active provider id |
+| `AI_PROVIDER` | Stage 6 | no | preferred provider id; naming it does not enable AI |
+| `AI_MODEL` | Stage 6 | no | preferred model id for that provider |
 | `AI_API_KEY` | Stage 6 | **secret** | provider key, server only |
 | `PAYSTACK_SECRET_KEY` | Stage 8 | **secret** | payment verification |
 | `PAYSTACK_WEBHOOK_SECRET` | Stage 8 | **secret** | webhook signature check |

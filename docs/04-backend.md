@@ -70,6 +70,8 @@ Codes come from `@quickbiz/shared` so the client can switch on them safely.
 | GET | `/api/v1` | endpoint index |
 | GET | `/api/v1/meta` | public platform metadata |
 | GET | `/api/v1/tools` | read-only tool catalogue with filters |
+| GET | `/api/v1/ai/status` | AI availability and per-tool prompt versions |
+| POST | `/api/v1/ai/run` | reserved; returns 501 until an adapter exists |
 
 ## Configuration
 

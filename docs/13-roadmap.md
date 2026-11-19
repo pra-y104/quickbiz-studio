@@ -10,8 +10,8 @@ starts before the previous one is reviewed.
 | 3 | Brand identity, homepage, navigation, footer | Complete - awaiting review |
 | 4 | Auth (register, verify, login, reset), profile, dashboard shell | Complete - awaiting review |
 | 5 | Ordinary tools: calculator, percentage, unit, date, word count, text formatter, invoice, quotation | Complete - awaiting review |
-| 6 | AI tools behind the provider adapter, credit cost display | Planned |
-| 7 | Wallet: ledger, atomic spend, reversals, history, saved results | Planned |
+| 6 | AI tools behind the provider adapter (M0 contracts complete) | In progress - M0 complete, awaiting review |
+| 7 | Wallet: ledger, atomic spend, reversals, history, saved results, AI credit settlement | Planned |
 | 8 | Paystack integration (sandbox first), webhook verification, purchase flow | Blocked on owner decision and business onboarding |
 | 9 | QA, accessibility, performance, CSP, deployment, monitoring | Planned |
 | 10 | Handover: docs, export, transfer instructions | Planned |
@@ -63,15 +63,27 @@ starts before the previous one is reviewed.
 
 **Stage 6**
 - All eight AI tools return real provider output.
-- Credit cost is shown and confirmed before submission.
-- Failure paths return credits automatically.
 - No key or prompt is visible in the client bundle.
+- Credit cost display, deduction and automatic reversal belong to Stage 7 (decision D6).
+
+**Stage 6 (M0 delivered)**
+- Shared input/output contracts exist for all eight AI tools and are the single source
+  of truth for the API, prompts and tests.
+- Every prompt has a version string owned by shared code; a run cannot record a version
+  that differs from the wording that produced it.
+- Test-only escaping proves pasted text cannot close the user-data block in a prompt.
+- `GET /api/v1/ai/status` reports `configured: false` with reason
+  `no-adapters-registered`, and `quota: null`; naming `AI_PROVIDER` does not enable AI.
+- `POST /api/v1/ai/run` returns 501; no adapter, key, network call or migration exists.
+- All eight AI tools remain `planned` with `creditCost: null`.
+- 291 automated tests pass across shared, API and web.
 
 **Stage 7**
 - Concurrent spend cannot overdraw a wallet.
 - Ledger sum always equals stored balance.
 - Duplicate submission charges once.
 - Full history visible to the user.
+- AI credit display, deduction and automatic reversal land here, not in Stage 6.
 
 **Stage 8**
 - Sandbox purchase grants credits exactly once.

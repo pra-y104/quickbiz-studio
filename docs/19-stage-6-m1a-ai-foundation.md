@@ -123,10 +123,14 @@ Safety rules a future real adapter must satisfy:
 
 1. Owner approval for the provider and its pricing/terms (D1, D2, D3).
 2. Add the adapter under `apps/api/src/ai/adapters/<id>.ts`, implementing
-   `AiProvider` and importing no Node networking.
+   `AiProvider` and importing no Node networking. **Done for Gemini in M1B**
+   (`adapters/gemini.ts`); the adapter receives a transport instead of calling fetch.
 3. Update the ESLint `ai-provider-boundary` rule to permit the reviewed transport, and
-   only that transport. The current rule is deliberately strict.
-4. Register it in `PRODUCTION_ADAPTERS` inside `registry.ts`. This is the only place a
+   only that transport. **Done in M1B** via the narrowly scoped
+   `quickbiz/ai-transport-exception` block for `ai/transport/http-transport.ts`;
+   every other file under `ai/` remains banned.
+4. Register it in `PRODUCTION_ADAPTERS` inside `registry.ts`. **Still open** — the
+   list is empty and M1B deliberately leaves it that way. This is the only place a
    production adapter can be added; the exported registry has no `register` method.
 5. Add offline tests using the fake for the pipeline, plus adapter tests with a
    stubbed transport. No live call in CI.

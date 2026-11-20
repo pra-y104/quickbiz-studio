@@ -47,9 +47,9 @@ registry the endpoint keeps reporting `configured: false` and
 
 | Adapter | Stage | Notes |
 |---|---|---|
-| Provider choice deferred | 6+ | Owner has not approved a provider (decision D1). Gemini is one candidate, not a commitment. |
-| OpenAI | later | Paid; requires owner approval |
-| Anthropic | later | Paid; requires owner approval |
+| Google Gemini | M1B prepared, **disabled** | `ai/adapters/gemini.ts` behind the M1A contract. Not in `PRODUCTION_ADAPTERS`; no key, no call. See [21-stage-6-m1b-provider-foundation.md](./21-stage-6-m1b-provider-foundation.md). |
+| OpenAI | later | Paid; requires owner approval (D1) |
+| Anthropic | later | Paid; requires owner approval (D1) |
 | OpenRouter | optional | Useful for model comparison in admin tooling |
 
 Each adapter normalises: text output, token usage, model name, latency. Provider-specific
@@ -74,6 +74,9 @@ Credit reservation and automatic reversal are **not** part of this flow yet. The
 arrive with the Stage 7 wallet (decision D6). Reserving before calling prevents a user
 with one credit from firing ten parallel requests, which is why the order matters when
 it is added.
+
+M1B adds the adapter and one reviewed transport module but does **not** wire this
+flow: `POST /api/v1/ai/run` still returns 501 and the production registry stays empty.
 
 ## Prompt design
 

@@ -144,6 +144,16 @@ export default tseslint.config(
     },
   },
   {
+    // M1B: exactly one reviewed transport file may perform network I/O. Everything
+    // else under ai/ keeps the M1A ban, including adapters and the pipeline.
+    name: 'quickbiz/ai-transport-exception',
+    files: ['apps/api/src/ai/transport/http-transport.ts'],
+    rules: {
+      'no-restricted-globals': 'off',
+      'no-restricted-properties': 'off',
+    },
+  },
+  {
     name: 'quickbiz/web',
     files: ['apps/web/**/*.{ts,tsx}'],
     languageOptions: {

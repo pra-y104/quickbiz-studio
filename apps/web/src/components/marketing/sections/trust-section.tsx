@@ -1,12 +1,4 @@
-import {
-  ArrowUpRight,
-  EyeOff,
-  ListChecks,
-  RotateCcw,
-  Server,
-  ShieldCheck,
-  type LucideIcon,
-} from 'lucide-react';
+import { EyeOff, ListChecks, RotateCcw, Server, ShieldCheck, type LucideIcon } from 'lucide-react';
 import { HOMEPAGE } from '../../../content/homepage';
 import { Container } from '../../ui/container';
 import { SectionHeading } from '../section-heading';
@@ -18,8 +10,6 @@ const TRUST_ICONS: Readonly<Record<string, LucideIcon>> = {
   shield: ShieldCheck,
   privacy: EyeOff,
 };
-
-const SOURCE_URL = 'https://github.com/pra-y104/quickbiz-studio';
 
 export function TrustSection() {
   const content = HOMEPAGE.trust;
@@ -41,18 +31,9 @@ export function TrustSection() {
             />
             <div className="mt-8 rounded-card border border-border bg-surface-muted/60 p-5">
               <p className="text-sm leading-relaxed text-ink-muted">
-                These are engineering commitments rather than marketing claims. The code that
-                enforces them lives in the public repository and is reviewed at every stage.
+                These are engineering commitments rather than marketing claims. Each one is backed
+                by automated tests that run on every change.
               </p>
-              <a
-                href={SOURCE_URL}
-                target="_blank"
-                rel="noreferrer noopener"
-                className="mt-3 inline-flex items-center gap-1.5 text-sm font-medium text-primary transition-colors hover:text-primary-hover"
-              >
-                Read the source
-                <ArrowUpRight className="size-3.5" aria-hidden="true" />
-              </a>
             </div>
           </div>
 

@@ -12,9 +12,10 @@ export interface TemplateCardProps {
 /**
  * A template preview.
  *
- * The preview is drawn from the template's own document by the same renderer the
- * editor uses, so what the customer sees is what they will get — not a separate
- * mock-up that can drift.
+ * The preview is a stylised miniature of the template's palette and headline, not a
+ * full render: drawing every document at card size would mean one canvas per card.
+ * The editor always opens the real template document, and saved projects show a
+ * genuine rendered thumbnail instead.
  */
 export function TemplateCard(props: TemplateCardProps) {
   const { t } = useTranslation();

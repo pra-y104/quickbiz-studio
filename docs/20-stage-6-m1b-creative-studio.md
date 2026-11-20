@@ -17,7 +17,7 @@ C7 and C8 are prepared and disabled.
 | Portable `.qbdesign` envelope | `packages/shared/src/creative/project-file.ts` | Implemented |
 | Offline text metrics for layout | `packages/shared/src/creative/text-metrics.ts` | Implemented |
 | Geometry, commands, history | `apps/web/src/lib/creative/engine/` | Implemented |
-| Canvas renderer (editor, thumbnails, export) | `apps/web/src/lib/creative/render/` | Implemented |
+| Canvas renderer (editor, project thumbnails, export) | `apps/web/src/lib/creative/render/` | Implemented |
 | Interactive stage (select, move, resize, rotate, zoom) | `apps/web/src/components/creative/canvas-stage.tsx` | Implemented |
 | Layers and properties panels | `apps/web/src/components/creative/` | Implemented |
 | Upload ingest and asset store | `apps/web/src/lib/creative/assets/`, `storage/` | Implemented |
@@ -35,8 +35,9 @@ C7 and C8 are prepared and disabled.
    document cannot make the application fetch or execute anything.
 3. **Assets are ids.** Images are referenced by `assetId` and stored as bytes on the
    device. The server never fetches a customer-supplied URL.
-4. **The renderer is shared.** Editor, thumbnails and exports all call
-   `renderDocument`, so what the customer sees is what is exported.
+4. **The renderer is shared.** The editor, saved-project thumbnails and every export
+   call `renderDocument`, so what the customer sees is what is exported. Template
+   *cards* use a stylised miniature rather than a full render, and say so in code.
 5. **Commands are pure.** Every edit is `(document) => document`, which is why undo
    is a restore rather than an inverse patch, and why every command is testable
    without a browser.
@@ -107,7 +108,8 @@ When approved, the only editor-side change is the body of `requestSuggestions`.
 
 Status: **prepared, disabled.**
 
-`AI_IMAGE_ENABLED` is `false` by default. `productionImageRegistry` is empty,
+`CREATIVE_STUDIO_FLAGS.aiImage` is `false` by default (the flag the task brief called
+`AI_IMAGE_ENABLED`; there is no environment variable of that name). `productionImageRegistry` is empty,
 module-local and frozen; it exposes no `register` method. No image module imports
 the design engine and the engine imports no image module.
 
@@ -139,3 +141,61 @@ C0–C6 acceptance is met when:
 - Renderer, geometry and export are exercised through unit tests with no browser.
 - The PDF writer is asserted byte-for-byte at the object offsets.
 - Upload validation is tested against HTML and SVG payloads disguised as images.
+## Remediation record (post-review)
+
+Four high-severity review findings were fixed on this branch.
+
+| ID | Finding | Fix |
+|---|---|---|
+| H1 | A write could be reported as saved before its IndexedDB transaction committed | `runRequest` resolves `readwrite` transactions on `oncomplete`; aborts, quota errors and version changes reject. Covered by `storage/__tests__/idb.test.ts`. |
+| H2 | A zoomed canvas could not be panned and its start edges were unreachable | The stage now uses a clamped pan transform, pointer panning (middle button, space-drag, two-finger drag) and pinch zoom with the gesture centre anchored. Wheel zoom/pan is attached natively with `{ passive: false }`. |
+| H3 | Layer hide/lock/delete acted on the selection, not the clicked row | Layer actions take a node id; `toggleLocked(id)`, `toggleHidden(id)` and `deleteNodes([id])`. |
+| H4 | A cached project switch could render the previous design and autosave it over the new project | The studio route keys the editor by project id, and `useStudioEditor` also resets when `initial.id` changes. Covered by `editor/__tests__/use-studio-editor.test.tsx`. |
+
+Also resolved: document-pixel conversion for placement and alignment (M1), rotation-handle
+geometry parity (M2), a schema-enforced group depth limit with guarded import parsing (M3),
+non-destructive import (M4), touch navigation (M5), compact wrapping mobile controls (M6),
+pure state updaters (M7), shortcuts suppressed while a dialog is open (M8), header-based
+dimension checks before decode (M9), and the low-severity items (asset garbage collection,
+locked-layer protection, id fallback, rename consistency, coordinate bounds, an ESLint
+network boundary for Creative Studio modules, genuine project thumbnails).
+
+### Content Security Policy (L10) — proposal only, not applied
+
+The web app is served by Cloudflare Pages and currently sends **no CSP**. Changing
+production headers is outside this remediation, so the proposal is recorded here for
+separate approval.
+
+Proposed `apps/web` `_headers` policy for `/*`:
+
+```
+Content-Security-Policy:
+  default-src 'self';
+  base-uri 'none';
+  object-src 'none';
+  frame-ancestors 'none';
+  img-src 'self' data: blob:;
+  font-src 'self';
+  style-src 'self' 'unsafe-inline';
+  script-src 'self';
+  connect-src 'self' https://<project>.supabase.co;
+  form-action 'self';
+  upgrade-insecure-requests
+```
+
+Compatibility notes:
+
+- **Blob downloads.** Exports are produced locally and downloaded through an object URL
+  created by `URL.createObjectURL`. Downloads are navigation to a `blob:` URL rather than a
+  sub-resource fetch, so `default-src` does not need `blob:`; adding `blob:` to `default-src`
+  is nevertheless recommended if a future browser enforces otherwise.
+- **Images.** Uploaded images and thumbnails are `blob:` or `data:` URLs, hence `img-src`.
+- **Styles.** Tailwind v4 injects a style element at runtime, so `'unsafe-inline'` is
+  required for styles. A hash/nonce based policy would need a build change and is future work.
+- **Scripts.** No inline script is used except the theme bootstrap in `index.html`, which
+  must be moved to an external file (or hashed) before `script-src 'self'` can be enforced
+  without `unsafe-inline`. That migration is itself a separate, reviewable change.
+- **Supabase.** `connect-src` must list the project's Supabase origin for auth requests.
+
+Until this is approved and tested, the absence of a CSP remains a known production
+hardening gap, not a regression introduced here.

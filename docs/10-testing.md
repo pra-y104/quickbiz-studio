@@ -13,7 +13,7 @@
 | Creative Studio | Vitest | `packages/shared/src/__tests__/creative-*.test.ts`, `apps/web/src/lib/creative/__tests__/*` | document validation, geometry, commands, history, renderer, export, ingest, project store |
 | AI foundation | Vitest | `packages/shared/src/__tests__/ai-contracts.test.ts`, `apps/api/src/__tests__/ai-*.test.ts` | contract parity, prompt versions, provider registry, fake-provider pipeline, timeout, cancellation, output validation, isolation guards |
 
-Current result: **469 tests passing** (186 shared, 82 API, 201 web).
+Current result: **517 tests passing** (189 shared, 82 API, 246 web).
 
 ## Commands
 

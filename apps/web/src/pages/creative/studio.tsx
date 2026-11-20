@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useQuery } from '@tanstack/react-query';
 import { Link, useParams } from 'react-router';
@@ -19,6 +19,8 @@ import { useStudioEditor } from '../../lib/creative/editor/use-studio-editor';
 import { useAssetImages } from '../../lib/creative/editor/use-asset-images';
 import { ingestImage, ImageIngestError } from '../../lib/creative/assets/ingest';
 import { invalidateAsset } from '../../lib/creative/render/asset-images';
+import { renderThumbnail } from '../../lib/creative/render/thumbnail';
+import type { RenderAsset } from '../../lib/creative/render/render-document';
 import { isCreativeStudioEnabled } from '../../lib/creative/flags';
 import { ASSET_STORE } from '../../lib/creative/storage/idb';
 import { runRequest, openDatabase } from '../../lib/creative/storage/idb';
@@ -87,8 +89,19 @@ function EditorView({
   readonly document: CreativeDocument;
 }) {
   const { t } = useTranslation();
-  const editor = useStudioEditor({ projectId, initial: document, store: getProjectStore() });
+  const assetsRef = useRef<ReadonlyMap<string, RenderAsset>>(new Map());
+  const editor = useStudioEditor({
+    projectId,
+    initial: document,
+    store: getProjectStore(),
+    createThumbnail: (snapshot) => renderThumbnail(snapshot, assetsRef.current),
+    onRemoteSave: () => setNotice(t('studio.remoteSave')),
+  });
   const assets = useAssetImages(editor.document);
+
+  useEffect(() => {
+    assetsRef.current = assets;
+  }, [assets]);
 
   const [tool, setTool] = useState<StudioTool>('select');
   const [zoomFactor, setZoomFactor] = useState(1);
@@ -105,45 +118,42 @@ function EditorView({
     window.setTimeout(() => setNotice((current) => (current === message ? null : current)), 4_000);
   }, []);
 
-  const handleUpload = useCallback(
-    async (file: File) => {
-      try {
-        const image = await ingestImage(file, { name: file.name });
-        const asset = await storeIngestedImage(file.name, image);
-        invalidateAsset(asset.id);
-        editor.addImage(asset);
-      } catch (error) {
-        if (error instanceof ImageIngestError) showNotice(error.message);
-        else showNotice(t('studio.uploadFailed'));
-      }
-    },
-    [editor, showNotice, t],
-  );
+  const handleUpload = async (file: File) => {
+    try {
+      const image = await ingestImage(file, { name: file.name });
+      const asset = await storeIngestedImage(file.name, image);
+      invalidateAsset(asset.id);
+      editor.addImage(asset);
+    } catch (error) {
+      if (error instanceof ImageIngestError) showNotice(error.message);
+      else showNotice(t('studio.uploadFailed'));
+    }
+  };
 
-  const handleCanvasTap = useCallback(
-    (point: { x: number; y: number }) => {
-      if (tool === 'text') {
-        editor.addText({ text: 'Your text here' });
-        setTool('select');
-        return;
-      }
-      if (tool === 'shape') {
-        editor.addShape('rect');
-        setTool('select');
-        return;
-      }
-      if (tool === 'image') {
-        fileInput.current?.click();
-      }
-      void point;
-    },
-    [editor, tool],
-  );
+  const handleCanvasTap = (point: { x: number; y: number }) => {
+    if (tool === 'text') {
+      editor.addText({ text: 'Your text here' });
+      setTool('select');
+      return;
+    }
+    if (tool === 'shape') {
+      editor.addShape('rect');
+      setTool('select');
+      return;
+    }
+    if (tool === 'image') {
+      fileInput.current?.click();
+    }
+    void point;
+  };
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
       const target = event.target as HTMLElement | null;
       if (target && ['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName)) return;
+      if (target?.isContentEditable) return;
+      // A dialog owns the keyboard while it is open.
+      if (globalThis.document?.querySelector('[role="dialog"][data-state="open"]')) return;
 
       const meta = event.metaKey || event.ctrlKey;
 
@@ -179,52 +189,53 @@ function EditorView({
     return () => window.removeEventListener('keydown', onKeyDown);
   }, [editor]);
 
-  const actions = useMemo(
-    () => (
-      <>
-        <Button variant="outline" size="sm" onClick={() => setExportOpen(true)}>
-          {t('studio.export')}
-        </Button>
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={editor.undo}
-          disabled={!editor.canUndo}
-          aria-label={t('studio.undo')}
-        >
-          <Undo2 className="size-4" aria-hidden="true" />
-        </Button>
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={editor.redo}
-          disabled={!editor.canRedo}
-          aria-label={t('studio.redo')}
-        >
-          <Redo2 className="size-4" aria-hidden="true" />
-        </Button>
-        <span className="hidden h-6 w-px bg-border sm:block" aria-hidden="true" />
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={editor.duplicateSelection}
-          disabled={editor.selection.length === 0}
-          aria-label={t('studio.duplicate')}
-        >
-          <Copy className="size-4" aria-hidden="true" />
-        </Button>
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={editor.deleteSelection}
-          disabled={editor.selection.length === 0}
-          aria-label={t('studio.remove')}
-        >
-          <Trash2 className="size-4" aria-hidden="true" />
-        </Button>
-      </>
-    ),
-    [editor, t],
+  const actions = (
+    <>
+      <Button variant="outline" size="sm" onClick={() => setExportOpen(true)}>
+        {t('studio.export')}
+      </Button>
+      <Button
+        variant="ghost"
+        size="sm"
+        className="hidden sm:inline-flex"
+        onClick={editor.undo}
+        disabled={!editor.canUndo}
+        aria-label={t('studio.undo')}
+      >
+        <Undo2 className="size-4" aria-hidden="true" />
+      </Button>
+      <Button
+        variant="ghost"
+        size="sm"
+        className="hidden sm:inline-flex"
+        onClick={editor.redo}
+        disabled={!editor.canRedo}
+        aria-label={t('studio.redo')}
+      >
+        <Redo2 className="size-4" aria-hidden="true" />
+      </Button>
+      <span className="hidden h-6 w-px bg-border md:block" aria-hidden="true" />
+      <Button
+        variant="ghost"
+        size="sm"
+        className="hidden sm:inline-flex"
+        onClick={editor.duplicateSelection}
+        disabled={editor.selection.length === 0}
+        aria-label={t('studio.duplicate')}
+      >
+        <Copy className="size-4" aria-hidden="true" />
+      </Button>
+      <Button
+        variant="ghost"
+        size="sm"
+        className="hidden sm:inline-flex"
+        onClick={editor.deleteSelection}
+        disabled={editor.selection.length === 0}
+        aria-label={t('studio.remove')}
+      >
+        <Trash2 className="size-4" aria-hidden="true" />
+      </Button>
+    </>
   );
 
   return (
@@ -267,6 +278,7 @@ function EditorView({
             assets={assets}
             tool={tool}
             zoomFactor={zoomFactor}
+            onZoomFactorChange={setZoomFactor}
             onScaleChange={setScale}
             onSelect={editor.select}
             onCommit={(next, historyKey) => editor.commit(next, { historyKey })}
@@ -285,10 +297,10 @@ function EditorView({
                 nodes={editor.document.nodes}
                 selection={editor.selection}
                 onSelect={(id, additive) => editor.select([id], additive)}
-                onToggleHidden={() => editor.toggleHidden()}
-                onToggleLocked={() => editor.toggleLocked()}
+                onToggleHidden={editor.toggleHidden}
+                onToggleLocked={editor.toggleLocked}
                 onMove={(id, direction) => editor.reorder(id, direction)}
-                onDelete={() => editor.deleteSelection()}
+                onDelete={(id) => editor.deleteNodes([id])}
               />
             </div>
             <div className="min-h-0 flex-1 overflow-y-auto border-t border-border">
@@ -302,8 +314,8 @@ function EditorView({
           </div>
         }
         mobileBar={
-          <div className="flex items-center justify-between gap-1">
-            <div className="flex items-center gap-1">
+          <div className="flex flex-wrap items-center justify-between gap-1">
+            <div className="flex flex-wrap items-center gap-1">
               <Button
                 variant={tool === 'select' ? 'primary' : 'ghost'}
                 size="sm"

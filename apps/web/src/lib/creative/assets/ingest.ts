@@ -18,6 +18,7 @@
  */
 
 import { createAssetId, type CreativeAssetRef } from '@quickbiz/shared';
+import { readImageDimensions } from './image-headers';
 
 export const ASSET_LIMITS = {
   maxFileBytes: 10 * 1024 * 1024,
@@ -167,6 +168,11 @@ export async function ingestImage(file: Blob, options: IngestImageOptions): Prom
 
   const sourceBytes = new Uint8Array(await file.arrayBuffer());
   const mime = assertSupportedImage(sourceBytes, declaredSize);
+
+  // Check the declared size before decoding. A file that lies here is caught by the
+  // post-decode check below, but the common decompression-bomb case never allocates.
+  const header = readImageDimensions(sourceBytes, mime);
+  if (header) assertImageDimensions(header.width, header.height);
 
   let bitmap: ImageBitmap;
   try {

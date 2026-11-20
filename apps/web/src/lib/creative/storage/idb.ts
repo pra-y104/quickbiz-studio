@@ -5,6 +5,11 @@
  * appropriate. Every call rejects with a readable error rather than hanging, and
  * `isIndexedDbAvailable()` lets the app decide whether to warn the customer that
  * their work will only last for this tab.
+ *
+ * Durability rule: a **write** is only reported as successful once the
+ * transaction has committed. Resolving on `request.onsuccess` is wrong, because a
+ * request can succeed and the transaction can still abort (quota, blocked,
+ * version change) — reporting "saved" then loses the customer's work silently.
  */
 
 const DATABASE_NAME = 'quickbiz-creative';
@@ -84,15 +89,37 @@ export function openDatabase(): Promise<IDBDatabase> {
   return databasePromise;
 }
 
-export interface RunRequest<T> {
+export interface RunRequestOptions<T> {
   readonly database: IDBDatabase;
   readonly store: string;
   readonly mode: IDBTransactionMode;
   readonly operation: (store: IDBObjectStore) => IDBRequest<T>;
 }
 
-/** Run one request inside a transaction and settle with its result. */
-export function runRequest<T>(options: RunRequest<T>): Promise<T> {
+function asStorageError(error: unknown, fallback: string): StorageUnavailableError {
+  if (error instanceof StorageUnavailableError) return error;
+
+  // DOMException does not extend Error in every environment, so read the message
+  // structurally rather than relying on instanceof.
+  const message =
+    typeof (error as { message?: unknown } | null)?.message === 'string'
+      ? (error as { message: string }).message
+      : '';
+
+  if (message.length > 0) return new StorageUnavailableError(message);
+  return new StorageUnavailableError(fallback);
+}
+
+/**
+ * Run one request and settle only when the transaction has finished.
+ *
+ * - `readwrite` transactions resolve on `oncomplete`, so a rolled-back write is
+ *   reported as a failure and never as success.
+ * - `readonly` transactions resolve on `request.onsuccess`, which is enough for a
+ *   read whose result is already in hand.
+ * - Aborts, quota errors and blocked upgrades all reject with a readable message.
+ */
+export function runRequest<T>(options: RunRequestOptions<T>): Promise<T> {
   const { database, store, mode, operation } = options;
 
   return new Promise<T>((resolve, reject) => {
@@ -100,9 +127,7 @@ export function runRequest<T>(options: RunRequest<T>): Promise<T> {
     try {
       transaction = database.transaction(store, mode);
     } catch (error) {
-      reject(
-        new StorageUnavailableError(error instanceof Error ? error.message : 'Storage failed'),
-      );
+      reject(asStorageError(error, 'Storage failed'));
       return;
     }
 
@@ -110,26 +135,46 @@ export function runRequest<T>(options: RunRequest<T>): Promise<T> {
     try {
       request = operation(transaction.objectStore(store));
     } catch (error) {
-      reject(
-        new StorageUnavailableError(error instanceof Error ? error.message : 'Storage failed'),
-      );
+      reject(asStorageError(error, 'Storage failed'));
       return;
     }
 
-    request.onsuccess = () => resolve(request.result);
-    request.onerror = () => {
-      reject(
-        new StorageUnavailableError(
-          request.error?.message ?? 'The local database rejected a write.',
-        ),
-      );
+    let settled = false;
+    const settle = (callback: () => void) => {
+      if (settled) return;
+      settled = true;
+      callback();
     };
+
+    const fail = (error: unknown) => {
+      settle(() => reject(asStorageError(error, 'The local database rejected a change.')));
+    };
+
+    request.onsuccess = () => {
+      if (mode === 'readwrite') return;
+      settle(() => resolve(request.result));
+    };
+
+    request.onerror = () => {
+      fail(request.error ?? new Error('The local database rejected a change.'));
+    };
+
+    transaction.oncomplete = () => {
+      if (mode === 'readwrite') settle(() => resolve(request.result));
+    };
+
     transaction.onabort = () => {
-      reject(
-        new StorageUnavailableError(
-          transaction.error?.message ?? 'The local database transaction was aborted.',
-        ),
-      );
+      fail(transaction.error ?? new Error('The local database transaction was aborted.'));
+    };
+
+    transaction.onerror = () => {
+      fail(transaction.error ?? new Error('The local database transaction failed.'));
     };
   });
+}
+
+/** True when the current page is being hidden or closed, so a save can flush. */
+export function isPageLosingFocus(): boolean {
+  if (typeof document === 'undefined') return false;
+  return document.visibilityState === 'hidden';
 }

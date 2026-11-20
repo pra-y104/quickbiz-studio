@@ -10,7 +10,13 @@ import { Card } from '../../components/ui/card';
 import { ProjectCard } from '../../components/creative/project-card';
 import { NewDesignDialog } from '../../components/creative/new-design-dialog';
 import { ConfirmDialog, RenameDialog } from '../../components/creative/dialogs';
-import { getProjectStore, type CreativeProjectSummary } from '../../lib/creative/storage';
+import {
+  getAssetStore,
+  getProjectStore,
+  type CreativeProjectSummary,
+} from '../../lib/creative/storage';
+import { deleteProjectWithAssets } from '../../lib/creative/storage/project-store';
+import { createBrowserId } from '../../lib/creative/id';
 import { useCreateProject } from '../../lib/creative/use-create-project';
 import { exportProjectFile, readProjectFile } from '../../lib/creative/project-file-client';
 import { isCreativeStudioEnabled } from '../../lib/creative/flags';
@@ -57,7 +63,7 @@ export function StudioProjectsPage() {
       if (!record) throw new Error('Project not found');
       const copy: typeof record = {
         ...record,
-        id: crypto.randomUUID(),
+        id: createBrowserId('doc'),
         title: `${record.title} copy`.slice(0, 120),
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
@@ -83,7 +89,7 @@ export function StudioProjectsPage() {
 
   const remove = useMutation({
     mutationFn: async (id: string) => {
-      await getProjectStore().remove(id);
+      await deleteProjectWithAssets(getProjectStore(), getAssetStore(), id);
     },
     onSuccess: () => void refresh(),
   });
@@ -102,6 +108,7 @@ export function StudioProjectsPage() {
     createProject.mutate({
       title: result.document.title,
       document: result.document,
+      freshId: true,
     });
   }
 

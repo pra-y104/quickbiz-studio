@@ -16,6 +16,12 @@ export interface PropertiesPanelProps {
   readonly onDelete: () => void;
 }
 
+/**
+ * A layer may sit partly off-canvas while being positioned, but not so far that
+ * it can never be dragged back. The bound is deliberately generous.
+ */
+const COORDINATE_LIMIT = 20_000;
+
 const SWATCHES: readonly CreativeColor[] = [
   '#0B1222',
   '#FFFFFF',
@@ -185,8 +191,20 @@ export function PropertiesPanel({ node, onChange, onDuplicate, onDelete }: Prope
           <h3 className="text-xs font-semibold uppercase tracking-wide text-ink-subtle">
             {t('studio.position')}
           </h3>
-          <NumberField label="X" value={node.x} onChange={(x) => onChange({ x } as NodePatch)} />
-          <NumberField label="Y" value={node.y} onChange={(y) => onChange({ y } as NodePatch)} />
+          <NumberField
+            label="X"
+            value={node.x}
+            min={-COORDINATE_LIMIT}
+            max={COORDINATE_LIMIT}
+            onChange={(x) => onChange({ x } as NodePatch)}
+          />
+          <NumberField
+            label="Y"
+            value={node.y}
+            min={-COORDINATE_LIMIT}
+            max={COORDINATE_LIMIT}
+            onChange={(y) => onChange({ y } as NodePatch)}
+          />
           <NumberField
             label={t('studio.width')}
             value={node.width}

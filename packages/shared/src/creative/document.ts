@@ -355,11 +355,20 @@ const imageNodeSchema: z.ZodType<CreativeImageNode> = z
   })
   .strict();
 
+/**
+ * Groups may contain nodes but never other groups.
+ *
+ * The depth limit is enforced by the schema rather than by convention: a recursive
+ * `z.lazy` union accepts unbounded nesting, which makes both node counting and
+ * rendering recursive on untrusted input.
+ */
+const groupChildSchema = z.union([textNodeSchema, shapeNodeSchema, imageNodeSchema]);
+
 const groupNodeSchema: z.ZodType<CreativeGroupNode> = z
   .object({
     ...nodeBase,
     type: z.literal('group'),
-    children: z.array(z.lazy(() => creativeNodeSchema)).max(CREATIVE_LIMITS.maxNodes),
+    children: z.array(groupChildSchema).max(CREATIVE_LIMITS.maxNodes),
   })
   .strict();
 
@@ -485,12 +494,25 @@ export function parseCreativeDocument(input: unknown): CreativeParseResult {
 }
 
 /** Flatten a document's nodes for counting and traversal, groups included. */
+/**
+ * Count nodes including group children.
+ *
+ * Iterative rather than recursive: the schema forbids nested groups, and an
+ * explicit stack keeps this safe even if a future format change loosens that rule.
+ */
 export function countCreativeNodes(nodes: readonly CreativeNode[]): number {
   let total = 0;
-  for (const node of nodes) {
-    total += 1;
-    if (node.type === 'group') total += countCreativeNodes(node.children);
+  const stack: (readonly CreativeNode[])[] = [nodes];
+
+  while (stack.length > 0) {
+    const level = stack.pop();
+    if (!level) continue;
+    for (const node of level) {
+      total += 1;
+      if (node.type === 'group') stack.push(node.children);
+    }
   }
+
   return total;
 }
 
@@ -579,6 +601,11 @@ export function createCreativeDocument(options: CreateCreativeDocumentOptions): 
 
 export function createNodeId(): string {
   return createId('n');
+}
+
+/** A fresh document id, used when importing must not overwrite an existing design. */
+export function createCreativeDocumentId(): string {
+  return createId('doc');
 }
 
 export function createAssetId(): string {

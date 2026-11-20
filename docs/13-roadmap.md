@@ -89,7 +89,7 @@ starts before the previous one is reviewed.
 - The production registry is empty, so `/api/v1/ai/status` stays unavailable and
   `POST /api/v1/ai/run` stays 501 even when `AI_PROVIDER` is set.
 - Cost interfaces exist with no prices; no wallet, credits or billing code is added.
-- 469 automated tests pass across shared, API and web.
+- 517 automated tests pass across shared, API and web.
 
 **Stage 7**
 - Concurrent spend cannot overdraw a wallet.

@@ -36,6 +36,12 @@ export interface RenderOptions {
   readonly selectionColor?: string;
   /** Omit the page background, used for transparent PNG export. */
   readonly skipBackground?: boolean;
+  /**
+   * Distance of the rotation handle above the node, in document pixels.
+   * The caller passes `28 / scale` so the handle sits 28 screen pixels above the
+   * node at any zoom, matching the stage's hit test exactly.
+   */
+  readonly selectionHandleOffset?: number;
 }
 
 const DEFAULT_SELECTION_COLOR = '#6741E8';
@@ -355,7 +361,12 @@ function drawNode(ctx: CanvasRenderingContext2D, node: CreativeNode, options: Re
   ctx.restore();
 }
 
-function drawSelection(ctx: CanvasRenderingContext2D, node: CreativeNode, color: string): void {
+function drawSelection(
+  ctx: CanvasRenderingContext2D,
+  node: CreativeNode,
+  color: string,
+  offset: number,
+): void {
   const centerX = node.x + node.width / 2;
   const centerY = node.y + node.height / 2;
 
@@ -390,7 +401,7 @@ function drawSelection(ctx: CanvasRenderingContext2D, node: CreativeNode, color:
 
   ctx.restore();
 
-  const rotateHandle = rotateHandlePoint(node);
+  const rotateHandle = rotateHandlePoint(node, offset);
   ctx.save();
   ctx.strokeStyle = color;
   ctx.lineWidth = 1.5;
@@ -430,7 +441,9 @@ export function renderDocument(
   if (options.showSelection && options.selection && options.selection.length > 0) {
     const color = options.selectionColor ?? DEFAULT_SELECTION_COLOR;
     for (const node of document.nodes) {
-      if (options.selection.includes(node.id)) drawSelection(ctx, node, color);
+      if (options.selection.includes(node.id)) {
+        drawSelection(ctx, node, color, options.selectionHandleOffset ?? 28);
+      }
     }
   }
 

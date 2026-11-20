@@ -2,10 +2,16 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router';
 import type { CreativeDocument } from '@quickbiz/shared';
 import { getProjectStore, type CreativeProjectRecord } from './storage';
+import { createBrowserId } from './id';
 
 export interface CreateProjectInput {
   readonly title: string;
   readonly document: CreativeDocument;
+  /**
+   * Importing a project file must never overwrite the design it came from, so
+   * imports pass `freshId: true` to receive a new project identity.
+   */
+  readonly freshId?: boolean;
 }
 
 /**
@@ -19,11 +25,12 @@ export function useCreateProject() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ title, document }: CreateProjectInput) => {
+    mutationFn: async ({ title, document, freshId }: CreateProjectInput) => {
+      const id = freshId ? createBrowserId('doc') : document.id;
       const record: CreativeProjectRecord = {
-        id: document.id,
+        id,
         title,
-        document: { ...document, title },
+        document: { ...document, id, title },
         createdAt: document.createdAt,
         updatedAt: new Date().toISOString(),
       };

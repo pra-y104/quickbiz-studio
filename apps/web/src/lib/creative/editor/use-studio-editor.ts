@@ -11,6 +11,7 @@
  */
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { toDocPixels } from '@quickbiz/shared';
 import type {
   CreativeAssetRef,
   CreativeColor,
@@ -64,6 +65,17 @@ export interface UseStudioEditorOptions {
   readonly initial: CreativeDocument;
   readonly store: CreativeProjectStore;
   readonly autosaveDelayMs?: number;
+  /**
+   * Produce a thumbnail for the saved record. Omitting it keeps any existing
+   * thumbnail; the interface must then label the placeholder honestly.
+   */
+  readonly createThumbnail?: (
+    document: CreativeDocument,
+  ) => Promise<string | undefined> | string | undefined;
+  /** Called when another tab reports a newer save for this project. */
+  readonly onRemoteSave?: (projectId: string) => void;
+  /** Channel name used to announce saves to other tabs. */
+  readonly broadcastChannelName?: string;
 }
 
 export interface StudioEditor {
@@ -92,14 +104,20 @@ export interface StudioEditor {
   addImage(asset: CreativeAssetRef): string;
   duplicateSelection(): void;
   deleteSelection(): void;
-  toggleLocked(): void;
-  toggleHidden(): void;
+  /** Toggle a specific layer, or the whole selection when no id is given. */
+  toggleLocked(id?: string): void;
+  toggleHidden(id?: string): void;
+  /** Delete specific layers. Locked layers are never removed. */
+  deleteNodes(ids: readonly string[]): void;
   reorder(id: string, direction: 'front' | 'back' | 'forward' | 'backward'): void;
   align(mode: AlignMode): void;
   nudge(dx: number, dy: number): void;
   updateSelected(patch: NodePatch): void;
   replaceDocument(next: CreativeDocument): void;
 }
+
+/** Broadcast channel used to tell other tabs that a project was just saved. */
+let activeChannel: BroadcastChannel | null = null;
 
 const AUTOSAVE_DELAY_MS = 700;
 const TEXT_DEFAULT_COLOR: CreativeColor = '#0B1222';
@@ -163,13 +181,18 @@ function applyPatch(node: CreativeNode, patch: NodePatch): CreativeNode {
   return next as unknown as CreativeNode;
 }
 
+/** Canvas centre in document pixels, which is what node coordinates use. */
 function centreOfCanvas(document: CreativeDocument): { x: number; y: number } {
-  return { x: document.canvas.width / 2, y: document.canvas.height / 2 };
+  const pixels = toDocPixels(document.canvas);
+  return { x: pixels.width / 2, y: pixels.height / 2 };
 }
 
 export function useStudioEditor(options: UseStudioEditorOptions): StudioEditor {
   const { projectId, initial, store } = options;
   const autosaveDelay = options.autosaveDelayMs ?? AUTOSAVE_DELAY_MS;
+  const createThumbnail = options.createThumbnail;
+  const onRemoteSave = options.onRemoteSave;
+  const broadcastChannelName = options.broadcastChannelName ?? 'quickbiz-creative';
 
   const historyRef = useRef<DocumentHistory>(new DocumentHistory(initial));
   const [document, setDocument] = useState<CreativeDocument>(initial);
@@ -181,6 +204,42 @@ export function useStudioEditor(options: UseStudioEditorOptions): StudioEditor {
   const documentRef = useRef<CreativeDocument>(initial);
   const [historyState, setHistoryState] = useState({ canUndo: false, canRedo: false });
 
+  // Module-scoped rather than a ref: reading a ref from a callback trips the
+  // React compiler lint, and only one editor is mounted at a time.
+  const projectIdRef = useRef(projectId);
+
+  useEffect(() => {
+    projectIdRef.current = projectId;
+  }, [projectId]);
+
+  const announce = useCallback((id: string) => {
+    if (!activeChannel) return;
+    try {
+      activeChannel.postMessage({ type: 'saved', projectId: id, at: Date.now() });
+    } catch {
+      // A closed channel is not an error worth surfacing to the customer.
+    }
+  }, []);
+
+  useEffect(() => {
+    if (typeof BroadcastChannel === 'undefined') return;
+    if (!broadcastChannelName) return;
+
+    const channel = new BroadcastChannel(broadcastChannelName);
+    activeChannel = channel;
+
+    channel.onmessage = (event: MessageEvent<{ type?: string; projectId?: string }>) => {
+      const data = event.data;
+      if (!data || data.type !== 'saved' || data.projectId !== projectIdRef.current) return;
+      onRemoteSave?.(projectIdRef.current);
+    };
+
+    return () => {
+      channel.close();
+      if (activeChannel === channel) activeChannel = null;
+    };
+  }, [broadcastChannelName, onRemoteSave]);
+
   const saveTimer = useRef<number | null>(null);
   const pendingSave = useRef<CreativeDocument | null>(null);
 
@@ -189,21 +248,29 @@ export function useStudioEditor(options: UseStudioEditorOptions): StudioEditor {
       setSaveState('saving');
       try {
         const existing = await store.get(projectId);
+
+        let thumbnail = existing?.thumbnail;
+        if (createThumbnail) {
+          const generated = await createThumbnail(snapshot);
+          if (generated !== undefined) thumbnail = generated;
+        }
+
         const record: CreativeProjectRecord = {
           id: projectId,
           title: snapshot.title,
           document: snapshot,
-          ...(existing?.thumbnail === undefined ? {} : { thumbnail: existing.thumbnail }),
+          ...(thumbnail === undefined ? {} : { thumbnail }),
           createdAt: existing?.createdAt ?? snapshot.createdAt,
           updatedAt: new Date().toISOString(),
         };
         await store.put(record);
+        announce(projectId);
         setSaveState('saved');
       } catch {
         setSaveState('error');
       }
     },
-    [projectId, store],
+    [announce, createThumbnail, projectId, store],
   );
 
   const scheduleSave = useCallback(
@@ -230,6 +297,49 @@ export function useStudioEditor(options: UseStudioEditorOptions): StudioEditor {
       }
     };
   }, [persist]);
+
+  // A hidden or closing page gets one immediate flush attempt. IndexedDB writes
+  // are asynchronous, so this is best-effort; the debounce is the normal path and a
+  // hard close can still lose the last few hundred milliseconds of work.
+  useEffect(() => {
+    const flush = () => {
+      if (saveTimer.current !== null) {
+        window.clearTimeout(saveTimer.current);
+        saveTimer.current = null;
+      }
+      const pending = pendingSave.current;
+      pendingSave.current = null;
+      if (pending) void persist(pending);
+    };
+
+    const onVisibility = () => {
+      if (globalThis.document?.visibilityState === 'hidden') flush();
+    };
+
+    window.addEventListener('pagehide', flush);
+    globalThis.document?.addEventListener('visibilitychange', onVisibility);
+    return () => {
+      window.removeEventListener('pagehide', flush);
+      globalThis.document?.removeEventListener('visibilitychange', onVisibility);
+    };
+  }, [persist]);
+
+  // Second line of defence for project switching. The studio route keys the editor
+  // by project id, but a cached navigation can re-render the same component with a
+  // different document; without this the old state would be autosaved over the new
+  // project. Detect the change and reset the history rather than trusting the key.
+  const loadedIdRef = useRef(initial.id);
+  useEffect(() => {
+    if (loadedIdRef.current === initial.id) return;
+    loadedIdRef.current = initial.id;
+
+    historyRef.current.reset(initial);
+    documentRef.current = initial;
+    setDocument(initial);
+    setSelection([]);
+    setHistoryState({ canUndo: false, canRedo: false });
+    setSaveState('saved');
+  }, [initial]);
 
   const commit = useCallback(
     (next: CreativeDocument, commitOptions: { readonly historyKey?: string } = {}) => {
@@ -388,25 +498,45 @@ export function useStudioEditor(options: UseStudioEditorOptions): StudioEditor {
     setSelection([]);
   }, [commit, selection]);
 
-  const toggleLocked = useCallback(() => {
-    const selected = new Set(selection);
-    if (selected.size === 0) return;
-    const current = documentRef.current;
-    const nodes = current.nodes.map((node) =>
-      selected.has(node.id) ? { ...node, locked: !node.locked } : node,
-    );
-    commit({ ...current, nodes, updatedAt: new Date().toISOString() });
-  }, [commit, selection]);
+  const toggleLocked = useCallback(
+    (id?: string) => {
+      const targets = new Set(id === undefined ? selection : [id]);
+      if (targets.size === 0) return;
+      const current = documentRef.current;
+      const nodes = current.nodes.map((node) =>
+        targets.has(node.id) ? { ...node, locked: !node.locked } : node,
+      );
+      commit({ ...current, nodes, updatedAt: new Date().toISOString() });
+    },
+    [commit, selection],
+  );
 
-  const toggleHidden = useCallback(() => {
-    const selected = new Set(selection);
-    if (selected.size === 0) return;
-    const current = documentRef.current;
-    const nodes = current.nodes.map((node) =>
-      selected.has(node.id) ? { ...node, hidden: !node.hidden } : node,
-    );
-    commit({ ...current, nodes, updatedAt: new Date().toISOString() });
-  }, [commit, selection]);
+  const toggleHidden = useCallback(
+    (id?: string) => {
+      const targets = new Set(id === undefined ? selection : [id]);
+      if (targets.size === 0) return;
+      const current = documentRef.current;
+      const nodes = current.nodes.map((node) =>
+        targets.has(node.id) ? { ...node, hidden: !node.hidden } : node,
+      );
+      commit({ ...current, nodes, updatedAt: new Date().toISOString() });
+    },
+    [commit, selection],
+  );
+
+  const deleteNodes = useCallback(
+    (ids: readonly string[]) => {
+      if (ids.length === 0) return;
+      const next = removeNodes(documentRef.current, ids);
+      if (next === documentRef.current) return;
+      commit(next);
+      setSelection((current) => {
+        const removing = new Set(ids);
+        return current.filter((id) => !removing.has(id));
+      });
+    },
+    [commit],
+  );
 
   const reorder = useCallback(
     (id: string, direction: 'front' | 'back' | 'forward' | 'backward') => {
@@ -480,6 +610,7 @@ export function useStudioEditor(options: UseStudioEditorOptions): StudioEditor {
     deleteSelection,
     toggleLocked,
     toggleHidden,
+    deleteNodes,
     reorder,
     align,
     nudge,

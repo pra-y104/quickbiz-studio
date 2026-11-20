@@ -15,6 +15,7 @@
 import {
   CREATIVE_LIMITS,
   createNodeId,
+  toDocPixels,
   type CreativeDocument,
   type CreativeNode,
   type CreativeTextNode,
@@ -75,12 +76,22 @@ export function addNodes(
   return touch(document, [...document.nodes, ...nodes]);
 }
 
+/**
+ * Remove nodes.
+ *
+ * Locked nodes are protected: deleting a locked layer is refused unless the caller
+ * unlocks it first. This is deliberate — a lock that can be bypassed by a stray
+ * Delete key is not a lock.
+ */
 export function removeNodes(document: CreativeDocument, ids: readonly string[]): CreativeDocument {
   const removing = new Set(ids);
-  if (!document.nodes.some((node) => removing.has(node.id))) return document;
+  const removable = document.nodes.filter((node) => removing.has(node.id) && !node.locked);
+  if (removable.length === 0) return document;
+
+  const removableIds = new Set(removable.map((node) => node.id));
   return touch(
     document,
-    document.nodes.filter((node) => !removing.has(node.id)),
+    document.nodes.filter((node) => !removableIds.has(node.id)),
   );
 }
 
@@ -334,10 +345,15 @@ export function moveNodes(
 ): CreativeDocument {
   if (delta.x === 0 && delta.y === 0) return document;
   const selected = new Set(ids);
-  const nodes = document.nodes.map((node) =>
-    selected.has(node.id) ? { ...node, x: node.x + delta.x, y: node.y + delta.y } : node,
-  );
-  return touch(document, nodes);
+  let moved = false;
+
+  const nodes = document.nodes.map((node) => {
+    if (!selected.has(node.id) || node.locked) return node;
+    moved = true;
+    return { ...node, x: node.x + delta.x, y: node.y + delta.y };
+  });
+
+  return moved ? touch(document, nodes) : document;
 }
 
 export function resizeSelectedNode(
@@ -362,15 +378,18 @@ export function alignSelection(
   const selected = document.nodes.filter((node) => ids.includes(node.id));
   if (selected.length === 0) return document;
 
+  // Node coordinates are document pixels, so the canvas must be converted the
+  // same way for print (mm) and digital (px) documents.
+  const pixels = toDocPixels(document.canvas);
   const reference =
     selected.length === 1
       ? {
           left: 0,
           top: 0,
-          right: document.canvas.width,
-          bottom: document.canvas.height,
-          width: document.canvas.width,
-          height: document.canvas.height,
+          right: pixels.width,
+          bottom: pixels.height,
+          width: pixels.width,
+          height: pixels.height,
         }
       : boundsOf(selected);
 

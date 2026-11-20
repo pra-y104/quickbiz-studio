@@ -22,6 +22,13 @@ export interface AssetStore {
   readonly persistent: boolean;
   put(asset: StoredAsset): Promise<void>;
   get(id: string): Promise<StoredAsset | null>;
+  /**
+   * Ids of every stored asset.
+   *
+   * Used by garbage collection, which must not load every blob into memory to
+   * find out what exists.
+   */
+  ids(): Promise<readonly string[]>;
   remove(id: string): Promise<void>;
 }
 
@@ -46,6 +53,16 @@ export function createIndexedDbAssetStore(): AssetStore {
         operation: (store) => store.get(id) as IDBRequest<StoredAsset | undefined>,
       });
       return asset ?? null;
+    },
+    async ids() {
+      const database = await openDatabase();
+      const keys = await runRequest<IDBValidKey[]>({
+        database,
+        store: ASSET_STORE,
+        mode: 'readonly',
+        operation: (store) => store.getAllKeys() as IDBRequest<IDBValidKey[]>,
+      });
+      return keys.map((key) => String(key));
     },
     async remove(id) {
       const database = await openDatabase();
@@ -74,6 +91,9 @@ export function createInMemoryAssetStore(
     },
     async get(id) {
       return assets.find((asset) => asset.id === id) ?? null;
+    },
+    async ids() {
+      return assets.map((asset) => asset.id);
     },
     async remove(id) {
       const index = assets.findIndex((asset) => asset.id === id);

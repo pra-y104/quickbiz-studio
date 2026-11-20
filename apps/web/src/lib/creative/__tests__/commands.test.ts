@@ -186,7 +186,7 @@ describe('document history', () => {
     const history = new DocumentHistory(emptyDocument());
     history.beginGesture('drag:a');
 
-    let current = history.current;
+    let current = addNode(history.current, box('a'));
     for (const dx of [1, 2, 3, 4, 5]) {
       current = moveNodes(current, ['a'], { x: dx, y: 0 });
       history.commit(current, { key: 'drag:a' });
@@ -195,6 +195,7 @@ describe('document history', () => {
 
     expect(history.depth).toBe(1);
     expect(history.canUndo).toBe(true);
+    expect(history.undo()?.nodes).toHaveLength(0);
   });
 
   it('respects the history limit', () => {
@@ -223,3 +224,69 @@ describe('document history', () => {
     expect(history.current.nodes).toHaveLength(0);
   });
 });
+
+describe('locked layers (L4)', () => {
+  it('refuses to delete a locked node', () => {
+    const document = addNodes(emptyDocument(), [box('a'), { ...box('b'), locked: true }]);
+    const next = removeNodes(document, ['a', 'b']);
+
+    expect(next.nodes.map((node) => node.id)).toEqual(['b']);
+  });
+
+  it('refuses to move a locked node', () => {
+    const document = addNodes(emptyDocument(), [
+      box('a', 0, 0),
+      { ...box('b', 0, 0), locked: true },
+    ]);
+    const next = moveNodes(document, ['a', 'b'], { x: 50, y: 0 });
+
+    expect(next.nodes[0]?.x).toBe(50);
+    expect(next.nodes[1]?.x).toBe(0);
+  });
+
+  it('returns the same document when every target is locked', () => {
+    const document = addNodes(emptyDocument(), [{ ...box('a'), locked: true }]);
+    expect(removeNodes(document, ['a'])).toBe(document);
+    expect(moveNodes(document, ['a'], { x: 5, y: 5 })).toBe(document);
+  });
+});
+
+describe('document pixel placement (M1)', () => {
+  it('aligns a single node to the right edge of an A4 document', () => {
+    // A4 at 300 DPI is 2480 px wide; the node is 100 px wide.
+    const document = addNode(emptyA4Document(), box('a', 0, 0));
+    const next = alignSelection(document, ['a'], 'right');
+
+    expect(next.nodes[0]?.x).toBeCloseTo(2380.315, 2);
+  });
+
+  it('aligns a single node to the vertical centre of an A4 document', () => {
+    const document = addNode(emptyA4Document(), box('a', 0, 0));
+    const next = alignSelection(document, ['a'], 'middle');
+
+    // A4 is 3508 px tall at 300 DPI.
+    expect(next.nodes[0]?.y).toBeCloseTo((3508 - 80) / 2, 0);
+  });
+
+  it('aligns to the edge of the selection when several nodes are selected', () => {
+    const document = addNodes(emptyA4Document(), [box('a', 100, 100), box('b', 400, 100)]);
+    const next = alignSelection(document, ['a', 'b'], 'left');
+
+    expect(next.nodes[0]?.x).toBe(100);
+    expect(next.nodes[1]?.x).toBe(100);
+  });
+});
+
+function emptyA4Document() {
+  return createCreativeDocument({
+    title: 'A4 test',
+    canvas: {
+      unit: 'mm',
+      width: 210,
+      height: 297,
+      dpi: 300,
+      background: { type: 'solid', color: '#ffffff' },
+    },
+    now: NOW,
+  });
+}

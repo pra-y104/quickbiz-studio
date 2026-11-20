@@ -42,6 +42,53 @@ export default tseslint.config(
     },
   },
   {
+    // Creative Studio: the editor, exporter and AI seams must never reach the
+    // network. This mirrors the Stage 6 API boundary and is defence-in-depth only:
+    // the design engine has no network code today, and this rule keeps it that way
+    // without touching the API protections.
+    name: 'quickbiz/creative-studio-no-network',
+    files: ['apps/web/src/lib/creative/**/*.ts', 'apps/web/src/lib/creative/**/*.tsx'],
+    rules: {
+      'no-restricted-globals': [
+        'error',
+        { name: 'fetch', message: 'Creative Studio must not call the network.' },
+        { name: 'WebSocket', message: 'Creative Studio must not open sockets.' },
+        { name: 'XMLHttpRequest', message: 'Creative Studio must not call the network.' },
+        { name: 'EventSource', message: 'Creative Studio must not open event streams.' },
+        { name: 'sendBeacon', message: 'Creative Studio must not send data to a server.' },
+      ],
+      'no-restricted-properties': [
+        'error',
+        {
+          object: 'globalThis',
+          property: 'fetch',
+          message: 'Creative Studio must not call globalThis.fetch.',
+        },
+      ],
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            {
+              group: [
+                'openai',
+                '@anthropic-ai/*',
+                '@google/*',
+                'groq-sdk',
+                'axios',
+                'undici',
+                'ky',
+                'got',
+                'node-fetch',
+              ],
+              message: 'Provider SDKs and HTTP clients are not allowed in Creative Studio.',
+            },
+          ],
+        },
+      ],
+    },
+  },
+  {
     // Test doubles stay out of every production module. Tests and the approved
     // testing directory are exempt, so the fake remains usable offline.
     // Declared before the AI boundary block: flat config replaces rule options

@@ -153,6 +153,11 @@
     "loadingEditor": "Opening the editor…",
     "editorUnavailable": "The editor could not start on this device.",
     "sheetTools": "Tools",
-    "sheetProperties": "Properties"
+    "sheetProperties": "Properties",
+    "forward": "Bring forward",
+    "backward": "Send backward",
+    "delete": "Delete",
+    "position": "Position",
+    "aiTextUnavailable": "AI writing assistance is not available yet."
   }
 }

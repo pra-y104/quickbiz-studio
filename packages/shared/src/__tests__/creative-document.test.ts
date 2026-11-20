@@ -134,7 +134,13 @@ describe('parseCreativeDocument', () => {
 
   it('rejects a canvas whose pixel size exceeds the ceiling', () => {
     const document = baseDocument({
-      canvas: { unit: 'px', width: 5_000, height: 5_000, dpi: 96, background: { type: 'solid', color: '#ffffff' } },
+      canvas: {
+        unit: 'px',
+        width: 5_000,
+        height: 5_000,
+        dpi: 96,
+        background: { type: 'solid', color: '#ffffff' },
+      },
     });
     expect(parseCreativeDocument(document).ok).toBe(false);
   });

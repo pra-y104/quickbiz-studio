@@ -246,13 +246,7 @@ export interface CreativeTextNode extends CreativeNodeBase {
 }
 
 export type CreativeShapeKind =
-  | 'rect'
-  | 'roundRect'
-  | 'ellipse'
-  | 'line'
-  | 'arrow'
-  | 'triangle'
-  | 'star';
+  'rect' | 'roundRect' | 'ellipse' | 'line' | 'arrow' | 'triangle' | 'star';
 
 export interface CreativeShapeStroke {
   readonly color: CreativeColor;
@@ -296,10 +290,7 @@ export interface CreativeGroupNode extends CreativeNodeBase {
  * groups, which keeps depth at one and validation predictable.
  */
 export type CreativeNode =
-  | CreativeTextNode
-  | CreativeShapeNode
-  | CreativeImageNode
-  | CreativeGroupNode;
+  CreativeTextNode | CreativeShapeNode | CreativeImageNode | CreativeGroupNode;
 
 export type CreativeNodeType = CreativeNode['type'];
 
@@ -381,8 +372,6 @@ export const creativeNodeSchema: z.ZodType<CreativeNode> = z.union([
 
 export const CREATIVE_NODE_TYPES = ['text', 'shape', 'image', 'group'] as const;
 
-
-
 export function isCreativeNode(value: unknown): value is CreativeNode {
   return creativeNodeSchema.safeParse(value).success;
 }
@@ -425,7 +414,11 @@ export const creativeDocumentSchema = z
   .object({
     kind: z.literal(CREATIVE_DOCUMENT_KIND),
     version: z.literal(CREATIVE_DOCUMENT_VERSION),
-    id: z.string().min(1).max(64).regex(/^[A-Za-z0-9_-]+$/),
+    id: z
+      .string()
+      .min(1)
+      .max(64)
+      .regex(/^[A-Za-z0-9_-]+$/),
     title: z.string().min(1).max(CREATIVE_LIMITS.maxTitleLength),
     canvas: canvasSchema,
     nodes: z.array(creativeNodeSchema).max(CREATIVE_LIMITS.maxNodes),

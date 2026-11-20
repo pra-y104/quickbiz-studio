@@ -113,7 +113,11 @@ export function StudioProjectsPage() {
             <Card className="mt-4 p-6">
               <h3 className="text-sm font-semibold text-ink">{t('studio.loadFailedTitle')}</h3>
               <p className="mt-1 text-sm text-ink-muted">{t('studio.loadFailedBody')}</p>
-              <Button variant="outline" className="mt-4" onClick={() => void projectsQuery.refetch()}>
+              <Button
+                variant="outline"
+                className="mt-4"
+                onClick={() => void projectsQuery.refetch()}
+              >
                 {t('studio.retry')}
               </Button>
             </Card>

@@ -46,7 +46,7 @@ function characterWidth(character: string, input: TextMetricsInput): number {
   const base = CHAR_WIDTH_FACTOR[input.fontFamily] * input.fontSize;
   const weightFactor = (input.fontWeight ?? 400) >= 700 ? 1.06 : 1;
   const wide = WIDE_CHARACTERS.has(character) ? 1.35 : 1;
-  const narrow = 'iljI.,:;\'!|'.includes(character) ? 0.72 : 1;
+  const narrow = "iljI.,:;'!|".includes(character) ? 0.72 : 1;
   return base * weightFactor * wide * narrow + (input.letterSpacing ?? 0);
 }
 

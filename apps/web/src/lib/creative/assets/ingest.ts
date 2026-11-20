@@ -155,10 +155,7 @@ export interface IngestImageOptions {
  * Returns bytes plus an asset reference; the caller stores them and puts the
  * reference in the document. The original file is never kept.
  */
-export async function ingestImage(
-  file: Blob,
-  options: IngestImageOptions,
-): Promise<IngestedImage> {
+export async function ingestImage(file: Blob, options: IngestImageOptions): Promise<IngestedImage> {
   const declaredSize = file.size;
   const limit = options.maxFileBytes ?? ASSET_LIMITS.maxFileBytes;
   if (declaredSize > limit) {

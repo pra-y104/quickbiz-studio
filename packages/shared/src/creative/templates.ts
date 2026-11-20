@@ -23,14 +23,7 @@ import { estimateTextHeight } from './text-metrics';
 import { canvasFromPreset, getPreset, requirePreset } from './presets';
 
 export type CreativeTemplateCategory =
-  | 'flyer'
-  | 'poster'
-  | 'social'
-  | 'story'
-  | 'business-card'
-  | 'invitation'
-  | 'event'
-  | 'banner';
+  'flyer' | 'poster' | 'social' | 'story' | 'business-card' | 'invitation' | 'event' | 'banner';
 
 export interface CreativeTemplate {
   readonly id: string;
@@ -662,8 +655,16 @@ function buildBusinessCard(variant: number): CreativeTemplate {
   const palette = paletteAt(variant + 1);
   const people = [
     { name: 'Amara Nwosu', role: 'Founder', contact: 'amara@studio.example  ·  +234 800 000 0000' },
-    { name: 'Tobi Adeyemi', role: 'Creative Director', contact: 'tobi@studio.example  ·  studio.example' },
-    { name: 'Lerato Mokoena', role: 'Studio Manager', contact: 'lerato@studio.example  ·  +27 82 000 0000' },
+    {
+      name: 'Tobi Adeyemi',
+      role: 'Creative Director',
+      contact: 'tobi@studio.example  ·  studio.example',
+    },
+    {
+      name: 'Lerato Mokoena',
+      role: 'Studio Manager',
+      contact: 'lerato@studio.example  ·  +27 82 000 0000',
+    },
   ];
   const person = subjectAt(people, variant);
 

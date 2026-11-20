@@ -100,7 +100,9 @@ export function runRequest<T>(options: RunRequest<T>): Promise<T> {
     try {
       transaction = database.transaction(store, mode);
     } catch (error) {
-      reject(new StorageUnavailableError(error instanceof Error ? error.message : 'Storage failed'));
+      reject(
+        new StorageUnavailableError(error instanceof Error ? error.message : 'Storage failed'),
+      );
       return;
     }
 
@@ -108,14 +110,18 @@ export function runRequest<T>(options: RunRequest<T>): Promise<T> {
     try {
       request = operation(transaction.objectStore(store));
     } catch (error) {
-      reject(new StorageUnavailableError(error instanceof Error ? error.message : 'Storage failed'));
+      reject(
+        new StorageUnavailableError(error instanceof Error ? error.message : 'Storage failed'),
+      );
       return;
     }
 
     request.onsuccess = () => resolve(request.result);
     request.onerror = () => {
       reject(
-        new StorageUnavailableError(request.error?.message ?? 'The local database rejected a write.'),
+        new StorageUnavailableError(
+          request.error?.message ?? 'The local database rejected a write.',
+        ),
       );
     };
     transaction.onabort = () => {

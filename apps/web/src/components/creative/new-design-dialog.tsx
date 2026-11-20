@@ -113,7 +113,8 @@ export function NewDesignDialog({ open, onOpenChange, onCreate, pending }: NewDe
                           {preset.name}
                         </span>
                         <span className="block truncate text-xs text-ink-subtle">
-                          {dimensions} · {preset.category === 'print' ? t('studio.print') : t('studio.digital')}
+                          {dimensions} ·{' '}
+                          {preset.category === 'print' ? t('studio.print') : t('studio.digital')}
                         </span>
                       </span>
                       {active ? (

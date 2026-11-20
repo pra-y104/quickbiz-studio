@@ -83,6 +83,12 @@ const AuthCallbackPage = lazy(() =>
 const DashboardPage = lazy(() =>
   import('../pages/dashboard').then((module) => ({ default: module.DashboardPage })),
 );
+const StudioProjectsPage = lazy(() =>
+  import('../pages/creative/projects').then((module) => ({ default: module.StudioProjectsPage })),
+);
+const StudioPage = lazy(() =>
+  import('../pages/creative/studio').then((module) => ({ default: module.StudioPage })),
+);
 const ProfilePage = lazy(() =>
   import('../pages/profile').then((module) => ({ default: module.ProfilePage })),
 );
@@ -154,6 +160,11 @@ export const router = createBrowserRouter([
 
   { path: '/dashboard', element: protectedRoute(<DashboardPage />) },
   { path: '/profile', element: protectedRoute(<ProfilePage />) },
+
+  // Creative Studio. Local-first and account-free: the editor writes to this
+  // browser only, so it sits outside the auth guard like the ordinary tools.
+  { path: '/studio', element: withShell(UtilityShell, <StudioProjectsPage />) },
+  { path: '/studio/:projectId', element: withShell(UtilityShell, <StudioPage />) },
 
   { path: '*', element: withShell(UtilityShell, <NotFoundPage />) },
 ]);

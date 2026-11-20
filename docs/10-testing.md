@@ -10,9 +10,10 @@
 | Web components | Vitest + Testing Library | `apps/web/src/**/*.test.tsx` | button states, api client contract, homepage sections, navigation drawer, theme toggle |
 | Auth screens and guards | Vitest + Testing Library | `apps/web/src/pages/auth`, `src/components/auth`, `src/lib/auth` | validation, provider state, protected redirects, logout, recovery states, safe next paths, profile payload |
 | Ordinary tools | Vitest + Testing Library | `apps/web/src/pages/tools`, `src/components/tools`, `src/lib/tools` | every tool interaction, validation states, PDF structure and printed totals |
+| Creative Studio | Vitest | `packages/shared/src/__tests__/creative-*.test.ts`, `apps/web/src/lib/creative/__tests__/*` | document validation, geometry, commands, history, renderer, export, ingest, project store |
 | AI foundation | Vitest | `packages/shared/src/__tests__/ai-contracts.test.ts`, `apps/api/src/__tests__/ai-*.test.ts` | contract parity, prompt versions, provider registry, fake-provider pipeline, timeout, cancellation, output validation, isolation guards |
 
-Current result: **346 tests passing** (146 shared, 82 API, 118 web).
+Current result: **469 tests passing** (186 shared, 82 API, 201 web).
 
 ## Commands
 

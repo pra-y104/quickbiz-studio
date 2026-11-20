@@ -10,6 +10,7 @@ import { ToolRail } from '../../components/creative/tool-rail';
 import { LayersPanel } from '../../components/creative/layers-panel';
 import { ExportDialog } from '../../components/creative/export-dialog';
 import { MobileInspector } from '../../components/creative/mobile-inspector';
+import { AiAssistDialog } from '../../components/creative/ai-assist-dialog';
 import { PropertiesPanel } from '../../components/creative/properties-panel';
 import { Button } from '../../components/ui/button';
 import { Spinner } from '../../components/ui/spinner';
@@ -94,6 +95,7 @@ function EditorView({
   const [scale, setScale] = useState(0.2);
   const [notice, setNotice] = useState<string | null>(null);
   const [exportOpen, setExportOpen] = useState(false);
+  const [aiPanel, setAiPanel] = useState<'text' | 'image' | null>(null);
   const fileInput = useRef<HTMLInputElement | null>(null);
 
   const selected = editor.selectedNodes[0] ?? null;
@@ -255,7 +257,7 @@ function EditorView({
               fileInput.current?.click();
             }}
             onOpenTemplates={() => showNotice(t('studio.templateBody'))}
-            onOpenAiPanel={() => showNotice(t('studio.aiTextBody'))}
+            onOpenAiPanel={(panel) => setAiPanel(panel)}
           />
         }
         canvas={
@@ -374,6 +376,14 @@ function EditorView({
           ) : null}
         </div>
       </div>
+
+      <AiAssistDialog
+        open={aiPanel !== null}
+        mode={aiPanel}
+        onOpenChange={(next) => {
+          if (!next) setAiPanel(null);
+        }}
+      />
 
       <ExportDialog
         open={exportOpen}

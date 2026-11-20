@@ -180,6 +180,7 @@
     },
     "moveForward": "Bring forward",
     "moveBackward": "Send backward",
-    "keyboardHelp": "Keyboard: arrow keys move the selection, shift and arrow moves ten, Delete removes, Control or Command D duplicates, Control or Command Z undoes and Control or Command Shift Z redoes."
+    "keyboardHelp": "Keyboard: arrow keys move the selection, shift and arrow moves ten, Delete removes, Control or Command D duplicates, Control or Command Z undoes and Control or Command Shift Z redoes.",
+    "aiDisabledNote": "No provider is connected and no paid API is active. Enabling this later requires a reviewed, funded provider, its own cost controls and explicit owner approval."
   }
 }

@@ -34,6 +34,8 @@ export interface RenderOptions {
   readonly selection?: readonly string[];
   readonly showSelection?: boolean;
   readonly selectionColor?: string;
+  /** Omit the page background, used for transparent PNG export. */
+  readonly skipBackground?: boolean;
 }
 
 const DEFAULT_SELECTION_COLOR = '#6741E8';
@@ -418,8 +420,10 @@ export function renderDocument(
   ctx.restore();
   ctx.save();
 
-  ctx.fillStyle = paintFor(ctx, document.canvas.background, 0, 0, width, height);
-  ctx.fillRect(0, 0, width, height);
+  if (options.skipBackground !== true) {
+    ctx.fillStyle = paintFor(ctx, document.canvas.background, 0, 0, width, height);
+    ctx.fillRect(0, 0, width, height);
+  }
 
   for (const node of document.nodes) drawNode(ctx, node, options);
 

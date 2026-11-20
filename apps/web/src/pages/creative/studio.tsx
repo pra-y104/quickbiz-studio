@@ -8,6 +8,8 @@ import { StudioShell } from '../../components/creative/studio-shell';
 import { CanvasStage, type StudioTool } from '../../components/creative/canvas-stage';
 import { ToolRail } from '../../components/creative/tool-rail';
 import { LayersPanel } from '../../components/creative/layers-panel';
+import { ExportDialog } from '../../components/creative/export-dialog';
+import { MobileInspector } from '../../components/creative/mobile-inspector';
 import { PropertiesPanel } from '../../components/creative/properties-panel';
 import { Button } from '../../components/ui/button';
 import { Spinner } from '../../components/ui/spinner';
@@ -91,6 +93,7 @@ function EditorView({
   const [zoomFactor, setZoomFactor] = useState(1);
   const [scale, setScale] = useState(0.2);
   const [notice, setNotice] = useState<string | null>(null);
+  const [exportOpen, setExportOpen] = useState(false);
   const fileInput = useRef<HTMLInputElement | null>(null);
 
   const selected = editor.selectedNodes[0] ?? null;
@@ -177,6 +180,9 @@ function EditorView({
   const actions = useMemo(
     () => (
       <>
+        <Button variant="outline" size="sm" onClick={() => setExportOpen(true)}>
+          {t('studio.export')}
+        </Button>
         <Button
           variant="ghost"
           size="sm"
@@ -221,6 +227,9 @@ function EditorView({
 
   return (
     <>
+      <p id="studio-help" className="sr-only">
+        {t('studio.keyboardHelp')}
+      </p>
       <StudioShell
         title={editor.document.title}
         canvasLabel={
@@ -294,7 +303,7 @@ function EditorView({
           <div className="flex items-center justify-between gap-1">
             <div className="flex items-center gap-1">
               <Button
-                variant="ghost"
+                variant={tool === 'select' ? 'primary' : 'ghost'}
                 size="sm"
                 onClick={() => setTool('select')}
                 aria-pressed={tool === 'select'}
@@ -307,9 +316,13 @@ function EditorView({
               <Button variant="ghost" size="sm" onClick={() => editor.addShape('rect')}>
                 {t('studio.shapes')}
               </Button>
-              <Button variant="ghost" size="sm" onClick={() => fileInput.current?.click()}>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => fileInput.current?.click()}
+                aria-label={t('studio.upload')}
+              >
                 <Upload className="size-4" aria-hidden="true" />
-                {t('studio.images')}
               </Button>
             </div>
             <div className="flex items-center gap-1">
@@ -329,6 +342,18 @@ function EditorView({
               >
                 <ZoomIn className="size-4" aria-hidden="true" />
               </Button>
+              <MobileInspector
+                nodes={editor.document.nodes}
+                selection={editor.selection}
+                selected={selected}
+                onSelect={(id, additive) => editor.select([id], additive)}
+                onChange={editor.updateSelected}
+                onDuplicate={editor.duplicateSelection}
+                onDelete={editor.deleteSelection}
+                onReorder={(id, direction) => editor.reorder(id, direction)}
+                onToggleHidden={editor.toggleHidden}
+                onToggleLocked={editor.toggleLocked}
+              />
             </div>
           </div>
         }
@@ -349,6 +374,13 @@ function EditorView({
           ) : null}
         </div>
       </div>
+
+      <ExportDialog
+        open={exportOpen}
+        onOpenChange={setExportOpen}
+        document={editor.document}
+        assets={assets}
+      />
 
       <input
         ref={fileInput}

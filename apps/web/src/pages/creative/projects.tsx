@@ -1,15 +1,18 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useNavigate } from 'react-router';
-import { Plus, ShieldAlert, Sparkles } from 'lucide-react';
+import { Link } from 'react-router';
+import { Plus, ShieldAlert, Sparkles, Upload } from 'lucide-react';
 import type { CreativeDocument } from '@quickbiz/shared';
 import { Container } from '../../components/ui/container';
 import { Button } from '../../components/ui/button';
 import { Card } from '../../components/ui/card';
 import { ProjectCard } from '../../components/creative/project-card';
 import { NewDesignDialog } from '../../components/creative/new-design-dialog';
-import { getProjectStore, type CreativeProjectRecord } from '../../lib/creative/storage';
+import { ConfirmDialog, RenameDialog } from '../../components/creative/dialogs';
+import { getProjectStore, type CreativeProjectSummary } from '../../lib/creative/storage';
+import { useCreateProject } from '../../lib/creative/use-create-project';
+import { exportProjectFile, readProjectFile } from '../../lib/creative/project-file-client';
 import { isCreativeStudioEnabled } from '../../lib/creative/flags';
 
 function UnavailableState() {
@@ -25,14 +28,18 @@ function UnavailableState() {
 }
 
 /**
- * Creative Studio landing page: saved designs, a new-design entry point and a
- * clear statement of where the work is stored.
+ * Creative Studio landing page: saved designs, a new-design entry point, template
+ * browsing and a clear statement of where the work is stored.
  */
 export function StudioProjectsPage() {
   const { t } = useTranslation();
-  const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const fileInput = useRef<HTMLInputElement | null>(null);
+
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [renameTarget, setRenameTarget] = useState<CreativeProjectSummary | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<CreativeProjectSummary | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
 
   const projectsQuery = useQuery({
     queryKey: ['creative-projects'],
@@ -40,28 +47,63 @@ export function StudioProjectsPage() {
     enabled: isCreativeStudioEnabled(),
   });
 
-  const createProject = useMutation({
-    mutationFn: async (document: CreativeDocument) => {
-      const record: CreativeProjectRecord = {
-        id: document.id,
-        title: document.title,
-        document,
-        createdAt: document.createdAt,
+  const createProject = useCreateProject();
+
+  const refresh = () => queryClient.invalidateQueries({ queryKey: ['creative-projects'] });
+
+  const duplicate = useMutation({
+    mutationFn: async (project: CreativeProjectSummary) => {
+      const record = await getProjectStore().get(project.id);
+      if (!record) throw new Error('Project not found');
+      const copy: typeof record = {
+        ...record,
+        id: crypto.randomUUID(),
+        title: `${record.title} copy`.slice(0, 120),
+        createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       };
-      await getProjectStore().put(record);
-      return record;
+      await getProjectStore().put(copy);
     },
-    onSuccess: async (record) => {
-      await queryClient.invalidateQueries({ queryKey: ['creative-projects'] });
-      navigate(`/studio/${record.id}`);
+    onSuccess: () => void refresh(),
+  });
+
+  const rename = useMutation({
+    mutationFn: async ({ id, title }: { id: string; title: string }) => {
+      const record = await getProjectStore().get(id);
+      if (!record) throw new Error('Project not found');
+      await getProjectStore().put({
+        ...record,
+        title,
+        document: { ...record.document, title, updatedAt: new Date().toISOString() },
+        updatedAt: new Date().toISOString(),
+      });
     },
+    onSuccess: () => void refresh(),
+  });
+
+  const remove = useMutation({
+    mutationFn: async (id: string) => {
+      await getProjectStore().remove(id);
+    },
+    onSuccess: () => void refresh(),
   });
 
   if (!isCreativeStudioEnabled()) return <UnavailableState />;
 
   const projects = projectsQuery.data ?? [];
   const storageBlocked = projectsQuery.isSuccess && !getProjectStore().persistent;
+
+  async function handleImport(file: File) {
+    const result = await readProjectFile(file);
+    if (!result.ok || !result.document) {
+      setNotice(result.error ?? t('studio.importFailed'));
+      return;
+    }
+    createProject.mutate({
+      title: result.document.title,
+      document: result.document,
+    });
+  }
 
   return (
     <>
@@ -79,10 +121,19 @@ export function StudioProjectsPage() {
               {t('studio.intro')}
             </p>
           </div>
-          <Button onClick={() => setDialogOpen(true)} className="shrink-0">
-            <Plus className="size-4" aria-hidden="true" />
-            {t('studio.newDesign')}
-          </Button>
+          <div className="flex flex-wrap gap-2">
+            <Button variant="outline" asChild>
+              <Link to="/studio/templates">{t('studio.browseTemplates')}</Link>
+            </Button>
+            <Button variant="outline" onClick={() => fileInput.current?.click()}>
+              <Upload className="size-4" aria-hidden="true" />
+              {t('studio.import')}
+            </Button>
+            <Button onClick={() => setDialogOpen(true)}>
+              <Plus className="size-4" aria-hidden="true" />
+              {t('studio.newDesign')}
+            </Button>
+          </div>
         </div>
 
         {storageBlocked ? (
@@ -134,7 +185,7 @@ export function StudioProjectsPage() {
               <div className="mt-2 flex flex-wrap justify-center gap-2">
                 <Button onClick={() => setDialogOpen(true)}>{t('studio.startBlank')}</Button>
                 <Button variant="outline" asChild>
-                  <a href="#templates">{t('studio.browseTemplates')}</a>
+                  <Link to="/studio/templates">{t('studio.browseTemplates')}</Link>
                 </Button>
               </div>
             </Card>
@@ -142,7 +193,21 @@ export function StudioProjectsPage() {
             <ul className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {projects.map((project) => (
                 <li key={project.id}>
-                  <ProjectCard project={project} />
+                  <ProjectCard
+                    project={project}
+                    busy={duplicate.isPending || rename.isPending || remove.isPending}
+                    onRename={setRenameTarget}
+                    onDuplicate={(target) => duplicate.mutate(target)}
+                    onDelete={setDeleteTarget}
+                    onExport={(target) => {
+                      void getProjectStore()
+                        .get(target.id)
+                        .then((record) => {
+                          if (record) exportProjectFile(record.title, record.document);
+                        })
+                        .catch(() => setNotice(t('studio.exportFailed')));
+                    }}
+                  />
                 </li>
               ))}
             </ul>
@@ -153,9 +218,68 @@ export function StudioProjectsPage() {
       <NewDesignDialog
         open={dialogOpen}
         onOpenChange={setDialogOpen}
-        onCreate={(document) => createProject.mutate(document)}
+        onCreate={(document: CreativeDocument) =>
+          createProject.mutate({ title: document.title, document })
+        }
         pending={createProject.isPending}
       />
+
+      <RenameDialog
+        open={renameTarget !== null}
+        title={t('studio.rename')}
+        initialValue={renameTarget?.title ?? ''}
+        onOpenChange={(open) => {
+          if (!open) setRenameTarget(null);
+        }}
+        onRename={(title) => {
+          if (renameTarget) rename.mutate({ id: renameTarget.id, title });
+          setRenameTarget(null);
+        }}
+      />
+
+      <ConfirmDialog
+        open={deleteTarget !== null}
+        title={t('studio.deleteTitle')}
+        body={t('studio.deleteBody')}
+        confirmLabel={t('studio.remove')}
+        destructive
+        pending={remove.isPending}
+        onOpenChange={(open) => {
+          if (!open) setDeleteTarget(null);
+        }}
+        onConfirm={() => {
+          if (deleteTarget) remove.mutate(deleteTarget.id);
+          setDeleteTarget(null);
+        }}
+      />
+
+      <input
+        ref={fileInput}
+        type="file"
+        accept=".qbdesign,application/json"
+        className="sr-only"
+        onChange={(event) => {
+          const file = event.target.files?.[0];
+          if (file) void handleImport(file);
+          event.target.value = '';
+        }}
+      />
+
+      {notice ? (
+        <div
+          role="status"
+          className="fixed bottom-4 left-1/2 z-50 -translate-x-1/2 rounded-card border border-border bg-surface px-4 py-2 text-sm text-ink shadow-elev-2"
+        >
+          {notice}
+          <button
+            type="button"
+            onClick={() => setNotice(null)}
+            className="ml-3 text-xs font-medium text-primary hover:underline"
+          >
+            {t('studio.close')}
+          </button>
+        </div>
+      ) : null}
     </>
   );
 }

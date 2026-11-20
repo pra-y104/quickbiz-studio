@@ -125,7 +125,7 @@
     "exportTransparent": "Transparent background",
     "exportProgress": "Preparing export…",
     "exportDone": "Export ready.",
-    "exportFailed": "The export failed. Try a smaller size.",
+    "exportFailed": "The export could not be created.",
     "exportPdfNote": "PDF exports are image-based: the text is not selectable and the file is larger than a vector PDF.",
     "exportFilename": "File name",
     "close": "Close",
@@ -158,6 +158,28 @@
     "backward": "Send backward",
     "delete": "Delete",
     "position": "Position",
-    "aiTextUnavailable": "AI writing assistance is not available yet."
+    "aiTextUnavailable": "AI writing assistance is not available yet.",
+    "open": "Open",
+    "rename": "Rename",
+    "save": "Save",
+    "edited": "Edited",
+    "import": "Import",
+    "importFailed": "That file could not be imported.",
+    "deleteTitle": "Delete this design?",
+    "deleteBody": "This removes the design from this browser. It cannot be undone. Export a project file first if you want to keep it.",
+    "useTemplate": "Use this template",
+    "category": {
+      "flyer": "Flyers",
+      "poster": "Posters",
+      "social": "Social posts",
+      "story": "Stories",
+      "business-card": "Business cards",
+      "invitation": "Invitations",
+      "event": "Events",
+      "banner": "Banners"
+    },
+    "moveForward": "Bring forward",
+    "moveBackward": "Send backward",
+    "keyboardHelp": "Keyboard: arrow keys move the selection, shift and arrow moves ten, Delete removes, Control or Command D duplicates, Control or Command Z undoes and Control or Command Shift Z redoes."
   }
 }

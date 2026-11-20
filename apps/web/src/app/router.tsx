@@ -86,6 +86,9 @@ const DashboardPage = lazy(() =>
 const StudioProjectsPage = lazy(() =>
   import('../pages/creative/projects').then((module) => ({ default: module.StudioProjectsPage })),
 );
+const StudioTemplatesPage = lazy(() =>
+  import('../pages/creative/templates').then((module) => ({ default: module.StudioTemplatesPage })),
+);
 const StudioPage = lazy(() =>
   import('../pages/creative/studio').then((module) => ({ default: module.StudioPage })),
 );
@@ -164,6 +167,7 @@ export const router = createBrowserRouter([
   // Creative Studio. Local-first and account-free: the editor writes to this
   // browser only, so it sits outside the auth guard like the ordinary tools.
   { path: '/studio', element: withShell(UtilityShell, <StudioProjectsPage />) },
+  { path: '/studio/templates', element: withShell(UtilityShell, <StudioTemplatesPage />) },
   // The editor owns its chrome, so it renders without the marketing shell.
   { path: '/studio/:projectId', element: withSuspense(<StudioPage />) },
 

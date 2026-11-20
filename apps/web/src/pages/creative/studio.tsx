@@ -10,6 +10,7 @@ import { ToolRail } from '../../components/creative/tool-rail';
 import { LayersPanel } from '../../components/creative/layers-panel';
 import { ExportDialog } from '../../components/creative/export-dialog';
 import { MobileInspector } from '../../components/creative/mobile-inspector';
+import { ConfirmDialog } from '../../components/creative/dialogs';
 import { AiAssistDialog } from '../../components/creative/ai-assist-dialog';
 import { PropertiesPanel } from '../../components/creative/properties-panel';
 import { Button } from '../../components/ui/button';
@@ -109,6 +110,8 @@ function EditorView({
   const [notice, setNotice] = useState<string | null>(null);
   const [exportOpen, setExportOpen] = useState(false);
   const [aiPanel, setAiPanel] = useState<'text' | 'image' | null>(null);
+  const [editingTextId, setEditingTextId] = useState<string | null>(null);
+  const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
   const fileInput = useRef<HTMLInputElement | null>(null);
 
   const selected = editor.selectedNodes[0] ?? null;
@@ -117,6 +120,26 @@ function EditorView({
     setNotice(message);
     window.setTimeout(() => setNotice((current) => (current === message ? null : current)), 4_000);
   }, []);
+
+  const requestDelete = useCallback(() => {
+    const count = editor.selection.length;
+    if (count === 0) return;
+
+    const locked = editor.selectedNodes.filter((node) => node.locked).length;
+    if (locked === count) {
+      showNotice(t('studio.lockedDelete'));
+      return;
+    }
+
+    // One layer is recoverable with undo; several are not obviously intentional.
+    if (count > 1) {
+      setConfirmDeleteOpen(true);
+      return;
+    }
+
+    const removed = editor.deleteSelection();
+    if (removed === 0) showNotice(t('studio.lockedDelete'));
+  }, [editor, showNotice, t]);
 
   const handleUpload = async (file: File) => {
     try {
@@ -170,7 +193,7 @@ function EditorView({
       }
       if (event.key === 'Delete' || event.key === 'Backspace') {
         event.preventDefault();
-        editor.deleteSelection();
+        requestDelete();
         return;
       }
       if (event.key.startsWith('Arrow') && editor.selection.length > 0) {
@@ -187,7 +210,7 @@ function EditorView({
 
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
-  }, [editor]);
+  }, [editor, requestDelete]);
 
   const actions = (
     <>
@@ -229,7 +252,7 @@ function EditorView({
         variant="ghost"
         size="sm"
         className="hidden sm:inline-flex"
-        onClick={editor.deleteSelection}
+        onClick={requestDelete}
         disabled={editor.selection.length === 0}
         aria-label={t('studio.remove')}
       >
@@ -285,6 +308,13 @@ function EditorView({
             onBeginGesture={editor.beginGesture}
             onEndGesture={editor.endGesture}
             onCanvasTap={handleCanvasTap}
+            editingTextId={editingTextId}
+            onRequestTextEdit={(id) => {
+              editor.select([id]);
+              setEditingTextId(id);
+            }}
+            onTextEditCommit={() => setEditingTextId(null)}
+            onTextEditCancel={() => setEditingTextId(null)}
           />
         }
         inspector={
@@ -308,66 +338,166 @@ function EditorView({
                 node={selected}
                 onChange={editor.updateSelected}
                 onDuplicate={editor.duplicateSelection}
-                onDelete={editor.deleteSelection}
+                onDelete={requestDelete}
               />
             </div>
           </div>
         }
         mobileBar={
-          <div className="flex flex-wrap items-center justify-between gap-1">
-            <div className="flex flex-wrap items-center gap-1">
-              <Button
-                variant={tool === 'select' ? 'primary' : 'ghost'}
-                size="sm"
-                onClick={() => setTool('select')}
-                aria-pressed={tool === 'select'}
-              >
-                {t('studio.select')}
-              </Button>
-              <Button variant="ghost" size="sm" onClick={() => editor.addText()}>
-                {t('studio.text')}
-              </Button>
-              <Button variant="ghost" size="sm" onClick={() => editor.addShape('rect')}>
-                {t('studio.shapes')}
-              </Button>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => fileInput.current?.click()}
-                aria-label={t('studio.upload')}
-              >
-                <Upload className="size-4" aria-hidden="true" />
-              </Button>
-            </div>
-            <div className="flex items-center gap-1">
-              <Button
-                variant="ghost"
-                size="sm"
-                aria-label={t('studio.zoomOut')}
-                onClick={() => setZoomFactor((value) => Math.max(0.5, value - 0.25))}
-              >
-                <ZoomOut className="size-4" aria-hidden="true" />
-              </Button>
-              <Button
-                variant="ghost"
-                size="sm"
-                aria-label={t('studio.zoomIn')}
-                onClick={() => setZoomFactor((value) => Math.min(4, value + 0.25))}
-              >
-                <ZoomIn className="size-4" aria-hidden="true" />
-              </Button>
-              <MobileInspector
-                nodes={editor.document.nodes}
-                selection={editor.selection}
-                selected={selected}
-                onSelect={(id, additive) => editor.select([id], additive)}
-                onChange={editor.updateSelected}
-                onDuplicate={editor.duplicateSelection}
-                onDelete={editor.deleteSelection}
-                onReorder={(id, direction) => editor.reorder(id, direction)}
-                onToggleHidden={editor.toggleHidden}
-                onToggleLocked={editor.toggleLocked}
-              />
+          <div className="flex flex-col gap-1">
+            {selected && selected.type === 'text' ? (
+              <div className="flex items-center gap-1 overflow-x-auto pb-1">
+                <Button
+                  variant="primary"
+                  size="sm"
+                  className="shrink-0"
+                  onClick={() => setEditingTextId(selected.id)}
+                >
+                  {t('studio.editText')}
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="shrink-0"
+                  aria-pressed={selected.italic}
+                  aria-label={t('studio.italic')}
+                  onClick={() => editor.updateSelected({ italic: !selected.italic })}
+                >
+                  <em>I</em>
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="shrink-0"
+                  aria-pressed={selected.fontWeight >= 700}
+                  aria-label={t('studio.bold')}
+                  onClick={() =>
+                    editor.updateSelected({ fontWeight: selected.fontWeight >= 700 ? 400 : 700 })
+                  }
+                >
+                  <strong>B</strong>
+                </Button>
+                <select
+                  aria-label={t('studio.textAlign')}
+                  value={selected.align}
+                  onChange={(event) =>
+                    editor.updateSelected({
+                      align: event.target.value as 'left' | 'center' | 'right',
+                    })
+                  }
+                  className="h-9 shrink-0 rounded-lg border border-border-strong bg-surface px-2 text-sm text-ink"
+                >
+                  <option value="left">{t('studio.alignLeft')}</option>
+                  <option value="center">{t('studio.alignCenter')}</option>
+                  <option value="right">{t('studio.alignRight')}</option>
+                </select>
+                <input
+                  type="color"
+                  aria-label={t('studio.color')}
+                  value={selected.color}
+                  onChange={(event) =>
+                    editor.updateSelected({ color: event.target.value.toUpperCase() })
+                  }
+                  className="size-9 shrink-0 rounded-md border border-border-strong bg-surface p-0.5"
+                />
+              </div>
+            ) : null}
+
+            <div className="flex flex-wrap items-center justify-between gap-1">
+              <div className="flex flex-wrap items-center gap-1">
+                <Button
+                  variant={tool === 'select' ? 'primary' : 'ghost'}
+                  size="sm"
+                  onClick={() => setTool('select')}
+                  aria-pressed={tool === 'select'}
+                >
+                  {t('studio.select')}
+                </Button>
+                <Button variant="ghost" size="sm" onClick={() => editor.addText()}>
+                  {t('studio.text')}
+                </Button>
+                <Button variant="ghost" size="sm" onClick={() => editor.addShape('rect')}>
+                  {t('studio.shapes')}
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => fileInput.current?.click()}
+                  aria-label={t('studio.upload')}
+                >
+                  <Upload className="size-4" aria-hidden="true" />
+                </Button>
+              </div>
+
+              <div className="flex items-center gap-1">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  aria-label={t('studio.undo')}
+                  disabled={!editor.canUndo}
+                  onClick={editor.undo}
+                >
+                  <Undo2 className="size-4" aria-hidden="true" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  aria-label={t('studio.redo')}
+                  disabled={!editor.canRedo}
+                  onClick={editor.redo}
+                >
+                  <Redo2 className="size-4" aria-hidden="true" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  aria-label={t('studio.duplicate')}
+                  disabled={editor.selection.length === 0}
+                  onClick={editor.duplicateSelection}
+                >
+                  <Copy className="size-4" aria-hidden="true" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  aria-label={t('studio.remove')}
+                  disabled={editor.selection.length === 0}
+                  onClick={requestDelete}
+                >
+                  <Trash2 className="size-4" aria-hidden="true" />
+                </Button>
+              </div>
+
+              <div className="flex items-center gap-1">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  aria-label={t('studio.zoomOut')}
+                  onClick={() => setZoomFactor((value) => Math.max(0.5, value - 0.25))}
+                >
+                  <ZoomOut className="size-4" aria-hidden="true" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  aria-label={t('studio.zoomIn')}
+                  onClick={() => setZoomFactor((value) => Math.min(4, value + 0.25))}
+                >
+                  <ZoomIn className="size-4" aria-hidden="true" />
+                </Button>
+                <MobileInspector
+                  nodes={editor.document.nodes}
+                  selection={editor.selection}
+                  selected={selected}
+                  onSelect={(id, additive) => editor.select([id], additive)}
+                  onChange={editor.updateSelected}
+                  onDuplicate={editor.duplicateSelection}
+                  onDelete={requestDelete}
+                  onReorder={(id, direction) => editor.reorder(id, direction)}
+                  onToggleHidden={editor.toggleHidden}
+                  onToggleLocked={editor.toggleLocked}
+                />
+              </div>
             </div>
           </div>
         }
@@ -394,6 +524,19 @@ function EditorView({
         mode={aiPanel}
         onOpenChange={(next) => {
           if (!next) setAiPanel(null);
+        }}
+      />
+
+      <ConfirmDialog
+        open={confirmDeleteOpen}
+        title={t('studio.deleteManyTitle')}
+        body={t('studio.deleteManyBody')}
+        confirmLabel={t('studio.remove')}
+        destructive
+        onOpenChange={setConfirmDeleteOpen}
+        onConfirm={() => {
+          setConfirmDeleteOpen(false);
+          if (editor.deleteSelection() === 0) showNotice(t('studio.lockedDelete'));
         }}
       />
 

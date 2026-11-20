@@ -103,12 +103,14 @@ export interface StudioEditor {
   addShape(shape: CreativeShapeKind): string;
   addImage(asset: CreativeAssetRef): string;
   duplicateSelection(): void;
-  deleteSelection(): void;
+  /** Delete the current selection; returns how many layers were removed. */
+  deleteSelection(): number;
   /** Toggle a specific layer, or the whole selection when no id is given. */
   toggleLocked(id?: string): void;
   toggleHidden(id?: string): void;
   /** Delete specific layers. Locked layers are never removed. */
-  deleteNodes(ids: readonly string[]): void;
+  /** Delete specific layers; returns how many were removed. */
+  deleteNodes(ids: readonly string[]): number;
   reorder(id: string, direction: 'front' | 'back' | 'forward' | 'backward'): void;
   align(mode: AlignMode): void;
   nudge(dx: number, dy: number): void;
@@ -241,47 +243,69 @@ export function useStudioEditor(options: UseStudioEditorOptions): StudioEditor {
   }, [broadcastChannelName, onRemoteSave]);
 
   const saveTimer = useRef<number | null>(null);
-  const pendingSave = useRef<CreativeDocument | null>(null);
+  const pendingSave = useRef<{ snapshot: CreativeDocument; revision: number } | null>(null);
+
+  // Save ordering. Autosave is asynchronous (it reads the existing record and renders
+  // a thumbnail), so two saves can otherwise finish out of order and an older
+  // snapshot can overwrite a newer one. Writes are chained, and a queued write that is
+  // older than the newest accepted revision is dropped instead of being written.
+  const revisionRef = useRef(0);
+  const queuedRevisionRef = useRef(0);
+  const saveChainRef = useRef<Promise<void>>(Promise.resolve());
 
   const persist = useCallback(
-    async (snapshot: CreativeDocument) => {
-      setSaveState('saving');
-      try {
-        const existing = await store.get(projectId);
+    (snapshot: CreativeDocument, savedRevision: number) => {
+      const run = async () => {
+        if (savedRevision < queuedRevisionRef.current) return;
 
-        let thumbnail = existing?.thumbnail;
-        if (createThumbnail) {
-          const generated = await createThumbnail(snapshot);
-          if (generated !== undefined) thumbnail = generated;
+        setSaveState('saving');
+        try {
+          const existing = await store.get(projectId);
+
+          let thumbnail = existing?.thumbnail;
+          if (createThumbnail) {
+            const generated = await createThumbnail(snapshot);
+            if (generated !== undefined) thumbnail = generated;
+          }
+
+          const record: CreativeProjectRecord = {
+            id: projectId,
+            title: snapshot.title,
+            document: snapshot,
+            ...(thumbnail === undefined ? {} : { thumbnail }),
+            createdAt: existing?.createdAt ?? snapshot.createdAt,
+            updatedAt: new Date().toISOString(),
+          };
+          await store.put(record);
+          announce(projectId);
+
+          // Only the newest revision may report success.
+          if (savedRevision === revisionRef.current) setSaveState('saved');
+        } catch {
+          if (savedRevision === revisionRef.current) setSaveState('error');
         }
+      };
 
-        const record: CreativeProjectRecord = {
-          id: projectId,
-          title: snapshot.title,
-          document: snapshot,
-          ...(thumbnail === undefined ? {} : { thumbnail }),
-          createdAt: existing?.createdAt ?? snapshot.createdAt,
-          updatedAt: new Date().toISOString(),
-        };
-        await store.put(record);
-        announce(projectId);
-        setSaveState('saved');
-      } catch {
-        setSaveState('error');
-      }
+      // Chain onto the previous write; a rejection must not break the chain.
+      const next = saveChainRef.current.then(run, run);
+      saveChainRef.current = next.catch(() => undefined);
+      return next;
     },
     [announce, createThumbnail, projectId, store],
   );
 
   const scheduleSave = useCallback(
-    (snapshot: CreativeDocument) => {
-      pendingSave.current = snapshot;
+    (snapshot: CreativeDocument, savedRevision: number) => {
+      queuedRevisionRef.current = Math.max(queuedRevisionRef.current, savedRevision);
+      pendingSave.current = { snapshot, revision: savedRevision };
+      setSaveState('saving');
+
       if (saveTimer.current !== null) window.clearTimeout(saveTimer.current);
       saveTimer.current = window.setTimeout(() => {
         saveTimer.current = null;
         const pending = pendingSave.current;
         pendingSave.current = null;
-        if (pending) void persist(pending);
+        if (pending) void persist(pending.snapshot, pending.revision);
       }, autosaveDelay);
     },
     [autosaveDelay, persist],
@@ -293,7 +317,7 @@ export function useStudioEditor(options: UseStudioEditorOptions): StudioEditor {
         window.clearTimeout(saveTimer.current);
         const pending = pendingSave.current;
         pendingSave.current = null;
-        if (pending) void persist(pending);
+        if (pending) void persist(pending.snapshot, pending.revision);
       }
     };
   }, [persist]);
@@ -309,7 +333,7 @@ export function useStudioEditor(options: UseStudioEditorOptions): StudioEditor {
       }
       const pending = pendingSave.current;
       pendingSave.current = null;
-      if (pending) void persist(pending);
+      if (pending) void persist(pending.snapshot, pending.revision);
     };
 
     const onVisibility = () => {
@@ -335,6 +359,8 @@ export function useStudioEditor(options: UseStudioEditorOptions): StudioEditor {
 
     historyRef.current.reset(initial);
     documentRef.current = initial;
+    revisionRef.current += 1;
+    queuedRevisionRef.current = revisionRef.current;
     setDocument(initial);
     setSelection([]);
     setHistoryState({ canUndo: false, canRedo: false });
@@ -347,6 +373,7 @@ export function useStudioEditor(options: UseStudioEditorOptions): StudioEditor {
       current.commit(next, { key: commitOptions.historyKey });
       const value = current.current;
       documentRef.current = value;
+      revisionRef.current += 1;
       setHistoryState({ canUndo: current.canUndo, canRedo: current.canRedo });
       setDocument(value);
       setRevision((count) => count + 1);
@@ -355,8 +382,7 @@ export function useStudioEditor(options: UseStudioEditorOptions): StudioEditor {
         const kept = ids.filter((id) => present.has(id));
         return kept.length === ids.length ? ids : kept;
       });
-      setSaveState('saving');
-      scheduleSave(value);
+      scheduleSave(value, revisionRef.current);
     },
     [scheduleSave],
   );
@@ -377,22 +403,22 @@ export function useStudioEditor(options: UseStudioEditorOptions): StudioEditor {
     const value = historyRef.current.undo();
     if (!value) return;
     documentRef.current = value;
+    revisionRef.current += 1;
     setHistoryState({ canUndo: historyRef.current.canUndo, canRedo: historyRef.current.canRedo });
     setDocument(value);
     setRevision((count) => count + 1);
-    setSaveState('saving');
-    scheduleSave(value);
+    scheduleSave(value, revisionRef.current);
   }, [scheduleSave]);
 
   const redo = useCallback(() => {
     const value = historyRef.current.redo();
     if (!value) return;
     documentRef.current = value;
+    revisionRef.current += 1;
     setHistoryState({ canUndo: historyRef.current.canUndo, canRedo: historyRef.current.canRedo });
     setDocument(value);
     setRevision((count) => count + 1);
-    setSaveState('saving');
-    scheduleSave(value);
+    scheduleSave(value, revisionRef.current);
   }, [scheduleSave]);
 
   const saveNow = useCallback(async () => {
@@ -400,9 +426,10 @@ export function useStudioEditor(options: UseStudioEditorOptions): StudioEditor {
       window.clearTimeout(saveTimer.current);
       saveTimer.current = null;
     }
-    const pending = pendingSave.current ?? documentRef.current;
+    const pending = pendingSave.current;
     pendingSave.current = null;
-    await persist(pending);
+    queuedRevisionRef.current = Math.max(queuedRevisionRef.current, revisionRef.current);
+    await persist(pending?.snapshot ?? documentRef.current, revisionRef.current);
   }, [persist]);
 
   const addText = useCallback(
@@ -492,12 +519,6 @@ export function useStudioEditor(options: UseStudioEditorOptions): StudioEditor {
     setSelection(result.createdIds);
   }, [commit, selection]);
 
-  const deleteSelection = useCallback(() => {
-    if (selection.length === 0) return;
-    commit(removeNodes(documentRef.current, selection));
-    setSelection([]);
-  }, [commit, selection]);
-
   const toggleLocked = useCallback(
     (id?: string) => {
       const targets = new Set(id === undefined ? selection : [id]);
@@ -524,19 +545,36 @@ export function useStudioEditor(options: UseStudioEditorOptions): StudioEditor {
     [commit, selection],
   );
 
+  /**
+   * Delete specific layers.
+   *
+   * Returns the number of layers actually removed. Locked layers are protected, so a
+   * caller can tell the difference between "deleted" and "refused because locked".
+   */
   const deleteNodes = useCallback(
     (ids: readonly string[]) => {
-      if (ids.length === 0) return;
-      const next = removeNodes(documentRef.current, ids);
-      if (next === documentRef.current) return;
+      if (ids.length === 0) return 0;
+
+      const current = documentRef.current;
+      const targets = new Set(ids);
+      const removable = current.nodes.filter((node) => targets.has(node.id) && !node.locked);
+
+      if (removable.length === 0) return 0;
+
+      const next = removeNodes(current, ids);
+      if (next === current) return 0;
+
       commit(next);
-      setSelection((current) => {
-        const removing = new Set(ids);
-        return current.filter((id) => !removing.has(id));
-      });
+      setSelection((selected) => selected.filter((id) => !targets.has(id)));
+      return removable.length;
     },
     [commit],
   );
+
+  const deleteSelection = useCallback(() => {
+    if (selection.length === 0) return 0;
+    return deleteNodes(selection);
+  }, [deleteNodes, selection]);
 
   const reorder = useCallback(
     (id: string, direction: 'front' | 'back' | 'forward' | 'backward') => {

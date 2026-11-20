@@ -42,10 +42,18 @@ export interface RenderOptions {
    * node at any zoom, matching the stage's hit test exactly.
    */
   readonly selectionHandleOffset?: number;
+  /**
+   * Outline width and handle size in *document* pixels. Callers pass
+   * `screenPixels / scale` so the selection stays the same apparent size at any
+   * zoom instead of shrinking to a hairline on a phone.
+   */
+  readonly selectionOutlineWidth?: number;
+  readonly selectionHandleSize?: number;
 }
 
 const DEFAULT_SELECTION_COLOR = '#6741E8';
-const HANDLE_SIZE = 9;
+const DEFAULT_HANDLE_SIZE = 9;
+const DEFAULT_OUTLINE_WIDTH = 1.5;
 
 function parseColor(color: CreativeColor): string {
   return color;
@@ -366,6 +374,8 @@ function drawSelection(
   node: CreativeNode,
   color: string,
   offset: number,
+  handleSize: number,
+  outlineWidth: number,
 ): void {
   const centerX = node.x + node.width / 2;
   const centerY = node.y + node.height / 2;
@@ -376,7 +386,7 @@ function drawSelection(
   ctx.translate(-centerX, -centerY);
 
   ctx.strokeStyle = color;
-  ctx.lineWidth = 1.5;
+  ctx.lineWidth = outlineWidth;
   ctx.strokeRect(node.x, node.y, node.width, node.height);
 
   const positions: ReadonlyArray<readonly [number, number]> = [
@@ -391,10 +401,10 @@ function drawSelection(
   ];
 
   ctx.fillStyle = '#FFFFFF';
-  ctx.lineWidth = 1.5;
+  ctx.lineWidth = outlineWidth;
   for (const [x, y] of positions) {
     ctx.beginPath();
-    ctx.rect(x - HANDLE_SIZE / 2, y - HANDLE_SIZE / 2, HANDLE_SIZE, HANDLE_SIZE);
+    ctx.rect(x - handleSize / 2, y - handleSize / 2, handleSize, handleSize);
     ctx.fill();
     ctx.stroke();
   }
@@ -404,13 +414,13 @@ function drawSelection(
   const rotateHandle = rotateHandlePoint(node, offset);
   ctx.save();
   ctx.strokeStyle = color;
-  ctx.lineWidth = 1.5;
+  ctx.lineWidth = outlineWidth;
   ctx.beginPath();
   ctx.moveTo(centerX, centerY);
   ctx.lineTo(rotateHandle.x, rotateHandle.y);
   ctx.stroke();
   ctx.beginPath();
-  ctx.arc(rotateHandle.x, rotateHandle.y, HANDLE_SIZE / 2 + 1, 0, Math.PI * 2);
+  ctx.arc(rotateHandle.x, rotateHandle.y, handleSize / 2 + 1, 0, Math.PI * 2);
   ctx.fillStyle = '#FFFFFF';
   ctx.fill();
   ctx.stroke();
@@ -442,7 +452,14 @@ export function renderDocument(
     const color = options.selectionColor ?? DEFAULT_SELECTION_COLOR;
     for (const node of document.nodes) {
       if (options.selection.includes(node.id)) {
-        drawSelection(ctx, node, color, options.selectionHandleOffset ?? 28);
+        drawSelection(
+          ctx,
+          node,
+          color,
+          options.selectionHandleOffset ?? 28,
+          options.selectionHandleSize ?? DEFAULT_HANDLE_SIZE,
+          options.selectionOutlineWidth ?? DEFAULT_OUTLINE_WIDTH,
+        );
       }
     }
   }

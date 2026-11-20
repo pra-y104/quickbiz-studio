@@ -14,6 +14,7 @@ import {
   type ResizeHandle,
 } from '../../lib/creative/engine/geometry';
 import { renderDocument, type RenderAsset } from '../../lib/creative/render/render-document';
+import { TextEditorOverlay } from './text-editor-overlay';
 import {
   clampPan,
   clampScale,
@@ -84,6 +85,11 @@ export interface CanvasStageProps {
   readonly onEndGesture: () => void;
   readonly onCanvasTap?: (point: Point) => void;
   readonly onEditText?: (id: string) => void;
+  /** Currently edited text node, owned by the page so a toolbar can open it. */
+  readonly editingTextId?: string | null;
+  readonly onRequestTextEdit?: (id: string) => void;
+  readonly onTextEditCommit?: (id: string, text: string) => void;
+  readonly onTextEditCancel?: () => void;
 }
 
 function toDocPoint(
@@ -129,6 +135,10 @@ export function CanvasStage(props: CanvasStageProps) {
     onEndGesture,
     onCanvasTap,
     onEditText,
+    editingTextId,
+    onRequestTextEdit,
+    onTextEditCommit,
+    onTextEditCancel,
   } = props;
 
   const containerRef = useRef<HTMLDivElement | null>(null);
@@ -226,6 +236,9 @@ export function CanvasStage(props: CanvasStageProps) {
       selection,
       showSelection: interactionRef.current?.mode !== 'marquee' && pinchRef.current === null,
       selectionHandleOffset: 28 / scale,
+      // Constant apparent size: 2 px outline and 10 px handles at any zoom.
+      selectionOutlineWidth: 2 / scale,
+      selectionHandleSize: 10 / scale,
     });
 
     if (marquee) {
@@ -540,8 +553,54 @@ export function CanvasStage(props: CanvasStageProps) {
     return () => canvas.removeEventListener('wheel', listener);
   }, [handleWheel]);
 
+  const editingNode =
+    editingTextId === undefined || editingTextId === null
+      ? null
+      : ((active.nodes.find((node) => node.id === editingTextId && node.type === 'text') as
+          Extract<CreativeNode, { type: 'text' }> | undefined) ?? null);
+
+  const selectionLabel =
+    active.nodes.filter((node) => selection.includes(node.id)).length > 1
+      ? `${active.nodes.filter((node) => selection.includes(node.id)).length} selected`
+      : (active.nodes.find((node) => node.id === selection[0])?.name ?? null);
+
   return (
     <div ref={containerRef} className="relative size-full overflow-hidden">
+      {editingNode ? (
+        <TextEditorOverlay
+          node={editingNode}
+          scale={scale}
+          canvasRef={canvasRef}
+          onPreview={(text) => {
+            const base = draftRef.current ?? document;
+            setDraft({
+              ...base,
+              nodes: base.nodes.map((node) =>
+                node.id === editingNode.id && node.type === 'text' ? { ...node, text } : node,
+              ),
+            });
+          }}
+          onCommit={(text) => {
+            const base = draftRef.current ?? document;
+            const next = {
+              ...base,
+              nodes: base.nodes.map((node) =>
+                node.id === editingNode.id && node.type === 'text' ? { ...node, text } : node,
+              ),
+            };
+            draftRef.current = null;
+            setDraftState(null);
+            onTextEditCommit?.(editingNode.id, text);
+            if (next !== document) onCommit(next, `text:${editingNode.id}`);
+          }}
+          onCancel={() => {
+            draftRef.current = null;
+            setDraftState(null);
+            onTextEditCancel?.();
+          }}
+        />
+      ) : null}
+
       <div className="absolute inset-0 flex items-center justify-center">
         <canvas
           ref={canvasRef}
@@ -559,11 +618,23 @@ export function CanvasStage(props: CanvasStageProps) {
           onDoubleClick={(event) => {
             if (selection.length !== 1) return;
             const node = document.nodes.find((candidate) => candidate.id === selection[0]);
-            if (node?.type === 'text') onEditText?.(node.id);
+            if (node?.type === 'text') {
+              onRequestTextEdit?.(node.id);
+              onEditText?.(node.id);
+            }
             event.preventDefault();
           }}
         />
       </div>
+
+      {selectionLabel && !editingNode ? (
+        <p
+          aria-live="polite"
+          className="pointer-events-none absolute left-1/2 top-2 max-w-[80%] -translate-x-1/2 truncate rounded-full bg-navy-900/90 px-3 py-1 text-[11px] font-medium text-white"
+        >
+          {selectionLabel}
+        </p>
+      ) : null}
     </div>
   );
 }

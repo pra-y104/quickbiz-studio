@@ -121,3 +121,17 @@ Rules:
 For each screen: screenshot light and dark on phone and desktop, then check
 hierarchy, type, colour, spacing, responsiveness, accessibility, states and copy.
 If a screen looks generic, it is not finished.
+
+## Brand mark
+
+The QuickBiz mark is a white bolt on a violet-to-blue tile, with the wordmark set as
+`QuickBiz` (semibold) and `Studio` (regular, muted) on one baseline.
+
+- Geometry lives in `apps/web/src/components/brand/logo.tsx` and is mirrored by
+  `apps/web/public/favicon.svg`.
+- Home-screen icons are generated from the same geometry by
+  `node scripts/generate-brand-icons.mjs`; do not hand-edit the PNGs.
+- The tile uses the brand gradient so the mark stays recognisable in both themes,
+  and the bolt has no thin details so it survives 16 px rendering.
+- Rejected direction: any circular mark with a handle, which reads as a magnifying
+  glass rather than a brand.

@@ -1,47 +1,62 @@
+/**
+ * Brand mark and wordmark.
+ *
+ * The mark is a bolt on a violet-to-blue tile: speed and completion, with no
+ * circular "lens" form that could be mistaken for a magnifying glass. The same
+ * geometry drives the favicon and the home-screen icons
+ * (`scripts/generate-brand-icons.mjs`), so the identity cannot drift between
+ * browser tab, header and installed app.
+ *
+ * The tile keeps the brand gradient so light and dark themes stay recognisable,
+ * and the bolt stays legible down to 16 px because it has no thin details.
+ */
+
 import { useId } from 'react';
 import { BRAND } from '@quickbiz/shared';
 import { cn } from '../../lib/cn';
 
 export interface LogoMarkProps {
-  className?: string;
+  readonly className?: string;
+  /** Monochrome variant for dark or single-colour contexts. */
+  readonly monochrome?: boolean;
 }
 
-/**
- * QuickBiz Studio monogram: a rounded tile with a violet-to-electric gradient and
- * a geometric "Q" aperture. The mark stays legible at 16px, which is why the
- * inner form is simplified rather than detailed.
- */
-export function LogoMark({ className }: LogoMarkProps) {
+/** Bolt path in a 48 × 48 box, shared with the icon generator. */
+export const BOLT_PATH = 'M28.5 6 14 26.5h7.6L19 42l15.5-21h-8.2z';
+
+export function LogoMark({ className, monochrome = false }: LogoMarkProps) {
   const gradientId = useId();
 
   return (
     <svg viewBox="0 0 48 48" className={cn('size-8', className)} role="img" aria-label={BRAND.name}>
-      <defs>
-        <linearGradient
-          id={gradientId}
-          x1="0"
-          y1="0"
-          x2="48"
-          y2="48"
-          gradientUnits="userSpaceOnUse"
-        >
-          <stop stopColor="#7C5CFF" />
-          <stop offset="1" stopColor="#2E8DFF" />
-        </linearGradient>
-      </defs>
-      <rect width="48" height="48" rx="12" fill={`url(#${gradientId})`} />
-      <path
-        d="M24 12a12 12 0 1 0 7.6 21.3l3.3 3.3a2.25 2.25 0 0 0 3.2-3.2l-3.3-3.3A12 12 0 0 0 24 12Zm0 4.5a7.5 7.5 0 1 1 0 15 7.5 7.5 0 0 1 0-15Z"
-        fill="#FFFFFF"
-        fillOpacity="0.96"
-      />
+      {monochrome ? (
+        <rect width="48" height="48" rx="12" fill="currentColor" />
+      ) : (
+        <>
+          <defs>
+            <linearGradient
+              id={gradientId}
+              x1="0"
+              y1="0"
+              x2="48"
+              y2="48"
+              gradientUnits="userSpaceOnUse"
+            >
+              <stop stopColor="#7C5CFF" />
+              <stop offset="1" stopColor="#2E8DFF" />
+            </linearGradient>
+          </defs>
+          <rect width="48" height="48" rx="12" fill={`url(#${gradientId})`} />
+        </>
+      )}
+      <path d={BOLT_PATH} fill={monochrome ? '#FFFFFF' : '#FFFFFF'} />
     </svg>
   );
 }
 
 export interface LogoProps {
-  className?: string;
-  showWordmark?: boolean;
+  readonly className?: string;
+  readonly showWordmark?: boolean;
 }
 
 export function Logo({ className, showWordmark = true }: LogoProps) {
@@ -49,11 +64,13 @@ export function Logo({ className, showWordmark = true }: LogoProps) {
     <span className={cn('inline-flex items-center gap-2.5', className)}>
       <LogoMark />
       {showWordmark ? (
-        <span className="text-[15px] font-semibold tracking-tight text-ink">
-          {BRAND.wordmark.primary}
-          {BRAND.wordmark.secondary ? (
-            <span className="font-normal text-ink-muted"> {BRAND.wordmark.secondary}</span>
-          ) : null}
+        <span className="inline-flex items-baseline gap-1.5">
+          <span className="text-[17px] font-semibold leading-none tracking-[-0.02em] text-ink">
+            {BRAND.wordmark.primary}
+          </span>
+          <span className="text-[17px] font-normal leading-none tracking-[-0.01em] text-ink-muted">
+            {BRAND.wordmark.secondary}
+          </span>
         </span>
       ) : null}
     </span>

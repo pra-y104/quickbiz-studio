@@ -35,6 +35,12 @@ export default tseslint.config(
     },
   },
   {
+    // Repository tooling runs in Node, not the browser or a worker.
+    name: 'quickbiz/scripts',
+    files: ['scripts/**/*.mjs'],
+    languageOptions: { globals: { ...globals.node } },
+  },
+  {
     name: 'quickbiz/api',
     files: ['apps/api/**/*.ts'],
     languageOptions: {

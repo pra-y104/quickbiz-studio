@@ -25,3 +25,15 @@ export function useAuth(): AuthContextValue {
   }
   return context;
 }
+
+/**
+ * Read the authentication state when a provider may be absent.
+ *
+ * Chrome that renders on both marketing and account pages (for example the mobile
+ * tab bar) must not crash when it is mounted outside `AuthProvider`, so this
+ * variant returns `null` instead of throwing. Components that require a session
+ * must keep using `useAuth`.
+ */
+export function useOptionalAuth(): AuthContextValue | null {
+  return useContext(AuthContext);
+}

@@ -19,5 +19,32 @@
   },
   "footer": {
     "rights": "All rights reserved."
+  },
+  "home": {
+    "finderEyebrow": "Find a tool",
+    "finderTitle": "What do you want to do?",
+    "finderDescription": "Search every tool, or browse by category. Free tools work instantly with no account.",
+    "finderPlaceholder": "Search tools, for example invoice, PDF or CV",
+    "finderCategories": "Tool categories",
+    "finderAll": "All",
+    "finderNoMatch": "No tools match that search. Try a different word or clear the filters.",
+    "finderClear": "Clear filters",
+    "finderEmpty": "No free tools are switched on in this build yet.",
+    "clear": "Clear search",
+    "browseTools": "Browse tools",
+    "mobileNav": "Primary",
+    "join": "Join",
+    "account": "Account",
+    "demo": {
+      "label": "Live example",
+      "paid": "Paid",
+      "billedTo": "Billed to",
+      "issued": "Issued",
+      "subtotal": "Subtotal",
+      "tax": "VAT (7.5%)",
+      "total": "Total",
+      "note": "Calculated live by the invoice maker’s own pricing code, with sample data. Open the tool to edit every line and export a PDF.",
+      "cta": "Open the invoice maker"
+    }
   }
 }

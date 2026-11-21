@@ -1,10 +1,9 @@
 import { ArrowRight, Sparkles } from 'lucide-react';
 import { Link } from 'react-router';
 import { HOMEPAGE } from '../../content/homepage';
-import { cn } from '../../lib/cn';
 import { Button } from '../ui/button';
 import { Container } from '../ui/container';
-import { HeroPreview } from './hero-preview';
+import { InvoiceDemo } from './invoice-demo';
 
 /**
  * Signature hero band. It intentionally keeps a deep navy surface in both
@@ -74,7 +73,7 @@ export function Hero() {
             </div>
           </div>
 
-          <HeroPreview className={cn('lg:pl-2')} />
+          <InvoiceDemo />
         </div>
       </Container>
     </section>

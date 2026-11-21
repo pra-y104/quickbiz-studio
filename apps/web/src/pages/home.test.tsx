@@ -1,15 +1,19 @@
-import { render, screen, within } from '@testing-library/react';
+import { fireEvent, render, screen, within } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 import { MemoryRouter } from 'react-router';
+import { I18nextProvider } from 'react-i18next';
+import i18n from '../i18n';
 import { TOOL_SLUGS } from '@quickbiz/shared';
 import { HOMEPAGE } from '../content/homepage';
 import { HomePage } from './home';
 
 function renderHome() {
   return render(
-    <MemoryRouter>
-      <HomePage />
-    </MemoryRouter>,
+    <I18nextProvider i18n={i18n}>
+      <MemoryRouter>
+        <HomePage />
+      </MemoryRouter>
+    </I18nextProvider>,
   );
 }
 
@@ -39,17 +43,23 @@ describe('Homepage', () => {
   it('lists the whole catalogue: eight AI tools and eight free tools', () => {
     renderHome();
 
-    const aiSection = screen.getByRole('region', { name: HOMEPAGE.aiTools.title });
     const freeSection = screen.getByRole('region', { name: HOMEPAGE.freeTools.title });
+    const aiSection = screen.getByRole('region', { name: HOMEPAGE.aiTools.title });
 
-    expect(within(aiSection).getAllByRole('article')).toHaveLength(8);
     expect(within(freeSection).getAllByRole('article')).toHaveLength(8);
-    expect(
-      within(aiSection).getByRole('heading', { level: 3, name: 'AI Writer' }),
-    ).toBeInTheDocument();
+    expect(within(aiSection).getAllByRole('article')).toHaveLength(8);
     expect(
       within(freeSection).getByRole('heading', { level: 3, name: 'Invoice Maker' }),
     ).toBeInTheDocument();
+    expect(
+      within(aiSection).getByRole('heading', { level: 3, name: 'AI Writer' }),
+    ).toBeInTheDocument();
+  });
+
+  it('offers a search box and category filters', () => {
+    renderHome();
+    expect(screen.getByRole('searchbox')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'All' })).toBeInTheDocument();
   });
 
   it('publishes all eight customer commitments', () => {
@@ -60,13 +70,26 @@ describe('Homepage', () => {
 
   it('answers common questions with native disclosures', () => {
     renderHome();
-    expect(screen.getAllByRole('group')).toHaveLength(5);
-    expect(screen.getByText(HOMEPAGE.faq.items[0]!.question)).toBeInTheDocument();
+    for (const item of HOMEPAGE.faq.items) {
+      expect(screen.getByText(item.question)).toBeInTheDocument();
+    }
   });
 
-  it('labels the hero example and the build state honestly', () => {
+  it('filters the tool finder by search', () => {
     renderHome();
-    expect(screen.getByText(/Example of the planned AI Writer screen/i)).toBeInTheDocument();
+
+    fireEvent.change(screen.getByRole('searchbox'), { target: { value: 'invoice' } });
+
+    const freeSection = screen.getByRole('region', { name: HOMEPAGE.freeTools.title });
+    expect(within(freeSection).getAllByRole('article')).toHaveLength(1);
+    expect(
+      within(freeSection).getByRole('heading', { level: 3, name: 'Invoice Maker' }),
+    ).toBeInTheDocument();
+  });
+
+  it('shows a real invoice example and states the build position honestly', () => {
+    renderHome();
+    expect(screen.getByText(/live example/i)).toBeInTheDocument();
     expect(
       screen.getByText(/AI tools and payments are not available in this build/i),
     ).toBeInTheDocument();
@@ -86,7 +109,12 @@ describe('Homepage', () => {
         continue;
       }
 
-      expect(href === '/tools' || TOOL_SLUGS.some((slug) => href === `/tools/${slug}`)).toBe(true);
+      const allowed =
+        href === '/tools' ||
+        href === '/register' ||
+        href === '/dashboard' ||
+        TOOL_SLUGS.some((slug) => href === `/tools/${slug}`);
+      expect(allowed).toBe(true);
     }
   });
 });

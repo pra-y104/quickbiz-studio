@@ -1,15 +1,19 @@
 import { render, screen } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 import { MemoryRouter } from 'react-router';
+import { I18nextProvider } from 'react-i18next';
+import i18n from '../../i18n';
 import { HomePage } from '../home';
 import { SiteFooter } from '../../components/layout/site-footer';
 
 function renderPage() {
   return render(
-    <MemoryRouter>
-      <HomePage />
-      <SiteFooter />
-    </MemoryRouter>,
+    <I18nextProvider i18n={i18n}>
+      <MemoryRouter>
+        <HomePage />
+        <SiteFooter />
+      </MemoryRouter>
+    </I18nextProvider>,
   );
 }
 
@@ -62,9 +66,10 @@ describe('T0 trust and customer-facing cleanup', () => {
 
   it('labels AI tools as planned rather than available', () => {
     renderPage();
-    const aiSection = screen.getByRole('region', { name: /writing that clears your desk/i });
-    expect(aiSection.textContent).toMatch(/planned|not available/i);
-    expect(aiSection.textContent).not.toMatch(/generate now|start generating/i);
+    const aiHeading = screen.getByRole('heading', { name: /writing that clears your desk/i });
+    const aiSection = aiHeading.closest('section');
+    expect(aiSection?.textContent ?? '').toMatch(/planned|not available/i);
+    expect(aiSection?.textContent ?? '').not.toMatch(/generate now|start generating/i);
   });
 
   it('states the real availability position plainly', () => {
@@ -72,7 +77,7 @@ describe('T0 trust and customer-facing cleanup', () => {
     expect(
       screen.getByText(/AI tools and payments are not available in this build/i),
     ).toBeInTheDocument();
-    expect(screen.getByText(/Example of the planned AI Writer screen/i)).toBeInTheDocument();
+    expect(screen.getByText(/live example/i)).toBeInTheDocument();
   });
 
   it('puts the free tools before the AI tools', () => {

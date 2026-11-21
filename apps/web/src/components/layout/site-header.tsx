@@ -18,8 +18,8 @@ const NAV_LINK_CLASS =
 
 function AnnouncementBar() {
   return (
-    <div className="bg-navy-950 text-white/60">
-      <Container className="flex items-center justify-center gap-2 py-2 text-center text-[11px] sm:text-xs">
+    <div className="bg-navy-950 text-white/75">
+      <Container className="flex items-center justify-center gap-2 py-2 text-center text-xs sm:text-sm">
         <span
           className="inline-flex size-1.5 shrink-0 rounded-full bg-brand-400"
           aria-hidden="true"

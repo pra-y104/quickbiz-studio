@@ -32,10 +32,10 @@ export function FinalCtaSection() {
             variant="outline"
             className="border-white/20 bg-white/[0.04] text-white hover:bg-white/10 hover:text-white"
           >
-            <a href="#pricing">See credit pricing</a>
+            <a href="#pricing">See pricing</a>
           </Button>
         </div>
-        <p className="mt-6 text-xs text-white/35">{content.note}</p>
+        <p className="mt-6 text-xs text-white/70">{content.note}</p>
       </Container>
     </section>
   );

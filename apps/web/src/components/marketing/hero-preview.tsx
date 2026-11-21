@@ -69,7 +69,7 @@ export function HeroPreview({ className }: { className?: string }) {
         </div>
       </div>
 
-      <figcaption className="mt-3 text-center text-[11px] text-white/35 sm:text-left">
+      <figcaption className="mt-3 text-center text-xs text-white/70 sm:text-left">
         {HOMEPAGE.hero.previewCaption}
       </figcaption>
     </figure>

@@ -1,4 +1,4 @@
-import { EyeOff, ListChecks, RotateCcw, Server, ShieldCheck, type LucideIcon } from 'lucide-react';
+import { Ban, EyeOff, ListChecks, Server, ShieldCheck, type LucideIcon } from 'lucide-react';
 import { HOMEPAGE } from '../../../content/homepage';
 import { Container } from '../../ui/container';
 import { SectionHeading } from '../section-heading';
@@ -6,7 +6,8 @@ import { SectionHeading } from '../section-heading';
 const TRUST_ICONS: Readonly<Record<string, LucideIcon>> = {
   server: Server,
   ledger: ListChecks,
-  refund: RotateCcw,
+  /** Neutral “not available” marker; deliberately not a refund symbol. */
+  unavailable: Ban,
   shield: ShieldCheck,
   privacy: EyeOff,
 };

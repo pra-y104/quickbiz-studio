@@ -54,7 +54,7 @@ export function ToolCard({ tool }: ToolCardProps) {
         <div className="flex items-center justify-between border-t border-border pt-3">
           <span className="text-xs text-ink-subtle">{CATEGORY_LABELS[tool.category]}</span>
           <span className="inline-flex items-center gap-1 text-xs font-medium text-ink-muted">
-            {isAi ? 'Credits shown first' : isLive ? 'Open tool' : 'No account'}
+            {isAi ? 'Planned' : isLive ? 'Open tool' : 'No account'}
             {isLive ? (
               <ArrowUpRight
                 className="size-3.5 text-ink-subtle transition-transform duration-200 group-hover:-translate-y-0.5 group-hover:translate-x-0.5"

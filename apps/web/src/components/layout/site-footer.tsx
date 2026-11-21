@@ -49,7 +49,7 @@ export function SiteFooter() {
           <div className="space-y-4">
             <Logo />
             <p className="max-w-xs text-sm leading-relaxed text-ink-muted">{BRAND.tagline}</p>
-            <p className="inline-flex items-center gap-1.5 rounded-pill border border-border bg-surface-muted px-2.5 py-1 text-[11px] font-medium text-ink-muted">
+            <p className="inline-flex items-center gap-1.5 rounded-pill border border-border bg-surface-muted px-3 py-1 text-xs font-medium text-ink-muted">
               Free tools available · AI tools planned
             </p>
           </div>

@@ -41,7 +41,7 @@ export type PromiseItem = {
 export type TrustPoint = {
   readonly title: string;
   readonly body: string;
-  readonly icon: 'server' | 'ledger' | 'refund' | 'shield' | 'privacy';
+  readonly icon: 'server' | 'ledger' | 'unavailable' | 'shield' | 'privacy';
 };
 
 export type FaqItem = {
@@ -243,14 +243,14 @@ export const HOMEPAGE: HomepageContent = {
         icon: 'ledger',
       },
       {
-        title: 'Secrets stay server-side',
-        body: 'API keys are worker secrets and are never included in the bundle sent to your browser.',
+        title: 'AI and service keys stay server-side',
+        body: 'AI and service keys are worker secrets and never reach your browser. Only the public Supabase project configuration is exposed, and access to your data is still enforced on the server.',
         icon: 'shield',
       },
       {
         title: 'Payments are not connected',
         body: 'No card details are collected and no payment is taken in this build. Wallets and checkout arrive with their own review.',
-        icon: 'refund',
+        icon: 'unavailable',
       },
       {
         title: 'Data collection is minimal',
@@ -293,7 +293,7 @@ export const HOMEPAGE: HomepageContent = {
   },
   finalCta: {
     title: 'Start with the tools that cost nothing',
-    body: 'Free utilities open without an account. Add credits only when you want AI help with the writing.',
+    body: 'Free utilities open without an account, with no sign-up and nothing to install. AI writing tools are on the way and will show their cost before a run.',
     cta: 'Browse the free tools',
     note: 'Free tools are live now. AI generation and payments are not available in this build.',
   },

@@ -55,7 +55,6 @@ export function UtilityShell({ children }: { children: ReactNode }) {
           <p>
             &copy; {year} {BRAND.name}
           </p>
-          <p>Stage 5 · Free tools live</p>
         </Container>
       </footer>
     </div>

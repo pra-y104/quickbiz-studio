@@ -1,7 +1,5 @@
-import { ArrowUpRight, Code2 } from 'lucide-react';
 import { Link } from 'react-router';
 import { BRAND } from '@quickbiz/shared';
-import { Badge } from '../ui/badge';
 import { Container } from '../ui/container';
 import { Logo } from '../brand/logo';
 
@@ -17,8 +15,6 @@ const RESOURCE_LINKS = [
   { label: 'Trust and security', href: '#trust' },
   { label: 'Questions', href: '#questions' },
 ] as const;
-
-const SOURCE_URL = 'https://github.com/pra-y104/quickbiz-studio';
 
 function LinkColumn({
   title,
@@ -53,7 +49,9 @@ export function SiteFooter() {
           <div className="space-y-4">
             <Logo />
             <p className="max-w-xs text-sm leading-relaxed text-ink-muted">{BRAND.tagline}</p>
-            <Badge tone="neutral">Pre-launch preview</Badge>
+            <p className="inline-flex items-center gap-1.5 rounded-pill border border-border bg-surface-muted px-2.5 py-1 text-[11px] font-medium text-ink-muted">
+              Free tools available · AI tools planned
+            </p>
           </div>
 
           <LinkColumn title="Product" links={PRODUCT_LINKS} />
@@ -61,7 +59,7 @@ export function SiteFooter() {
 
           <div>
             <h2 className="text-xs font-semibold uppercase tracking-[0.14em] text-ink-subtle">
-              Project
+              Explore
             </h2>
             <ul className="mt-3 space-y-2.5">
               <li>
@@ -71,26 +69,6 @@ export function SiteFooter() {
                 >
                   All free tools
                 </Link>
-              </li>
-              <li>
-                <Link
-                  to="/design-system"
-                  className="text-sm text-ink-muted transition-colors hover:text-ink"
-                >
-                  Design system
-                </Link>
-              </li>
-              <li>
-                <a
-                  href={SOURCE_URL}
-                  target="_blank"
-                  rel="noreferrer noopener"
-                  className="inline-flex items-center gap-1.5 text-sm text-ink-muted transition-colors hover:text-ink"
-                >
-                  <Code2 className="size-3.5" aria-hidden="true" />
-                  Source code
-                  <ArrowUpRight className="size-3" aria-hidden="true" />
-                </a>
               </li>
             </ul>
             <p className="mt-5 text-xs leading-relaxed text-ink-subtle">
@@ -103,7 +81,7 @@ export function SiteFooter() {
           <p>
             &copy; {year} {BRAND.name}. All rights reserved.
           </p>
-          <p>Stage 5 · Built with React, TypeScript and Cloudflare Workers.</p>
+          <p>Built with React, TypeScript and Cloudflare Workers.</p>
         </div>
       </Container>
     </footer>

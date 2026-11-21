@@ -85,15 +85,14 @@ export interface HomepageContent {
 
 export const HOMEPAGE: HomepageContent = {
   hero: {
-    eyebrow: 'AI writing and everyday tools, together',
+    eyebrow: 'Free everyday tools, with AI writing on the way',
     titleLead: 'Do the work.',
     titleAccent: 'Skip the subscription.',
     subtitle:
-      'Draft letters and adverts, translate, polish copy, build invoices, convert units and run the numbers — in one calm workspace. Free tools need no account. Paid AI runs on credits you buy once, at a price shown before you click.',
+      'Build invoices, convert units, run the numbers and clean up text in one calm workspace. The free tools work instantly with no account, and nothing you type leaves your device. AI writing tools are in development and will show their cost before every run.',
     primaryCta: 'Browse the tools',
-    secondaryCta: 'See how credits work',
-    reassurance:
-      'No recurring subscription  ·  Cost shown before every run  ·  Free tools stay free',
+    secondaryCta: 'See what is available',
+    reassurance: 'No account needed  ·  Nothing uploaded  ·  Free tools stay free',
     audienceLabel: 'Built for',
     audiences: [
       'Business owners',
@@ -103,14 +102,14 @@ export const HOMEPAGE: HomepageContent = {
       'Creators',
       'Small teams',
     ],
-    previewCaption: 'Interface preview with sample content. Not a live generation.',
+    previewCaption: 'Example of the planned AI Writer screen, using sample content.',
   },
   aiTools: {
     eyebrow: 'AI tools',
     title: 'Writing that clears your desk',
     description:
       'Eight focused assistants for the work people actually get asked to do — letters, adverts, product copy, translations, business plans and social captions.',
-    note: 'These AI tools are in the current build queue. When they open, every run shows its credit cost before you confirm, and a qualifying technical failure is refunded automatically.',
+    note: 'These AI tools are planned and are not available in this build. Each will show its cost before a run and will only use content you choose to submit.',
   },
   freeTools: {
     eyebrow: 'Free tools',
@@ -123,7 +122,7 @@ export const HOMEPAGE: HomepageContent = {
     eyebrow: 'How it works',
     title: 'Three steps, no learning curve',
     description:
-      'The product is built around the task, not around a billing meter. You always know what a run will cost before it starts.',
+      'The product is built around the task. Free tools need no account, and nothing you type leaves your device.',
     steps: [
       {
         title: 'Choose the tool',
@@ -131,13 +130,13 @@ export const HOMEPAGE: HomepageContent = {
         icon: 'search',
       },
       {
-        title: 'See the price first',
-        body: 'For AI work, the exact credit cost sits on the submit button. Nothing is deducted silently or in the background.',
+        title: 'Free means free',
+        body: 'Every free utility runs on your device with no account and no allowance. When AI tools open, their cost will be shown before a run.',
         icon: 'receipt',
       },
       {
         title: 'Keep what you make',
-        body: 'Copy or download the result. Signed-in users can save outputs and review a complete usage and transaction history.',
+        body: 'Copy or download the result as a file. Free tools never upload your work to a server.',
         icon: 'archive',
       },
     ],
@@ -146,7 +145,7 @@ export const HOMEPAGE: HomepageContent = {
     eyebrow: 'Pricing',
     title: 'Pay for the work, not the calendar',
     description:
-      'Credits are the only thing you buy. No monthly plan, no auto-renewal, no surprise deductions. Purchased credits stay in your wallet until you choose to use them.',
+      'The free tools cost nothing, now and in future. Paid AI usage is planned as pay-as-you-go, with the cost of a run shown before it starts.',
     plans: [
       {
         name: 'Free tools',
@@ -156,35 +155,34 @@ export const HOMEPAGE: HomepageContent = {
           'Calculators, converters and text utilities',
           'Invoice and quotation builders',
           'No account required',
-          'No credits deducted, ever',
+          'Unlimited use, no allowance to run out of',
         ],
       },
       {
-        name: 'New account trial',
-        price: 'Free',
-        priceNote: 'on email verification',
+        name: 'AI writing tools',
+        price: 'Planned',
+        priceNote: 'not available yet',
         features: [
-          'A small AI allowance to try paid tools',
-          'Same credit prices as everyone else',
-          'Daily fair-use cap',
-          'Free credits may expire — disclosed up front',
+          'Eight writing assistants in development',
+          'Cost shown before each run',
+          'No subscription required',
+          'Availability announced before launch',
         ],
       },
       {
         name: 'Pay as you go',
-        price: 'Credits',
-        priceNote: 'price shown at checkout',
+        price: 'Planned',
+        priceNote: 'pricing published before launch',
         features: [
-          'Buy credits only when you need them',
-          'Purchased credits never expire',
-          'Qualifying failures refunded automatically',
+          'Credit packs when AI tools open',
+          'Pay only for what you use',
           'No forced subscription',
+          'Local prices in naira and US dollars',
         ],
-        emphasis: true,
       },
     ],
     footnote:
-      'Credit packages and local prices are published before checkout opens. This preview build cannot take or process any payment.',
+      'AI tools and payments are not available in this build. Prices will be published before either opens.',
   },
   promise: {
     eyebrow: 'Our promise',
@@ -197,24 +195,24 @@ export const HOMEPAGE: HomepageContent = {
         body: 'Basic everyday tools work without registration or purchase.',
       },
       {
-        title: 'Try before you pay',
-        body: 'Verified accounts receive a small free AI allowance before buying anything.',
+        title: 'Nothing is charged without a shown price',
+        body: 'When paid AI tools open, the cost of a run will appear before you confirm it.',
       },
       {
         title: 'No hidden charges',
-        body: 'The credit cost is displayed before every paid action, and you decide whether to proceed.',
+        body: 'There will be no auto-renewal and no charge you did not agree to at that moment.',
       },
       {
-        title: 'Purchased credits never expire',
-        body: 'Your balance waits for you. We do not remove purchased credits on a timer.',
+        title: 'Clear status, not big claims',
+        body: 'Planned features are labelled as planned. Nothing on this site claims a capability it does not have.',
       },
       {
-        title: 'No charge for technical failures',
-        body: 'If a paid run fails because of a qualifying technical error, the credits return automatically.',
+        title: 'Free tools carry no conditions',
+        body: 'No account, no card and no allowance is needed for any free utility.',
       },
       {
-        title: 'Your money deserves protection',
-        body: 'Payments run through supported providers, and your transaction history is always available in your account.',
+        title: 'No advertising trackers',
+        body: 'This site runs no advertising networks and no third-party analytics in the pages you browse.',
       },
       {
         title: 'Your privacy matters',
@@ -226,33 +224,33 @@ export const HOMEPAGE: HomepageContent = {
       },
     ],
     footnote:
-      'Fair-use limits, service availability and legal conditions apply. Full terms, including refunds, are published before payments open.',
+      'Terms of service, a privacy policy and a refund policy are published before accounts, AI tools or payments open.',
   },
   trust: {
     eyebrow: 'Trust and transparency',
-    title: 'Money and data handled like they matter',
+    title: 'Your data, handled carefully',
     description:
-      'The platform is designed so a browser can never decide a balance, a price or a payment outcome.',
+      'The free tools run on your device, and the server-side controls are built before anything valuable is stored.',
     points: [
       {
-        title: 'Balances live on the server',
-        body: 'Wallets and ledgers sit behind the API. Editing a request in your browser cannot add credits.',
+        title: 'Free tools run on your device',
+        body: 'Calculators, converters and the invoice builders never upload what you type.',
         icon: 'server',
       },
       {
-        title: 'Every deduction is recorded',
-        body: 'Each charge writes an auditable ledger entry with an idempotency key, so a double submit cannot charge twice.',
+        title: 'Access tokens verified on the server',
+        body: 'Every protected request is checked against the identity provider; a user id in the request body is ignored.',
         icon: 'ledger',
       },
       {
-        title: 'Failures reverse themselves',
-        body: 'A qualifying technical failure writes a compensating entry without waiting for a support ticket.',
-        icon: 'refund',
+        title: 'Secrets stay server-side',
+        body: 'API keys are worker secrets and are never included in the bundle sent to your browser.',
+        icon: 'shield',
       },
       {
-        title: 'Payments are verified',
-        body: 'Provider webhooks are signature-checked before a single credit is granted.',
-        icon: 'shield',
+        title: 'Payments are not connected',
+        body: 'No card details are collected and no payment is taken in this build. Wallets and checkout arrive with their own review.',
+        icon: 'refund',
       },
       {
         title: 'Data collection is minimal',
@@ -274,22 +272,22 @@ export const HOMEPAGE: HomepageContent = {
       {
         question: 'What exactly is a credit?',
         answer:
-          'A credit is a unit of paid AI usage. Every AI tool shows its cost before you run it. Free tools never consume credits.',
+          'A credit is the unit paid AI usage will be measured in once AI tools open. AI tools are not available in this build, and no free tool consumes anything.',
       },
       {
-        question: 'Will my purchased credits expire?',
+        question: 'Can I buy credits today?',
         answer:
-          'No. Purchased credits stay in your wallet until you spend them. Free trial credits are separate and may expire, which is disclosed when they are granted.',
+          'No. Payments are not connected in this build. Pricing will be published before AI tools and checkout open.',
       },
       {
-        question: 'What happens if a generation fails?',
+        question: 'Are my designs saved online?',
         answer:
-          'If the failure is on our side or the provider\u2019s, the credits are returned automatically and the run is marked in your usage history.',
+          'Not yet. Creative Studio projects are stored in this browser on this device. Cloud saving is planned and will ship with a privacy policy.',
       },
       {
         question: 'Is there a subscription?',
         answer:
-          'Not at launch. The model is pay-as-you-go. Optional plans may be considered later only if real usage shows demand, and paid features will never require one.',
+          'No. The plan is pay-as-you-go when AI tools open, and a recurring plan will not be required to use them.',
       },
     ],
   },
@@ -303,8 +301,8 @@ export const HOMEPAGE: HomepageContent = {
 
 /** Top navigation shown on marketing pages. All targets are on this page. */
 export const HOMEPAGE_NAV = [
-  { label: 'AI tools', href: '#ai-tools' },
   { label: 'Free tools', href: '#free-tools' },
+  { label: 'AI tools', href: '#ai-tools' },
   { label: 'Pricing', href: '#pricing' },
   { label: 'Our promise', href: '#promise' },
   { label: 'Questions', href: '#questions' },

@@ -64,11 +64,11 @@ describe('Homepage', () => {
     expect(screen.getByText(HOMEPAGE.faq.items[0]!.question)).toBeInTheDocument();
   });
 
-  it('marks the interface preview and the build state honestly', () => {
+  it('labels the hero example and the build state honestly', () => {
     renderHome();
-    expect(screen.getByText(/Not a live generation/i)).toBeInTheDocument();
+    expect(screen.getByText(/Example of the planned AI Writer screen/i)).toBeInTheDocument();
     expect(
-      screen.getByText(/AI generation and payments are not available in this build/i),
+      screen.getByText(/AI tools and payments are not available in this build/i),
     ).toBeInTheDocument();
     expect(screen.getByText(HOMEPAGE.aiTools.note)).toBeInTheDocument();
   });

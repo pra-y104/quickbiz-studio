@@ -23,8 +23,8 @@ export function HomePage() {
   return (
     <>
       <Hero />
-      <ToolShowcase id="ai-tools" content={HOMEPAGE.aiTools} tools={aiTools} />
-      <ToolShowcase id="free-tools" content={HOMEPAGE.freeTools} tools={freeTools} surface />
+      <ToolShowcase id="free-tools" content={HOMEPAGE.freeTools} tools={freeTools} />
+      <ToolShowcase id="ai-tools" content={HOMEPAGE.aiTools} tools={aiTools} surface />
       <HowItWorksSection />
       <PricingSection />
       <PromiseSection />

@@ -10,11 +10,11 @@ export const AUTH_COPY = {
   common: {
     brandPanelTitle: 'One account, every tool.',
     brandPanelBody:
-      'Your dashboard holds saved results, usage history and your credit balance. The free utilities stay available either way.',
+      'Your dashboard holds your profile and session details. The free utilities stay available whether or not you sign in.',
     brandPanelPoints: [
-      'Email verification protects the free AI allowance',
-      'Purchased credits belong to your account, not a session',
-      'You can delete your account and data at any time',
+      'Your work stays on your device until cloud saving ships',
+      'AI tools and payments are not connected in this build',
+      'You can delete your account at any time',
     ],
     notConfiguredTitle: 'Authentication is not configured in this build',
     notConfiguredBody:
@@ -34,7 +34,7 @@ export const AUTH_COPY = {
   },
   register: {
     title: 'Create your account',
-    subtitle: 'Start with the free tools. Add credits only when you want AI help.',
+    subtitle: 'Start with the free tools. AI writing tools are in development.',
     submit: 'Create account',
     passwordHint: 'At least 10 characters, including a letter and a number.',
     termsPrefix: 'I agree to the',
@@ -101,7 +101,7 @@ export const AUTH_COPY = {
     verified: 'Email confirmed',
     unverified: 'Email not confirmed',
     unverifiedBody:
-      'Confirm your email address to unlock the free AI allowance when AI tools open. Free utilities will never require it.',
+      'Confirm your email address to keep your account secure. Free utilities will never require an account.',
     resend: 'Resend confirmation',
     nextTitle: 'What happens next',
     nextBody:

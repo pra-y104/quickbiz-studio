@@ -3,10 +3,10 @@ import { HOMEPAGE } from '../../content/homepage';
 import { cn } from '../../lib/cn';
 
 /**
- * Illustrative product preview for the hero.
+ * Illustrative example of the planned AI Writer screen.
  *
- * This is deliberately static markup, not a fake API call: it shows the shape of
- * the AI Writer interface and is labelled as a preview in the caption underneath.
+ * This is static markup, not a working AI call. It is captioned as an example so it
+ * cannot be mistaken for a live generation.
  */
 export function HeroPreview({ className }: { className?: string }) {
   return (
@@ -25,14 +25,6 @@ export function HeroPreview({ className }: { className?: string }) {
                 <Wand2 className="size-3.5" aria-hidden="true" />
               </span>
               <span className="text-[13px] font-medium text-white/90">AI Writer</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="rounded-pill border border-white/10 bg-white/5 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wider text-white/50">
-                Preview
-              </span>
-              <span className="rounded-pill border border-brand-400/30 bg-brand-500/15 px-2 py-0.5 text-[11px] font-medium text-brand-200">
-                3 credits
-              </span>
             </div>
           </div>
 
@@ -67,10 +59,10 @@ export function HeroPreview({ className }: { className?: string }) {
             </div>
 
             <div className="flex items-center justify-between gap-3 pt-1">
-              <span className="text-[11px] text-white/40">Cost is shown before the run</span>
-              <span className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-[12px] font-medium text-on-primary">
+              <span className="text-[11px] text-white/40">Sample output</span>
+              <span className="inline-flex items-center gap-1.5 rounded-lg border border-white/15 px-3 py-1.5 text-[12px] font-medium text-white/70">
                 <Sparkles className="size-3.5" aria-hidden="true" />
-                Generate draft
+                Example only
               </span>
             </div>
           </div>

@@ -41,6 +41,14 @@ export default tseslint.config(
     languageOptions: { globals: { ...globals.node } },
   },
   {
+    // Service worker runs in a worker global scope, not a window.
+    name: 'quickbiz/service-worker',
+    files: ['apps/web/public/sw.js'],
+    languageOptions: {
+      globals: { ...globals.serviceworker },
+    },
+  },
+  {
     name: 'quickbiz/api',
     files: ['apps/api/**/*.ts'],
     languageOptions: {

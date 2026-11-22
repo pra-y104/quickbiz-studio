@@ -196,6 +196,9 @@
     "templateCount": "{{count}} templates",
     "pack": {
       "starter": "Starter collection"
-    }
+    },
+    "page": "Page",
+    "background": "Background",
+    "alignTools": "Alignment"
   }
 }

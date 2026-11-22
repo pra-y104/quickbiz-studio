@@ -115,6 +115,8 @@ export interface StudioEditor {
   align(mode: AlignMode): void;
   nudge(dx: number, dy: number): void;
   updateSelected(patch: NodePatch): void;
+  /** Change document-level settings such as the page background. */
+  updateCanvas(patch: Partial<Pick<CreativeDocument['canvas'], 'background'>>): void;
   replaceDocument(next: CreativeDocument): void;
 }
 
@@ -611,6 +613,15 @@ export function useStudioEditor(options: UseStudioEditorOptions): StudioEditor {
     [commit, selection],
   );
 
+  const updateCanvas = useCallback(
+    (patch: Partial<Pick<CreativeDocument['canvas'], 'background'>>) => {
+      const current = documentRef.current;
+      const canvas = { ...current.canvas, ...patch };
+      commit({ ...current, canvas, updatedAt: new Date().toISOString() });
+    },
+    [commit],
+  );
+
   const replaceDocument = useCallback((next: CreativeDocument) => {
     historyRef.current.reset(next);
     documentRef.current = next;
@@ -653,6 +664,7 @@ export function useStudioEditor(options: UseStudioEditorOptions): StudioEditor {
     align,
     nudge,
     updateSelected,
+    updateCanvas,
     replaceDocument,
   };
 }

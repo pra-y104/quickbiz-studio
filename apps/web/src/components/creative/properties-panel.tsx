@@ -1,6 +1,8 @@
 import { useTranslation } from 'react-i18next';
 import {
   FONT_FAMILIES,
+  type CreativeCanvas,
+  type CreativePaint,
   type CreativeColor,
   type CreativeNode,
   type CreativeShapeKind,
@@ -14,6 +16,9 @@ export interface PropertiesPanelProps {
   readonly onChange: (patch: NodePatch) => void;
   readonly onDuplicate: () => void;
   readonly onDelete: () => void;
+  /** Page settings, shown when nothing is selected. */
+  readonly canvas?: CreativeCanvas;
+  readonly onCanvasChange?: (patch: { readonly background: CreativePaint }) => void;
 }
 
 /**
@@ -143,15 +148,44 @@ function SelectField<T extends string>({
  * fill colour and an image never offers a font. Every change is a document
  * command and therefore undoable.
  */
-export function PropertiesPanel({ node, onChange, onDuplicate, onDelete }: PropertiesPanelProps) {
+export function PropertiesPanel({
+  node,
+  onChange,
+  onDuplicate,
+  onDelete,
+  canvas,
+  onCanvasChange,
+}: PropertiesPanelProps) {
   const { t } = useTranslation();
 
   if (!node) {
+    const background = canvas?.background.type === 'solid' ? canvas.background.color : '#FFFFFF';
+
     return (
-      <div className="p-4">
-        <h2 className="text-sm font-semibold text-ink">{t('studio.properties')}</h2>
-        <p className="mt-3 text-sm font-medium text-ink">{t('studio.nothingSelected')}</p>
-        <p className="mt-1 text-sm text-ink-muted">{t('studio.nothingSelectedBody')}</p>
+      <div className="space-y-4 p-4">
+        <div>
+          <h2 className="text-sm font-semibold text-ink">{t('studio.properties')}</h2>
+          <p className="mt-3 text-sm font-medium text-ink">{t('studio.nothingSelected')}</p>
+          <p className="mt-1 text-sm text-ink-muted">{t('studio.nothingSelectedBody')}</p>
+        </div>
+
+        {canvas && onCanvasChange ? (
+          <section className="space-y-2 border-t border-border pt-3">
+            <h3 className="text-xs font-semibold uppercase tracking-wide text-ink-subtle">
+              {t('studio.page')}
+            </h3>
+            <p className="text-xs text-ink-subtle">
+              {canvas.unit === 'mm'
+                ? `${canvas.width} × ${canvas.height} mm · ${canvas.dpi} DPI`
+                : `${canvas.width} × ${canvas.height} px`}
+            </p>
+            <ColorField
+              label={t('studio.background')}
+              value={background}
+              onChange={(color) => onCanvasChange({ background: { type: 'solid', color } })}
+            />
+          </section>
+        ) : null}
       </div>
     );
   }

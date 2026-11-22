@@ -2,9 +2,11 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import * as Dialog from '@radix-ui/react-dialog';
 import { Layers, SlidersHorizontal, X } from 'lucide-react';
-import type { CreativeNode } from '@quickbiz/shared';
+import type { CreativeCanvas, CreativeNode, CreativePaint } from '@quickbiz/shared';
 import { LayersPanel } from './layers-panel';
 import { PropertiesPanel } from './properties-panel';
+import { AlignToolbar } from './align-toolbar';
+import type { AlignMode } from '../../lib/creative/engine/geometry';
 import type { NodePatch } from '../../lib/creative/editor/use-studio-editor';
 import { Button } from '../ui/button';
 
@@ -19,6 +21,9 @@ export interface MobileInspectorProps {
   readonly onReorder: (id: string, direction: 'forward' | 'backward') => void;
   readonly onToggleHidden: () => void;
   readonly onToggleLocked: () => void;
+  readonly onAlign: (mode: AlignMode) => void;
+  readonly canvas?: CreativeCanvas;
+  readonly onCanvasChange?: (patch: { readonly background: CreativePaint }) => void;
 }
 
 type MobileTab = 'layers' | 'properties';
@@ -35,7 +40,8 @@ export function MobileInspector(props: MobileInspectorProps) {
   const [open, setOpen] = useState(false);
   const [tab, setTab] = useState<MobileTab>('properties');
 
-  const { nodes, selection, selected, onSelect, onChange, onDuplicate, onDelete } = props;
+  const { nodes, selection, selected, onSelect, onChange, onDuplicate, onDelete, onAlign } = props;
+  const { canvas, onCanvasChange } = props;
 
   return (
     <>
@@ -105,6 +111,9 @@ export function MobileInspector(props: MobileInspectorProps) {
               Edit the selected element or manage layers.
             </Dialog.Description>
 
+            <div className="border-b border-border p-2">
+              <AlignToolbar disabled={selection.length === 0} onAlign={onAlign} />
+            </div>
             <div className="min-h-0 flex-1 overflow-y-auto">
               {tab === 'layers' ? (
                 <LayersPanel
@@ -122,6 +131,8 @@ export function MobileInspector(props: MobileInspectorProps) {
                   onChange={onChange}
                   onDuplicate={onDuplicate}
                   onDelete={onDelete}
+                  canvas={canvas}
+                  onCanvasChange={onCanvasChange}
                 />
               )}
             </div>

@@ -8,6 +8,7 @@ import { StudioShell } from '../../components/creative/studio-shell';
 import { CanvasStage, type StudioTool } from '../../components/creative/canvas-stage';
 import { ToolRail } from '../../components/creative/tool-rail';
 import { LayersPanel } from '../../components/creative/layers-panel';
+import { AlignToolbar } from '../../components/creative/align-toolbar';
 import { ExportDialog } from '../../components/creative/export-dialog';
 import { MobileInspector } from '../../components/creative/mobile-inspector';
 import { ConfirmDialog } from '../../components/creative/dialogs';
@@ -333,12 +334,20 @@ function EditorView({
                 onDelete={(id) => editor.deleteNodes([id])}
               />
             </div>
+            <div className="flex items-center justify-between gap-2 border-t border-border p-2">
+              <span className="pl-1 text-[11px] font-medium uppercase tracking-wide text-ink-subtle">
+                {t('studio.alignTools')}
+              </span>
+              <AlignToolbar disabled={editor.selection.length === 0} onAlign={editor.align} />
+            </div>
             <div className="min-h-0 flex-1 overflow-y-auto border-t border-border">
               <PropertiesPanel
                 node={selected}
                 onChange={editor.updateSelected}
                 onDuplicate={editor.duplicateSelection}
                 onDelete={requestDelete}
+                canvas={editor.document.canvas}
+                onCanvasChange={editor.updateCanvas}
               />
             </div>
           </div>
@@ -496,6 +505,9 @@ function EditorView({
                   onReorder={(id, direction) => editor.reorder(id, direction)}
                   onToggleHidden={editor.toggleHidden}
                   onToggleLocked={editor.toggleLocked}
+                  onAlign={editor.align}
+                  canvas={editor.document.canvas}
+                  onCanvasChange={editor.updateCanvas}
                 />
               </div>
             </div>

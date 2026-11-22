@@ -86,3 +86,24 @@ The API limiter remains per isolate (`apps/api/src/middleware/rate-limit.ts`). A
 store (Cloudflare rate limiting rules, a Durable Object, or a database-backed counter)
 is required before any paid AI endpoint is public. This is a **high-severity**
 production blocker and is not resolved by this milestone.
+
+## M3 — all eight tools (offline acceptance)
+
+Every tool now has an end-to-end offline acceptance test
+(`apps/api/src/__tests__/ai-tools-m3.test.ts`) driven by the deterministic fake
+provider and the shared pipeline. For each of the eight tools it proves:
+
+- valid provider output is accepted and validated by that tool's output schema;
+- the tool's `maxOutputTokens` from `AI_TOOL_LIMITS` reaches the provider request;
+- invalid input is rejected **before** the provider is called;
+- unknown output keys are stripped, and missing required fields reject with
+  `invalid-response`.
+
+Tool sample outputs live in `apps/api/src/__tests__/fixtures/tool-outputs.ts`. They
+are test data only: they are never served, never used as a fallback, and never
+presented to a customer as generated text.
+
+What M3 still needs before customer exposure: a real provider adapter decision
+(D1/D2), a funded cost envelope (D3/D15/D19), and the run endpoint's quota and
+distributed rate limiting. None of those are implemented here, and no live call is
+made by any test.

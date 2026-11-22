@@ -200,5 +200,35 @@
     "page": "Page",
     "background": "Background",
     "alignTools": "Alignment"
+  },
+  "tools": {
+    "back": "All tools"
+  },
+  "translator": {
+    "title": "Translator",
+    "intro": "Dictate or type, listen to the result, and translate between supported languages.",
+    "unavailableTitle": "AI translation is not available yet",
+    "unavailableBody": "The voice tools on this page work now. Translation needs the AI provider work to be approved and switched on, so the translate button stays disabled until then.",
+    "sourceText": "Text to translate",
+    "placeholder": "Type or dictate the text you want to translate…",
+    "targetLanguage": "Target language",
+    "voice": "Voice",
+    "voiceAutomatic": "Automatic (system default)",
+    "rate": "Speaking rate",
+    "voiceNote": "Playback uses a voice installed on your device for {{language}}. Availability depends on your browser and operating system.",
+    "dictate": "Dictate",
+    "stop": "Stop",
+    "play": "Play",
+    "pause": "Pause",
+    "resume": "Resume",
+    "replay": "Replay",
+    "translate": "Translate",
+    "translateHint": "Disabled until AI translation is approved.",
+    "consent": "I understand my browser may send audio to its speech service to transcribe it. QuickBiz does not record or store audio.",
+    "consentRequired": "Please confirm the microphone notice before dictating.",
+    "sttUnsupported": "Speech recognition is not available in this browser. Typing works everywhere.",
+    "ttsUnsupported": "This browser cannot read text aloud.",
+    "ttsFailed": "That text could not be read aloud.",
+    "nothingToRead": "Add some text first."
   }
 }

@@ -53,6 +53,9 @@ const QuotationMakerPage = lazy(() =>
 const WordCounterPage = lazy(() =>
   import('../pages/tools/word-counter').then((module) => ({ default: module.WordCounterPage })),
 );
+const TranslatorPage = lazy(() =>
+  import('../pages/tools/translator').then((module) => ({ default: module.TranslatorPage })),
+);
 const TextFormatterPage = lazy(() =>
   import('../pages/tools/text-formatter').then((module) => ({
     default: module.TextFormatterPage,
@@ -148,6 +151,7 @@ export const router = createBrowserRouter([
   { path: '/tools/quotation-maker', element: withShell(UtilityShell, <QuotationMakerPage />) },
   { path: '/tools/word-counter', element: withShell(UtilityShell, <WordCounterPage />) },
   { path: '/tools/text-formatter', element: withShell(UtilityShell, <TextFormatterPage />) },
+  { path: '/tools/translator', element: withShell(UtilityShell, <TranslatorPage />) },
 
   { path: '/register', element: guest(<RegisterPage />) },
   { path: '/login', element: guest(<LoginPage />) },

@@ -93,9 +93,28 @@ export function SiteFooter() {
                 </a>
               </li>
             </ul>
-            <p className="mt-5 text-xs leading-relaxed text-ink-subtle">
-              Privacy policy, terms of service and support contact are published before launch.
-            </p>
+            <ul className="mt-5 space-y-1.5 text-xs">
+              <li>
+                <Link to="/legal/privacy" className="text-ink-subtle hover:text-ink">
+                  Privacy policy
+                </Link>
+              </li>
+              <li>
+                <Link to="/legal/terms" className="text-ink-subtle hover:text-ink">
+                  Terms of service
+                </Link>
+              </li>
+              <li>
+                <Link to="/legal/refunds" className="text-ink-subtle hover:text-ink">
+                  Refund policy
+                </Link>
+              </li>
+              <li>
+                <Link to="/contact" className="text-ink-subtle hover:text-ink">
+                  Contact
+                </Link>
+              </li>
+            </ul>
           </div>
         </div>
 

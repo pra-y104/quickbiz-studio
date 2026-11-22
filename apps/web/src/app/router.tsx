@@ -86,6 +86,12 @@ const AuthCallbackPage = lazy(() =>
 const DashboardPage = lazy(() =>
   import('../pages/dashboard').then((module) => ({ default: module.DashboardPage })),
 );
+const LegalDocumentPage = lazy(() =>
+  import('../pages/legal/document').then((module) => ({ default: module.LegalDocumentPage })),
+);
+const ContactPage = lazy(() =>
+  import('../pages/legal/contact').then((module) => ({ default: module.ContactPage })),
+);
 const StudioProjectsPage = lazy(() =>
   import('../pages/creative/projects').then((module) => ({ default: module.StudioProjectsPage })),
 );
@@ -174,6 +180,9 @@ export const router = createBrowserRouter([
   { path: '/studio/templates', element: withShell(UtilityShell, <StudioTemplatesPage />) },
   // The editor owns its chrome, so it renders without the marketing shell.
   { path: '/studio/:projectId', element: withSuspense(<StudioPage />) },
+
+  { path: '/legal/:document', element: withShell(UtilityShell, <LegalDocumentPage />) },
+  { path: '/contact', element: withShell(UtilityShell, <ContactPage />) },
 
   { path: '*', element: withShell(UtilityShell, <NotFoundPage />) },
 ]);

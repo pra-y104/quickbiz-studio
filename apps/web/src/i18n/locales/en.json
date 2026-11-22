@@ -230,5 +230,19 @@
     "ttsUnsupported": "This browser cannot read text aloud.",
     "ttsFailed": "That text could not be read aloud.",
     "nothingToRead": "Add some text first."
+  },
+  "legal": {
+    "updated": "Last updated {{date}}",
+    "draftTitle": "Draft — owner details pending",
+    "draftBody": "Some information on this page is a clearly marked placeholder. It will be completed before launch.",
+    "more": "More information"
+  },
+  "contact": {
+    "title": "Contact",
+    "intro": "Questions about the product, your account or a legal page? The details below will be published before launch.",
+    "support": "Support",
+    "pending": "No support inbox has been published yet.",
+    "legal": "Legal pages",
+    "legalBody": "Read how we handle your data and what the terms of service are."
   }
 }

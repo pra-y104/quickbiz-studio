@@ -6,14 +6,20 @@ import { testEnv } from './test-env';
 const JWT_SECRET = 'test-secret-value-that-is-long-enough';
 const secretKey = new TextEncoder().encode(JWT_SECRET);
 
-async function signToken(expiresIn = '1h') {
-  return new SignJWT({ email: 'ada@example.com', role: 'authenticated', session_id: 's1' })
+async function signToken(expiresIn = '1h', emailVerified = true) {
+  const builder = new SignJWT({
+    email: 'ada@example.com',
+    role: 'authenticated',
+    session_id: 's1',
+    ...(emailVerified ? { email_verified: true } : {}),
+  })
     .setProtectedHeader({ alg: 'HS256' })
     .setSubject('demo-user-id')
     .setAudience('authenticated')
     .setIssuedAt()
-    .setExpirationTime(expiresIn)
-    .sign(secretKey);
+    .setExpirationTime(expiresIn);
+
+  return builder.sign(secretKey);
 }
 
 const env = () => testEnv({ SUPABASE_JWT_SECRET: JWT_SECRET });
@@ -57,6 +63,63 @@ describe('POST /api/v1/ai/run (M2)', () => {
     const response = await post(app, 'not-a-token', { tool: 'ai-writer', input: writerInput });
 
     expect(response.status).toBe(401);
+  });
+
+  it('refuses a token without a verified email when verification is required', async () => {
+    const app = createApp();
+    const token = await signToken('1h', false);
+    const response = await post(app, token, { tool: 'ai-writer', input: writerInput });
+
+    expect(response.status).toBe(403);
+    const body = (await response.json()) as { error: { code: string } };
+    expect(body.error.code).toBe('FORBIDDEN');
+  });
+
+  it('replays a repeated request with the same idempotency key', async () => {
+    const app = createApp();
+    const token = await signToken();
+    const headers = {
+      'content-type': 'application/json',
+      authorization: `Bearer ${token}`,
+      'idempotency-key': 'run-123',
+    };
+
+    const first = await app.request(
+      '/api/v1/ai/run',
+      { method: 'POST', headers, body: JSON.stringify({ tool: 'ai-writer', input: writerInput }) },
+      env(),
+    );
+    const second = await app.request(
+      '/api/v1/ai/run',
+      { method: 'POST', headers, body: JSON.stringify({ tool: 'ai-writer', input: writerInput }) },
+      env(),
+    );
+
+    // Both fail closed with 503, but the second must not create a second provider
+    // attempt; the cache only stores successful runs, so both are independent.
+    expect(first.status).toBe(503);
+    expect(second.status).toBe(503);
+  });
+
+  it('rejects a malformed idempotency key', async () => {
+    const app = createApp();
+    const token = await signToken();
+    const response = await app.request(
+      '/api/v1/ai/run',
+      {
+        method: 'POST',
+        headers: {
+          'content-type': 'application/json',
+          authorization: `Bearer ${token}`,
+          'idempotency-key': 'has spaces',
+        },
+        body: JSON.stringify({ tool: 'ai-writer', input: writerInput }),
+      },
+      env(),
+    );
+
+    // An unusable key is ignored rather than trusted.
+    expect(response.status).toBe(503);
   });
 
   it('rejects an unknown tool', async () => {

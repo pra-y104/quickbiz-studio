@@ -10,8 +10,13 @@ import { testEnv } from './test-env';
 const JWT_SECRET = 'test-secret-value-that-is-long-enough';
 const secretKey = new TextEncoder().encode(JWT_SECRET);
 
-async function signToken() {
-  return new SignJWT({ email: 'ada@example.com', role: 'authenticated', session_id: 's1' })
+async function signToken(emailVerified = true) {
+  return new SignJWT({
+    email: 'ada@example.com',
+    role: 'authenticated',
+    session_id: 's1',
+    ...(emailVerified ? { email_verified: true } : {}),
+  })
     .setProtectedHeader({ alg: 'HS256' })
     .setSubject('demo-user-id')
     .setAudience('authenticated')

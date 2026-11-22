@@ -25,6 +25,13 @@ export interface AuthClaims {
   readonly sessionId: string | null;
   /** Unix seconds. */
   readonly expiresAt: number;
+  /**
+   * Whether the token asserts a verified email.
+   *
+   * `undefined` means the token carries no such claim. Callers that require
+   * verification must treat that as unverified rather than guessing.
+   */
+  readonly emailVerified: boolean | undefined;
 }
 
 export type AuthTokenErrorReason = 'missing' | 'expired' | 'invalid' | 'unconfigured';
@@ -88,6 +95,7 @@ function toClaims(payload: JWTPayload): AuthClaims {
     role: typeof payload.role === 'string' ? payload.role : 'authenticated',
     sessionId: typeof payload.session_id === 'string' ? payload.session_id : null,
     expiresAt: typeof payload.exp === 'number' ? payload.exp : 0,
+    emailVerified: typeof payload.email_verified === 'boolean' ? payload.email_verified : undefined,
   };
 }
 

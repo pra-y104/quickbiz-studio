@@ -25,6 +25,11 @@ export interface Bindings {
   /** Server-only. Preferred model id for the requested provider. */
   readonly AI_MODEL?: string;
   readonly AI_API_KEY?: string;
+  /**
+   * Require a verified email before AI runs. Defaults to true and fails closed:
+   * a token without an `email_verified` claim is treated as unverified.
+   */
+  readonly AI_REQUIRE_VERIFIED_EMAIL?: string;
 }
 
 export const ENVIRONMENTS = ['development', 'preview', 'production'] as const;
@@ -51,6 +56,8 @@ export interface AppConfig {
   readonly ai: {
     readonly providerId: string | null;
     readonly model: string | null;
+    /** Fail-closed switch: AI runs require a verified email unless disabled. */
+    readonly requireVerifiedEmail: boolean;
   };
 }
 
@@ -91,6 +98,7 @@ const rawEnvSchema = z.object({
   RATE_LIMIT_ENABLED: z.enum(['true', 'false']).default('true'),
   RATE_LIMIT_WINDOW_SECONDS: z.coerce.number().int().min(1).max(3600).default(60),
   RATE_LIMIT_MAX_REQUESTS: z.coerce.number().int().min(1).max(10_000).default(120),
+  AI_REQUIRE_VERIFIED_EMAIL: z.enum(['true', 'false']).default('true'),
   /** Preferred provider/model. Not a capability switch: see `AppConfig.ai`. */
   AI_PROVIDER: nullableIdentifier,
   AI_MODEL: nullableModelId,
@@ -130,6 +138,7 @@ export function resolveConfig(bindings: Bindings): AppConfig {
     ai: {
       providerId: parsed.AI_PROVIDER,
       model: parsed.AI_MODEL,
+      requireVerifiedEmail: parsed.AI_REQUIRE_VERIFIED_EMAIL === 'true',
     },
   };
 

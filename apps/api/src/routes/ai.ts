@@ -11,13 +11,18 @@ import {
 } from '@quickbiz/shared';
 import { describeAiAvailability, productionRegistry } from '../ai/registry';
 import { describeAiFailure, executeAiTool } from '../ai/execution';
+import { inMemoryAiQuotaStore } from '../ai/quota';
 import { requireAuth } from '../middleware/auth';
 import { AppError } from '../lib/errors';
+import { IDEMPOTENCY_HEADER, idempotencyCache, readIdempotencyKey } from '../lib/idempotency';
+import { logger } from '../lib/logger';
 import { parseOrThrow } from '../lib/validate';
 import { ok } from '../lib/response';
 import type { AppContext } from '../types/context';
 
 export const aiRoutes = new Hono<AppContext>();
+
+const MAX_RUNS_PER_DAY = 50;
 
 /**
  * Availability probe for the AI tools.
@@ -71,38 +76,76 @@ const runBodySchema = z
  * Security posture (M2):
  *
  * - **authenticated only.** Identity comes from the verified token, never the body.
- * - **validated before any work.** The tool slug and input are checked against the
- *   shared schemas; an invalid request never reaches a provider.
+ * - **verified email when required.** `AI_REQUIRE_VERIFIED_EMAIL` defaults to true
+ *   and fails closed: a token without an `email_verified` claim is unverified.
+ * - **validated before any work.** Envelope and tool input are checked against the
+ *   shared schemas before a provider is considered.
+ * - **idempotent.** An `Idempotency-Key` makes a retried request replay the first
+ *   successful answer instead of running (and paying) twice.
  * - **fail closed.** With no registered adapter — the state of this build — the
- *   endpoint answers `503` and spends nothing. It never falls back to a different
- *   provider or fabricates a result.
+ *   endpoint answers `503` and spends nothing.
  * - **text-safe failures.** `describeAiFailure` decides the status; provider text,
  *   keys and stack traces never reach the caller.
  *
- * Quota enforcement and usage persistence are Stage 7 concerns and are not
- * implemented here, so `quota` stays `null` and no allowance is implied.
+ * Quota enforcement uses a per-isolate counter and is a cost limiter, not a
+ * security boundary. Usage persistence and distributed limits remain Stage 7 work.
  */
 aiRoutes.post('/run', async (c) => {
-  // Authentication first: an anonymous caller learns nothing about the AI surface.
+  // 1. Authenticate: an anonymous caller learns nothing about the AI surface.
   await requireAuth(c, async () => undefined);
+  const identity = c.get('auth');
+  if (!identity) {
+    // Defensive: requireAuth throws before this point.
+    throw AppError.unauthorized();
+  }
 
+  // 2. Verified email, fail-closed when the claim is absent.
+  const config = c.get('config');
+  if (config.ai.requireVerifiedEmail && identity.emailVerified !== true) {
+    logger.warn('ai.email-unverified', {
+      requestId: c.get('requestId'),
+      userId: identity.userId,
+    });
+    throw AppError.forbidden('Confirm your email address to use AI tools.');
+  }
+
+  const requestId = c.get('requestId');
+  const idempotencyKey = readIdempotencyKey(c.req.header(IDEMPOTENCY_HEADER));
+
+  if (idempotencyKey) {
+    const cached = idempotencyCache.get(identity.userId, idempotencyKey);
+    if (cached) {
+      c.header('Idempotent-Replay', 'true');
+      return c.json(cached.body as object, cached.status as 200);
+    }
+  }
+
+  // 3. Validate the request and the tool input before touching a provider.
   const body = parseOrThrow(runBodySchema, await c.req.json().catch(() => null));
   const { tool, input } = body;
-
-  // Validate the tool's input before touching the provider.
-  // The registry returns a union of schemas; parse as unknown and keep the validated value opaque.
   const validated: unknown = parseOrThrow(getAiToolSchemas(tool).input as ZodType<unknown>, input);
 
-  const config = c.get('config');
   const availability = describeAiAvailability(config, productionRegistry);
 
   if (!availability.configured) {
     // Fail closed: no adapter, no key, no request, no charge.
+    logger.info('ai.unavailable', { requestId, tool, userId: identity.userId });
     throw AppError.unavailable('AI generation is not available in this build.');
   }
 
+  // 4. Cost limiter (per isolate). Only relevant once a provider exists.
+  const quota = inMemoryAiQuotaStore.consume(identity.userId, MAX_RUNS_PER_DAY);
+  if (!quota.allowed) {
+    c.header('Retry-After', String(quota.retryAfterSeconds ?? 3600));
+    logger.warn('ai.quota-exhausted', { requestId, userId: identity.userId });
+    throw AppError.rateLimited(
+      'You have used up today’s AI allowance. Please try again tomorrow.',
+      quota.retryAfterSeconds ?? 3600,
+    );
+  }
+
   const provider = productionRegistry.require(config.ai.providerId ?? '');
-  const identity = c.get('auth');
+  const startedAt = Date.now();
 
   try {
     const result = await executeAiTool({
@@ -113,37 +156,56 @@ aiRoutes.post('/run', async (c) => {
       signal: c.req.raw.signal,
     });
 
-    return ok(c, {
+    const payload = {
       tool,
       output: result.output,
       metadata: {
         ...result.metadata,
-        // Recorded for the caller's own audit; never a provider payload.
-        requestedBy: identity?.userId,
+        requestedBy: identity.userId,
       },
-    });
-  } catch (error) {
-    const failure = describeAiFailure(error);
-    if (!failure) {
-      // Programmer error: generic 500, no internal detail.
-      throw AppError.internal();
+    };
+
+    if (idempotencyKey) {
+      idempotencyCache.put(identity.userId, idempotencyKey, { status: 200, body: payload });
     }
 
+    logger.info('ai.run.succeeded', {
+      requestId,
+      tool,
+      providerId: result.metadata.providerId,
+      latencyMs: result.metadata.latencyMs,
+      // Counts only: never the prompt or the model's text.
+      inputTokens: result.metadata.usage?.inputTokens,
+      outputTokens: result.metadata.usage?.outputTokens,
+    });
+
+    if (idempotencyKey) c.header('Idempotent-Replay', 'false');
+    return ok(c, payload);
+  } catch (error) {
+    const failure = describeAiFailure(error);
+    const latencyMs = Date.now() - startedAt;
+
+    logger.warn('ai.run.failed', {
+      requestId,
+      tool,
+      latencyMs,
+      reason: failure?.reason ?? 'internal',
+      kind: failure?.kind ?? 'internal',
+    });
+
+    if (!failure) throw AppError.internal();
+
     if (failure.kind === 'validation') {
-      // Output paths only; never the model's text.
       throw AppError.validation(
         (failure.issues ?? []).map((path) => ({ path, message: 'Invalid value.' })),
       );
     }
-
     if (failure.kind === 'unavailable') {
       throw AppError.unavailable('AI generation is not available right now.');
     }
-
     if (failure.reason === 'rate-limited') {
       throw AppError.rateLimited(undefined, failure.retryAfterSeconds ?? 60);
     }
-
     throw AppError.provider();
   }
 });

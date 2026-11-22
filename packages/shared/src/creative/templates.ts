@@ -25,13 +25,50 @@ import { canvasFromPreset, getPreset, requirePreset } from './presets';
 export type CreativeTemplateCategory =
   'flyer' | 'poster' | 'social' | 'story' | 'business-card' | 'invitation' | 'event' | 'banner';
 
+/**
+ * Where a template comes from and who may use it.
+ *
+ * Catalogue metadata is data, not code: packs can be added, versioned and retired
+ * without rebuilding the application, which is the point of keeping it here.
+ */
+export type CreativeTemplateTier = 'free' | 'premium';
+export type CreativeTemplateStatus = 'published' | 'retired';
+
 export interface CreativeTemplate {
   readonly id: string;
   readonly name: string;
   readonly category: CreativeTemplateCategory;
   readonly presetId: string;
   readonly description: string;
+  /** Publishing group, used to organise the gallery. */
+  readonly pack?: string;
+  /** Search terms beyond the name and description. */
+  readonly tags?: readonly string[];
+  /** Free templates are usable without a credit balance. */
+  readonly tier?: CreativeTemplateTier;
+  /** Retired templates are excluded from the public gallery. */
+  readonly status?: CreativeTemplateStatus;
   readonly build: () => readonly CreativeNode[];
+}
+
+/** Default pack for the starter collection. */
+export const DEFAULT_TEMPLATE_PACK = 'starter';
+
+export function templatePack(template: CreativeTemplate): string {
+  return template.pack ?? DEFAULT_TEMPLATE_PACK;
+}
+
+export function templateTier(template: CreativeTemplate): CreativeTemplateTier {
+  return template.tier ?? 'free';
+}
+
+export function templateStatus(template: CreativeTemplate): CreativeTemplateStatus {
+  return template.status ?? 'published';
+}
+
+/** Public templates only: retired entries never reach the gallery. */
+export function listPublishedTemplates(): readonly CreativeTemplate[] {
+  return CREATIVE_TEMPLATES.filter((template) => templateStatus(template) === 'published');
 }
 
 interface TemplatePalette {

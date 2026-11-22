@@ -188,6 +188,14 @@
     "textAlign": "Text alignment",
     "deleteManyTitle": "Delete these elements?",
     "deleteManyBody": "All selected elements will be removed. You can undo this once, but not after you close the design.",
-    "lockedDelete": "That element is locked. Unlock it in the layers panel first."
+    "lockedDelete": "That element is locked. Unlock it in the layers panel first.",
+    "templateSearch": "Search templates",
+    "templateCategories": "Template categories",
+    "templateNoMatch": "No templates match that search.",
+    "templatePreviewUnavailable": "Preview unavailable",
+    "templateCount": "{{count}} templates",
+    "pack": {
+      "starter": "Starter collection"
+    }
   }
 }

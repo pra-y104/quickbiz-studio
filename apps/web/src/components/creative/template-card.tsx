@@ -1,6 +1,8 @@
+import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ArrowUpRight } from 'lucide-react';
 import type { CreativeTemplate } from '@quickbiz/shared';
+import { renderTemplateThumbnail } from '../../lib/creative/render/template-thumbnail';
 
 export interface TemplateCardProps {
   readonly template: CreativeTemplate;
@@ -12,14 +14,19 @@ export interface TemplateCardProps {
 /**
  * A template preview.
  *
- * The preview is a stylised miniature of the template's palette and headline, not a
- * full render: drawing every document at card size would mean one canvas per card.
- * The editor always opens the real template document, and saved projects show a
- * genuine rendered thumbnail instead.
+ * The thumbnail is a real render of the template document through the same
+ * renderer the editor and exporter use, so the card shows what the customer will
+ * actually open. Rendering happens once per card after mount; if the browser
+ * cannot provide a canvas the card falls back to a labelled placeholder rather
+ * than an empty box.
  */
 export function TemplateCard(props: TemplateCardProps) {
   const { t } = useTranslation();
   const { template, canvasLabel, busy, onUse } = props;
+
+  // Rendered once per template and cached by the thumbnail module; computing it
+  // during render keeps the card free of state and avoids an effect-driven cascade.
+  const thumbnail = useMemo(() => renderTemplateThumbnail(template), [template]);
 
   return (
     <button
@@ -28,7 +35,21 @@ export function TemplateCard(props: TemplateCardProps) {
       disabled={busy}
       className="group flex w-full flex-col overflow-hidden rounded-card border border-border bg-surface text-left shadow-elev-1 transition-shadow hover:shadow-elev-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus/70 focus-visible:ring-offset-2 focus-visible:ring-offset-canvas disabled:opacity-60"
     >
-      <TemplateThumbnail template={template} />
+      <div className="relative flex aspect-[4/3] items-center justify-center overflow-hidden bg-surface-muted">
+        {thumbnail ? (
+          <img
+            src={thumbnail}
+            alt=""
+            className="size-full object-contain"
+            loading="lazy"
+            decoding="async"
+          />
+        ) : (
+          <span className="px-3 text-center text-[11px] font-medium text-ink-subtle">
+            {t('studio.templatePreviewUnavailable')}
+          </span>
+        )}
+      </div>
       <div className="flex items-center justify-between gap-2 p-3">
         <div className="min-w-0">
           <p className="truncate text-sm font-semibold text-ink">{template.name}</p>
@@ -40,44 +61,5 @@ export function TemplateCard(props: TemplateCardProps) {
         </span>
       </div>
     </button>
-  );
-}
-
-function TemplateThumbnail({ template }: { readonly template: CreativeTemplate }) {
-  return (
-    <div
-      aria-hidden="true"
-      className="flex aspect-[4/3] items-center justify-center overflow-hidden bg-surface-muted p-3"
-    >
-      <TemplateMiniature template={template} />
-    </div>
-  );
-}
-
-/**
- * A lightweight vector stand-in for the real render.
- *
- * Drawing the full document into a canvas here would mean one canvas per card;
- * instead the thumbnail shows the template's dominant shape and type blocks at the
- * correct proportions. The editor always renders the true document.
- */
-function TemplateMiniature({ template }: { readonly template: CreativeTemplate }) {
-  const nodes = template.build();
-  const fill = nodes.find((node) => node.type === 'shape' && node.fill.type === 'solid');
-  const background =
-    fill && fill.type === 'shape' && fill.fill.type === 'solid' ? fill.fill.color : '#6741E8';
-  const headline = nodes.find((node) => node.type === 'text' && node.name === 'Headline');
-
-  return (
-    <div
-      className="flex size-full flex-col justify-between rounded-sm p-2 shadow-elev-1"
-      style={{ backgroundColor: background }}
-    >
-      <span className="block h-1.5 w-1/3 rounded-full bg-white/40" />
-      <span className="line-clamp-3 text-[10px] font-bold leading-tight text-white/90">
-        {headline && headline.type === 'text' ? headline.text : template.name}
-      </span>
-      <span className="block h-1 w-1/2 rounded-full bg-white/30" />
-    </div>
   );
 }

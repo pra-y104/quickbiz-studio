@@ -1,0 +1,21 @@
+# Content Security Policy for the QuickBiz Studio web app (Cloudflare Pages).
+#
+# This file only takes effect once the site is deployed; the dev server ignores it.
+# The policy is strict enough to matter and loose enough not to break the app:
+#
+# - scripts: same-origin only, no 'unsafe-inline' and no 'unsafe-eval'
+# - styles: same-origin plus inline, because Tailwind v4 injects a style element
+# - images: same-origin plus blob: and data:, for local uploads and previews
+# - connect: same-origin plus the Supabase project (authentication only)
+# - microphone: allowed for this origin, because Translator dictation needs it
+# - camera, geolocation: denied
+#
+# Verify on a preview deployment before applying to production.
+
+/*
+  Content-Security-Policy: default-src 'self'; base-uri 'none'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self'; connect-src 'self' https://*.supabase.co; manifest-src 'self'; worker-src 'self'; upgrade-insecure-requests
+  X-Content-Type-Options: nosniff
+  X-Frame-Options: DENY
+  Referrer-Policy: no-referrer
+  Permissions-Policy: camera=(), microphone=(self), geolocation=()
+  Strict-Transport-Security: max-age=31536000; includeSubDomains

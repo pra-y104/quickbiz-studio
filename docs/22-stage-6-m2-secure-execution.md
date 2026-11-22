@@ -57,3 +57,32 @@ applied to production Pages headers.
 
 `GET /api/v1/ai/status` still reports `quota: null`, because no durable allowance is
 enforced. The per-isolate limiter is a damage limiter, not an entitlement.
+
+## Content Security Policy (proposed, not applied)
+
+The web app previously had no CSP. `apps/web/public/_headers` now carries a policy for
+Cloudflare Pages. It is **not active** until the site is deployed, and the dev server
+ignores it.
+
+- `default-src 'self'`, `object-src 'none'`, `base-uri 'none'`, `frame-ancestors 'none'`
+- `script-src 'self'` — no `unsafe-inline`, no `unsafe-eval`; the theme bootstrap moved
+  from an inline script to `public/theme-init.js` so this can be enforced
+- `style-src 'self' 'unsafe-inline'` — Tailwind v4 injects a style element at runtime
+- `img-src 'self' data: blob:` — local uploads, previews and thumbnails
+- `connect-src 'self' https://*.supabase.co` — authentication only
+- `Permissions-Policy: camera=(), microphone=(self), geolocation=()`
+
+Automated coverage: `apps/web/src/__tests__/csp.test.ts` parses the header file and
+asserts the required directives, the absence of `unsafe-inline`/`unsafe-eval`, the
+image sources, the Supabase-only remote origin, the microphone allowance and the
+HTML shell having no inline scripts or handler attributes.
+
+**Still required:** a preview deployment to confirm the policy does not break
+authentication, downloads or the editor, then owner approval to apply it to production.
+
+## Rate limiting
+
+The API limiter remains per isolate (`apps/api/src/middleware/rate-limit.ts`). A shared
+store (Cloudflare rate limiting rules, a Durable Object, or a database-backed counter)
+is required before any paid AI endpoint is public. This is a **high-severity**
+production blocker and is not resolved by this milestone.

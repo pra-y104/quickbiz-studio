@@ -13,21 +13,7 @@
     <meta property="og:title" content="QuickBiz Studio" />
     <meta property="og:description" content="Powerful Tools. Fair Pricing. No Surprises." />
     <meta property="og:type" content="website" />
-    <script>
-      // Apply the saved theme before first paint to avoid a colour flash.
-      try {
-        var stored = localStorage.getItem('qb-theme');
-        var theme =
-          stored === 'light' || stored === 'dark'
-            ? stored
-            : window.matchMedia('(prefers-color-scheme: dark)').matches
-              ? 'dark'
-              : 'light';
-        document.documentElement.dataset.theme = theme;
-      } catch (_error) {
-        /* Theme preference is optional. */
-      }
-    </script>
+    <script src="/theme-init.js"></script>
   </head>
   <body>
     <div id="root"></div>

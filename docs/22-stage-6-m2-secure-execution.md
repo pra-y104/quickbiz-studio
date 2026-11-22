@@ -45,3 +45,15 @@ is replaced with a shared store (Cloudflare rate limiting rules, a Durable Objec
 a database-backed counter). Likewise the web app still has no Content Security
 Policy; the proposed policy must be verified on a preview deployment before it is
 applied to production Pages headers.
+## M2 phase 2 — added controls
+
+| Control | Implementation | Honest limit |
+|---|---|---|
+| Verified email | `AuthClaims.emailVerified` from the `email_verified` claim; `AI_REQUIRE_VERIFIED_EMAIL` defaults to `true`; missing claim = unverified → `403` | Real verification status still requires a server-side check if a token omits the claim |
+| Idempotency | `Idempotency-Key` replays the first successful answer per user+key, 10 min TTL, 500 entries | Per isolate; a retry routed elsewhere can run again |
+| Cost limiter | Per-user daily run count (default 50), only enforced once an adapter is configured | Per isolate and in memory; **not** a security boundary and not a quota |
+| Redacted logging | `ai.run.succeeded`, `ai.run.failed`, `ai.unavailable`, `ai.quota-exhausted` with request id, tool, latency and token counts | Never logs prompts, outputs, keys or provider bodies |
+| Usage persistence | Interface prepared (`AiQuotaStore`); durable store not implemented | Needs a migration (Stage 7) |
+
+`GET /api/v1/ai/status` still reports `quota: null`, because no durable allowance is
+enforced. The per-isolate limiter is a damage limiter, not an entitlement.

@@ -1,3 +1,4 @@
+import { SignJWT } from 'jose';
 import { describe, expect, it } from 'vitest';
 import { TOOL_CATALOGUE, isToolExecutable } from '@quickbiz/shared';
 import * as aiModule from '../ai';
@@ -5,6 +6,19 @@ import { productionRegistry } from '../ai/registry';
 import { createApp } from '../app';
 import apiPackage from '../../package.json';
 import { testEnv } from './test-env';
+
+const JWT_SECRET = 'test-secret-value-that-is-long-enough';
+const secretKey = new TextEncoder().encode(JWT_SECRET);
+
+async function signToken() {
+  return new SignJWT({ email: 'ada@example.com', role: 'authenticated', session_id: 's1' })
+    .setProtectedHeader({ alg: 'HS256' })
+    .setSubject('demo-user-id')
+    .setAudience('authenticated')
+    .setIssuedAt()
+    .setExpirationTime('1h')
+    .sign(secretKey);
+}
 
 describe('production isolation', () => {
   it('contains no provider in the production registry', () => {
@@ -56,8 +70,37 @@ describe('HTTP surface stays disabled', () => {
       testEnv({ AI_PROVIDER: 'gemini', AI_MODEL: 'gemini-flash' }),
     );
 
-    expect(response.status).toBe(501);
-    expect(await response.json()).toMatchObject({ error: { code: 'NOT_IMPLEMENTED' } });
+    // M2: the route exists but is authenticated and fail-closed. An anonymous
+    // caller must not learn anything, and a signed-in caller gets 503 because no
+    // adapter is registered.
+    expect(response.status).toBe(401);
+    expect(await response.json()).toMatchObject({ error: { code: 'UNAUTHORIZED' } });
+  });
+
+  it('fails closed with 503 for a signed-in caller while no adapter exists', async () => {
+    const token = await signToken();
+    const app = createApp();
+    const response = await app.request(
+      '/api/v1/ai/run',
+      {
+        method: 'POST',
+        headers: { 'content-type': 'application/json', authorization: `Bearer ${token}` },
+        body: JSON.stringify({
+          tool: 'ai-writer',
+          input: {
+            documentType: 'email',
+            topic: 'A practical guide to opening a small bakery in Lagos',
+            tone: 'friendly',
+            length: 'medium',
+            language: 'en',
+          },
+        }),
+      },
+      testEnv({ SUPABASE_JWT_SECRET: JWT_SECRET, AI_PROVIDER: 'gemini' }),
+    );
+
+    expect(response.status).toBe(503);
+    expect(await response.json()).toMatchObject({ error: { code: 'SERVICE_UNAVAILABLE' } });
   });
 
   it('keeps every AI catalogue entry planned and unpriced', () => {

@@ -70,7 +70,7 @@ describe('GET /api/v1/ai/status', () => {
 });
 
 describe('POST /api/v1/ai/run', () => {
-  it('returns 501 and never calls a provider', async () => {
+  it('requires authentication and never calls a provider', async () => {
     const app = createApp();
     const response = await app.request(
       '/api/v1/ai/run',
@@ -79,7 +79,9 @@ describe('POST /api/v1/ai/run', () => {
     );
     const body = (await response.json()) as { error: { code: string } };
 
-    expect(response.status).toBe(501);
-    expect(body.error.code).toBe('NOT_IMPLEMENTED');
+    // M2: no token, no information. The route never reaches a provider because
+    // none is registered.
+    expect(response.status).toBe(401);
+    expect(body.error.code).toBe('UNAUTHORIZED');
   });
 });

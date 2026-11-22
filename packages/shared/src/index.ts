@@ -7,6 +7,7 @@ export * from './types/currency';
 export * from './types/locale';
 export * from './types/tool';
 export * from './types/profile';
+export * from './wallet/ledger';
 export * from './schemas/common';
 export * from './schemas/tools';
 export * from './schemas/auth';

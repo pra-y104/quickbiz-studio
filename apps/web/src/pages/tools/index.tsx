@@ -1,6 +1,7 @@
 import { listToolsByKind, type ToolCategory } from '@quickbiz/shared';
 import { Search, Sparkles, X } from 'lucide-react';
 import { useState } from 'react';
+import { Link } from 'react-router';
 import { TOOLS_INDEX_COPY } from '../../content/tools';
 import { ToolCard } from '../../components/marketing/tool-card';
 import { Alert } from '../../components/ui/alert';
@@ -36,6 +37,7 @@ export function ToolsPage() {
   const [category, setCategory] = useState<CategoryFilter>('all');
 
   const tools = listToolsByKind('utility').filter((tool) => tool.status === 'live');
+  const plannedAiTools = listToolsByKind('ai').filter((tool) => tool.status === 'planned');
   const categories = [...new Set(tools.map((tool) => tool.category))];
 
   const search = query.trim().toLowerCase();
@@ -160,6 +162,28 @@ export function ToolsPage() {
           <CardTitle>{TOOLS_INDEX_COPY.aiNoteTitle}</CardTitle>
           <CardDescription>{TOOLS_INDEX_COPY.aiNoteBody}</CardDescription>
         </CardHeader>
+        <CardContent>
+          <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            {plannedAiTools.map((tool) => (
+              <li key={tool.slug}>
+                <Link
+                  to={`/tools/${tool.slug}`}
+                  className="flex h-full flex-col gap-1 rounded-card border border-border bg-surface p-3 transition-colors hover:border-border-strong hover:bg-surface-muted"
+                >
+                  <span className="flex items-center justify-between gap-2">
+                    <span className="text-sm font-medium text-ink">{tool.name}</span>
+                    <Badge tone="neutral">Planned</Badge>
+                  </span>
+                  <span className="text-xs text-ink-subtle">{tool.summary}</span>
+                </Link>
+              </li>
+            ))}
+          </ul>
+          <p className="mt-3 text-xs text-ink-subtle">
+            These pages show the planned interface. They are not connected to a provider in this
+            build, so nothing can run or be charged.
+          </p>
+        </CardContent>
       </Card>
 
       <Alert tone="info" className="mt-6">

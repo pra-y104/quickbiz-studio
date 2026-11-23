@@ -18,6 +18,15 @@ export interface Bindings {
   readonly SUPABASE_JWKS_URL?: string;
   /** Legacy HS256 shared secret. Server-only; never exposed to the browser. */
   readonly SUPABASE_JWT_SECRET?: string;
+  /**
+   * Optional Cloudflare KV namespace binding used by the rate limiter.
+   * When present, the API uses a shared store instead of the per-isolate default.
+   * Typed structurally so tests can inject a fake without a real binding.
+   */
+  readonly RATE_LIMIT_KV?: {
+    get(key: string): Promise<string | null>;
+    put(key: string, value: string, options?: { expirationTtl?: number }): Promise<void>;
+  };
   /** Server-only, reserved for Stage 7 privileged database work. */
   readonly SUPABASE_SERVICE_ROLE_KEY?: string;
   /** Server-only. Reserved for Stage 6+. */
@@ -44,6 +53,15 @@ export interface AppConfig {
     readonly enabled: boolean;
     readonly windowSeconds: number;
     readonly maxRequests: number;
+    /**
+     * Shared KV namespace for distributed rate limiting, or null to use the
+     * per-isolate in-memory default. KV is eventually consistent; see
+     * `rate-limit-store.ts` for the exact consistency tradeoff.
+     */
+    readonly kvNamespace: {
+      get(key: string): Promise<string | null>;
+      put(key: string, value: string, options?: { expirationTtl?: number }): Promise<void>;
+    } | null;
   };
   /**
    * Requested AI provider and model, if the environment names them.
@@ -134,6 +152,7 @@ export function resolveConfig(bindings: Bindings): AppConfig {
       enabled: parsed.RATE_LIMIT_ENABLED === 'true',
       windowSeconds: parsed.RATE_LIMIT_WINDOW_SECONDS,
       maxRequests: parsed.RATE_LIMIT_MAX_REQUESTS,
+      kvNamespace: (bindings as Bindings).RATE_LIMIT_KV ?? null,
     },
     ai: {
       providerId: parsed.AI_PROVIDER,

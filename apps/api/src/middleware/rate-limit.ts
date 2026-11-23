@@ -1,59 +1,50 @@
 import type { MiddlewareHandler } from 'hono';
 import { AppError } from '../lib/errors';
 import type { AppContext } from '../types/context';
-
-interface Bucket {
-  count: number;
-  resetAt: number;
-}
+import { defaultRateLimitStore, rateLimitKey, type RateLimitStore } from './rate-limit-store';
 
 /**
- * Fixed-window rate limiting held in worker memory.
+ * Fixed-window rate limiting backed by a shared store interface.
  *
- * LIMITATION: Cloudflare isolates are ephemeral and replicated, so this limit is
- * per isolate, not global. It stops runaway loops and casual abuse but is not a
- * hard guarantee. Before public launch this must be backed by a shared store
- * (Cloudflare rate limiting rules, Durable Objects or KV). Documented in
- * docs/08-security.md.
+ * The default store is per-isolate (see `rate-limit-store.ts`). Production must
+ * inject a distributed store (KV, Durable Object or a Cloudflare rate-limit
+ * rule) before this endpoint is public. The middleware no longer owns a `Map`;
+ * it delegates to the injected store so the backing can change without editing
+ * request handling.
  */
-const buckets = new Map<string, Bucket>();
-const MAX_TRACKED_KEYS = 5_000;
+export function createRateLimit(store: RateLimitStore = defaultRateLimitStore) {
+  const handler: MiddlewareHandler<AppContext> = async (c, next) => {
+    const { rateLimit: limits } = c.get('config');
+    if (!limits.enabled) {
+      await next();
+      return;
+    }
 
-function clientKey(c: Parameters<MiddlewareHandler<AppContext>>[0]): string {
-  const ip = c.req.header('cf-connecting-ip') ?? c.req.header('x-forwarded-for') ?? 'unknown';
-  return ip.split(',')[0]?.trim() ?? 'unknown';
-}
+    const clientKey =
+      c.req.header('cf-connecting-ip') ??
+      c.req.header('x-forwarded-for')?.split(',')[0]?.trim() ??
+      'unknown';
+    const key = rateLimitKey({ clientKey, path: new URL(c.req.url).pathname });
+    const windowMs = limits.windowSeconds * 1000;
 
-function pruneExpired(now: number): void {
-  if (buckets.size < MAX_TRACKED_KEYS) return;
-  for (const [key, bucket] of buckets) {
-    if (bucket.resetAt <= now) buckets.delete(key);
-  }
-  if (buckets.size >= MAX_TRACKED_KEYS) buckets.clear();
-}
+    const decision = await store.hit(key, limits.maxRequests, windowMs);
+    if (!decision.allowed) {
+      c.header('Retry-After', String(decision.retryAfterSeconds));
+      c.header('X-RateLimit-Limit', String(limits.maxRequests));
+      c.header('X-RateLimit-Remaining', '0');
+      c.header('X-RateLimit-Reset', String(Math.ceil(decision.resetAt / 1000)));
+      throw AppError.rateLimited(undefined, decision.retryAfterSeconds);
+    }
 
-export const rateLimit: MiddlewareHandler<AppContext> = async (c, next) => {
-  const { rateLimit: limits } = c.get('config');
-  if (!limits.enabled) {
+    c.header('X-RateLimit-Limit', String(limits.maxRequests));
+    c.header('X-RateLimit-Remaining', String(decision.remaining));
+    c.header('X-RateLimit-Reset', String(Math.ceil(decision.resetAt / 1000)));
+
     await next();
-    return;
-  }
+  };
 
-  const now = Date.now();
-  pruneExpired(now);
+  return handler;
+}
 
-  const key = `${clientKey(c)}:${new URL(c.req.url).pathname}`;
-  const existing = buckets.get(key);
-
-  if (!existing || existing.resetAt <= now) {
-    buckets.set(key, { count: 1, resetAt: now + limits.windowSeconds * 1000 });
-  } else if (existing.count >= limits.maxRequests) {
-    const retryAfter = Math.max(1, Math.ceil((existing.resetAt - now) / 1000));
-    c.header('Retry-After', String(retryAfter));
-    throw AppError.rateLimited(undefined, retryAfter);
-  } else {
-    existing.count += 1;
-  }
-
-  await next();
-};
+/** Default middleware instance bound to the per-isolate store. */
+export const rateLimit: MiddlewareHandler<AppContext> = createRateLimit();

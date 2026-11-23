@@ -21,6 +21,7 @@ import type { MediaClip, TextClip, VideoDocument, VideoTrack } from '@quickbiz/s
 import {
   addClip,
   clipEndMs,
+  clipOpacityAt,
   createVideoDocument,
   documentDurationMs,
   removeClip,
@@ -370,6 +371,18 @@ function VideoEditor({
 
   const duration = useMemo(() => (document ? documentDurationMs(document) : 0), [document]);
 
+  // Preview opacity for the active media clip, so a fade transition is visible
+  // while editing exactly as it will render in the export.
+  const previewOpacity = useMemo(() => {
+    if (!document) return 1;
+    const active = document.tracks
+      .filter((track) => track.kind === 'video')
+      .flatMap((track) => track.clips)
+      .find((clip) => clip.startMs <= playhead && playhead < clipEndMs(clip));
+    if (!active) return 1;
+    return clipOpacityAt(active, playhead - active.startMs);
+  }, [document, playhead]);
+
   const persist = useCallback(async (next: VideoDocument) => {
     setSaveState('saving');
     try {
@@ -706,6 +719,7 @@ function VideoEditor({
               className="size-full object-contain"
               playsInline
               aria-label="Video preview"
+              style={{ opacity: previewOpacity }}
             />
             {document.tracks
               .filter((track) => track.kind === 'text')
@@ -985,6 +999,25 @@ function ClipInspector({
               onChange({ trimStartMs: Math.max(0, Math.round(Number(event.target.value) * 1000)) })
             }
           />
+        </label>
+      ) : null}
+
+      {clip.type === 'media' && clip.id !== '' ? (
+        <label className="block space-y-1">
+          <span className="text-xs font-medium text-ink">Transition</span>
+          <select
+            className="w-full rounded-md border border-border bg-surface px-2 py-1 text-sm text-ink"
+            value={clip.transition ?? 'none'}
+            onChange={(event) =>
+              onChange({ transition: event.target.value === 'fade' ? 'fade' : 'none' })
+            }
+          >
+            <option value="none">None (hard cut)</option>
+            <option value="fade">Fade</option>
+          </select>
+          <span className="block text-[11px] text-ink-subtle">
+            Fade is the only transition supported; the export applies it identically.
+          </span>
         </label>
       ) : null}
     </div>

@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   addClip,
+  clipOpacityAt,
   clipsInWindow,
   createVideoDocument,
   documentDurationMs,
@@ -115,6 +116,35 @@ describe('addClip', () => {
     const clips = withText.tracks.find((track) => track.kind === 'text')!.clips;
     expect(clips).toHaveLength(1);
     expect(clips[0]!.type).toBe('text');
+  });
+});
+
+describe('clipOpacityAt', () => {
+  it('is fully opaque for a hard cut', () => {
+    const clip = mediaClip({ durationMs: 2_000 });
+    expect(clipOpacityAt(clip, 0)).toBe(1);
+    expect(clipOpacityAt(clip, 1_000)).toBe(1);
+  });
+
+  it('ramps in and out for a fade transition', () => {
+    const clip = mediaClip({ durationMs: 2_000, transition: 'fade', transitionMs: 500 });
+    expect(clipOpacityAt(clip, 0)).toBeCloseTo(0, 5);
+    expect(clipOpacityAt(clip, 250)).toBeCloseTo(0.5, 5);
+    expect(clipOpacityAt(clip, 1_000)).toBeCloseTo(1, 5);
+    expect(clipOpacityAt(clip, 1_750)).toBeCloseTo(0.5, 5);
+    expect(clipOpacityAt(clip, 2_000)).toBeCloseTo(0, 5);
+  });
+
+  it('clamps the ramp to half the clip so a short clip still reaches full opacity', () => {
+    const clip = mediaClip({ durationMs: 200, transition: 'fade', transitionMs: 2_000 });
+    // ramp = min(2000, 100) = 100; at the midpoint the clip is fully opaque.
+    expect(clipOpacityAt(clip, 100)).toBeCloseTo(1, 5);
+    expect(clipOpacityAt(clip, 50)).toBeCloseTo(0.5, 5);
+  });
+
+  it('does not fade a text clip', () => {
+    const clip = textClip();
+    expect(clipOpacityAt(clip, 10)).toBe(1);
   });
 });
 

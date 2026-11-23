@@ -67,6 +67,14 @@ export const mediaClipSchema = z
     assetId: z.string().min(1).max(120),
     /** Optional display label; never a URL. */
     label: z.string().max(VIDEO_LIMITS.maxTitleLength).optional(),
+    /**
+     * Supported transition at the clip edges. Only a fade is implemented; the
+     * option exists so the timeline and the exporter agree on what is rendered.
+     * Optional so older project files still parse; absence means no transition.
+     */
+    transition: z.enum(['none', 'fade']).optional(),
+    /** Fade length in milliseconds. Clamped by the renderer to the clip length. */
+    transitionMs: z.number().int().min(0).max(2_000).optional(),
   })
   .strict();
 
@@ -142,6 +150,26 @@ export type VideoDocument = z.infer<typeof videoDocumentSchema>;
 
 export function clipEndMs(clip: VideoClip): number {
   return clip.startMs + clip.durationMs;
+}
+
+/**
+ * Opacity multiplier for a media clip at a moment in its playback, or 1.
+ *
+ * Only the `fade` transition is supported: the clip ramps from transparent to
+ * opaque over `transitionMs` at its start and back to transparent over the same
+ * length at its end. The ramp length is clamped to half the clip so a very short
+ * clip still reaches full opacity in the middle.
+ */
+export function clipOpacityAt(clip: VideoClip, elapsedInClipMs: number): number {
+  if (clip.type !== 'media' || !clip.transition || clip.transition === 'none') return 1;
+
+  const requested = clip.transitionMs ?? 250;
+  const ramp = Math.max(0, Math.min(requested, Math.floor(clip.durationMs / 2)));
+  if (ramp <= 0) return 1;
+
+  const fadeIn = Math.min(1, Math.max(0, elapsedInClipMs / ramp));
+  const fadeOut = Math.min(1, Math.max(0, (clip.durationMs - elapsedInClipMs) / ramp));
+  return Math.min(fadeIn, fadeOut);
 }
 
 /** The last moment any clip ends, or 0 for an empty document. */

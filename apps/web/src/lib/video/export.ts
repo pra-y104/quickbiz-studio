@@ -17,7 +17,7 @@
  */
 
 import type { MediaClip, VideoClip, VideoDocument } from '@quickbiz/shared';
-import { clipEndMs } from '@quickbiz/shared';
+import { clipEndMs, clipOpacityAt } from '@quickbiz/shared';
 import { getVideoAssetUrl, releaseVideoAssetUrl } from './assets';
 
 export const WEBM_MIME_CANDIDATES = [
@@ -247,11 +247,12 @@ export async function exportVideoToWebm(options: VideoExportOptions): Promise<Vi
       const clip = entry.clip;
       return clip.startMs <= timeMs && timeMs < clipEndMs(clip);
     });
+    ctx!.fillStyle = '#000';
+    ctx!.fillRect(0, 0, canvas.width, canvas.height);
     if (active && active.video.readyState >= 2) {
+      ctx!.globalAlpha = clipOpacityAt(active.clip, timeMs - active.clip.startMs);
       drawContain(ctx!, active.video, canvas.width, canvas.height);
-    } else {
-      ctx!.fillStyle = '#000';
-      ctx!.fillRect(0, 0, canvas.width, canvas.height);
+      ctx!.globalAlpha = 1;
     }
     for (const clip of textClips) {
       if (clip.type !== 'text') continue;

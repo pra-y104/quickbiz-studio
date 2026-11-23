@@ -23,6 +23,7 @@ import { parseOrThrow } from '../lib/validate';
 import { ok } from '../lib/response';
 import { PaymentProviderError } from '../payments/provider';
 import { resolvePaymentProvider } from '../payments/registry';
+import { defaultPaymentLedger } from '../payments/ledger';
 import type { AppContext } from '../types/context';
 
 export const paymentRoutes = new Hono<AppContext>();
@@ -49,6 +50,9 @@ paymentRoutes.get('/status', (c) => {
     provider: provider?.id ?? null,
     // Test mode is the only mode this build supports.
     mode: provider ? 'test' : null,
+    // False until the payment migration is applied and a service-role ledger is
+    // wired; a webhook is acknowledged but never settles money without it.
+    ledgerConfigured: defaultPaymentLedger.isConfigured(),
   });
 });
 
@@ -122,16 +126,32 @@ paymentRoutes.post('/webhook', async (c) => {
       return ok(c, { received: true, ignored: true });
     }
 
-    // Stage 7 follow-up: credit the wallet here (service role) after verifying the
-    // amount and currency against the stored checkout. No database is applied in
-    // this build, so the event is acknowledged without moving money.
+    // Store the event for replay protection, then settle once if it is new.
+    // With no ledger configured (this build) the event is acknowledged and no
+    // money moves; see supabase/migrations/0005_payments.sql for the service-role
+    // functions (payment_store_event, payment_settle) that implement this.
+    const recorded = await defaultPaymentLedger.recordEvent({
+      provider: event.providerId,
+      providerEventId: c.req.header('x-paystack-signature') ?? 'body-hash',
+      type: event.type,
+      reference: event.reference,
+      status: event.status,
+      payload: event.payload,
+    });
+
+    if (!recorded.duplicate && event.status === 'success') {
+      await defaultPaymentLedger.settle(event.reference);
+    }
+
     logger.info('payments.webhook.received', {
       requestId: c.get('requestId'),
       type: event.type,
       reference: event.reference,
       status: event.status,
+      duplicate: recorded.duplicate,
+      settled: defaultPaymentLedger.isConfigured(),
     });
-    return ok(c, { received: true });
+    return ok(c, { received: true, duplicate: recorded.duplicate });
   } catch (error) {
     if (error instanceof PaymentProviderError) throw mapProviderError(error);
     throw AppError.provider();

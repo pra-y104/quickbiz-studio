@@ -53,8 +53,11 @@ Run `pnpm verify` for typecheck, lint, tests and both builds.
 | Android/desktop manual QA | The editor and Video Studio have never been opened on a phone |
 | Supabase connectivity | `VITE_SUPABASE_*` / `SUPABASE_*` are not visible to the sandbox, so no live auth or DB call has succeeded |
 | Database migrations | `0001`–`0004` are written but unapplied; wallet RLS is unproven |
-| Dependency audit | `pnpm audit` has not been run in CI |
 | Penetration test | Not performed |
+
+Verified: `pnpm audit --prod` reports **no known vulnerabilities** (run at the time
+of writing). This is a snapshot, not a guarantee; re-run it in CI before each
+release.
 
 ## 5. Recommended order of work before launch
 

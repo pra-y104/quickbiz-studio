@@ -2,7 +2,7 @@ import { useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link } from 'react-router';
-import { Plus, ShieldAlert, Sparkles, Upload } from 'lucide-react';
+import { Film, Plus, ShieldAlert, Sparkles, Upload } from 'lucide-react';
 import type { CreativeDocument } from '@quickbiz/shared';
 import { Container } from '../../components/ui/container';
 import { Button } from '../../components/ui/button';
@@ -131,6 +131,12 @@ export function StudioProjectsPage() {
           <div className="flex flex-wrap gap-2">
             <Button variant="outline" asChild>
               <Link to="/studio/templates">{t('studio.browseTemplates')}</Link>
+            </Button>
+            <Button variant="outline" asChild>
+              <Link to="/studio/video">
+                <Film className="size-4" aria-hidden="true" />
+                Video Studio
+              </Link>
             </Button>
             <Button variant="outline" onClick={() => fileInput.current?.click()}>
               <Upload className="size-4" aria-hidden="true" />

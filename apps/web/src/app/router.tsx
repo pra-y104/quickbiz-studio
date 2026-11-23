@@ -104,6 +104,9 @@ const StudioTemplatesPage = lazy(() =>
 const StudioPage = lazy(() =>
   import('../pages/creative/studio').then((module) => ({ default: module.StudioPage })),
 );
+const VideoStudioPage = lazy(() =>
+  import('../pages/creative/video').then((module) => ({ default: module.VideoStudioPage })),
+);
 const ProfilePage = lazy(() =>
   import('../pages/profile').then((module) => ({ default: module.ProfilePage })),
 );
@@ -165,7 +168,6 @@ export const router = createBrowserRouter([
     path: '/tools/ad-generator',
     element: withShell(UtilityShell, <AiToolPage slug="ad-generator" />),
   },
-  { path: '/tools/translator', element: withShell(UtilityShell, <AiToolPage slug="translator" />) },
   {
     path: '/tools/text-improver',
     element: withShell(UtilityShell, <AiToolPage slug="text-improver" />),
@@ -207,6 +209,8 @@ export const router = createBrowserRouter([
   // browser only, so it sits outside the auth guard like the ordinary tools.
   { path: '/studio', element: withShell(UtilityShell, <StudioProjectsPage />) },
   { path: '/studio/templates', element: withShell(UtilityShell, <StudioTemplatesPage />) },
+  // Video Studio owns its own chrome, so it renders without the marketing shell.
+  { path: '/studio/video', element: withSuspense(<VideoStudioPage />) },
   // The editor owns its chrome, so it renders without the marketing shell.
   { path: '/studio/:projectId', element: withSuspense(<StudioPage />) },
 

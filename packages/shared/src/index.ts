@@ -22,3 +22,4 @@ export * from './tools/percentage';
 export * from './tools/text-format';
 export * from './tools/text-stats';
 export * from './tools/units';
+export * from './video';

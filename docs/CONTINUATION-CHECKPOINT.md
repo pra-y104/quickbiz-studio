@@ -9,7 +9,7 @@ checkpoint, **not** a completion report. The roadmap is not finished.
 |---|---|
 | Branch | `stage-6-p1-templates` |
 | Main | `12f1712` — untouched, no merge performed |
-| Tests | 706 passing (219 shared, 176 API, 311 web) |
+| Tests | 712 passing (219 shared, 180 API, 313 web) |
 | Working tree | clean at the last commit |
 
 ## Completed and pushed on this branch

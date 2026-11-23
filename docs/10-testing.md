@@ -18,7 +18,7 @@
 | Translation | Vitest | `apps/api/src/__tests__/translate.test.ts` | auth required, language validation, fail-closed 503 |
 | Globalisation | Vitest | `packages/shared/src/__tests__/locale.test.ts`, `apps/web/src/lib/locale`, `components/layout/locale-menu.test.tsx` | locale model, preferences, menu behaviour |
 
-Current result: **706 tests passing** (219 shared, 176 API, 311 web). See
+Current result: **712 tests passing** (219 shared, 180 API, 313 web). See
 `docs/24-stage-9-qa.md` for what the suites do **not** cover.
 
 ## Commands

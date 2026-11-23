@@ -56,9 +56,11 @@ the binding id, then deploy.
 
 1. **Database**: create a Supabase project (free tier), then apply
    `supabase/migrations/0001_extensions.sql`, `0002_conventions.sql`,
-   `0003_profiles.sql`, `0004_wallet.sql` in order using the SQL editor.
-   *Requires owner approval.* `0004` adds wallets, an append-only ledger and the
-   service-role credit/debit/refund functions.
+   `0003_profiles.sql`, `0004_wallet.sql`, `0005_payments.sql` in order using the
+   SQL editor. *Requires owner approval.* `0004` adds wallets, an append-only
+   ledger and the service-role credit/debit/refund functions; `0005` adds payments,
+   provider events (replay protection) and `payment_settle`, which credits a wallet
+   exactly once per successful payment.
 4. **Web**: Cloudflare dashboard → Workers & Pages → Create → Pages → connect the
    GitHub repository → build command `pnpm install && pnpm build:web`, output
    directory `apps/web/dist` → add the `VITE_*` variables → deploy.
@@ -108,14 +110,15 @@ expected future costs.
 | Area | Status |
 |---|---|
 | Web build, API build | Passing |
-| Tests | Passing (219 shared, 176 API, 311 web — unit/integration, no browser) |
+| Tests | Passing (219 shared, 180 API, 313 web — unit/integration, no browser) |
 | Authentication | Implemented; **not verified against a live Supabase project** |
-| Database migrations | Written (`0001`–`0004`, incl. wallet + RLS); **not applied** |
+| Database migrations | Written (`0001`–`0005`, incl. wallet + payments + RLS); **not applied** |
 | AI execution | Fail-closed 503; no provider activated |
 | AI interface (M4) | All eight tool pages live, honest unavailable state |
 | Translation | Provider-neutral route, fail-closed; voice input/playback work |
 | Wallet | Domain ledger + `0004` migration + customer UI (Supabase); **tables unapplied** |
-| Payments | Paystack **test-mode** adapter + routes + signature verification; **no live gateway** |
+| Payments | Paystack **test-mode** adapter, routes, signature verification, replay-protected ledger port and `0005` migration; **no live gateway, no DB wired** |
+| Dependency audit | `pnpm audit --prod` clean at the time of writing |
 | Creative Studio | Editor, templates, export, mobile layout implemented |
 | Video Studio | Multi-track editor, local save/reopen, WebM export implemented; **no device QA** |
 | Globalisation | Locale + currency display preferences, prepared language catalogues |

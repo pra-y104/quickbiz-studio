@@ -82,10 +82,23 @@ authentication, downloads or the editor, then owner approval to apply it to prod
 
 ## Rate limiting
 
-The API limiter remains per isolate (`apps/api/src/middleware/rate-limit.ts`). A shared
-store (Cloudflare rate limiting rules, a Durable Object, or a database-backed counter)
-is required before any paid AI endpoint is public. This is a **high-severity**
-production blocker and is not resolved by this milestone.
+The API limiter delegates to a `RateLimitStore`
+(`apps/api/src/middleware/rate-limit-store.ts`):
+
+- the default `InMemoryRateLimitStore` is a fixed-window counter held in worker
+  memory — **per isolate**, so ten isolates mean ten times the allowance;
+- `KvRateLimitStore` writes the counter to Cloudflare KV, so the limit is shared
+  across isolates. KV is eventually consistent: a burst straddling the window
+  boundary can briefly overshoot, and `get`+`put` is not atomic.
+
+Binding `RATE_LIMIT_KV` to a KV namespace (or replacing the store with Cloudflare
+rate-limiting rules or a Durable Object) is required before any public AI endpoint.
+This remains a **high-severity** production blocker until that binding exists.
+
+The same pattern applies to the AI daily quota: `InMemoryAiQuotaStore` is per
+isolate; `KvAiQuotaStore` shares the allowance across isolates when `AI_QUOTA_KV`
+is bound. The KV store is a genuine cross-isolate cost limiter, not a billing
+ledger.
 
 ## M3 — all eight tools (offline acceptance)
 

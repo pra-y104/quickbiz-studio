@@ -11,9 +11,15 @@
 | Auth screens and guards | Vitest + Testing Library | `apps/web/src/pages/auth`, `src/components/auth`, `src/lib/auth` | validation, provider state, protected redirects, logout, recovery states, safe next paths, profile payload |
 | Ordinary tools | Vitest + Testing Library | `apps/web/src/pages/tools`, `src/components/tools`, `src/lib/tools` | every tool interaction, validation states, PDF structure and printed totals |
 | Creative Studio | Vitest | `packages/shared/src/__tests__/creative-*.test.ts`, `apps/web/src/lib/creative/__tests__/*` | document validation, geometry, commands, history, renderer, export, ingest, project store |
-| AI foundation | Vitest | `packages/shared/src/__tests__/ai-contracts.test.ts`, `apps/api/src/__tests__/ai-*.test.ts` | contract parity, prompt versions, provider registry, fake-provider pipeline, timeout, cancellation, output validation, isolation guards |
+| AI foundation | Vitest | `packages/shared/src/__tests__/ai-contracts.test.ts`, `apps/api/src/__tests__/ai-*.test.ts` | contract parity, prompt versions, provider registry, fake-provider pipeline, timeout, cancellation, output validation, isolation guards, rate-limit store, AI quota (memory + KV), logger redaction |
+| Video Studio | Vitest | `packages/shared/src/__tests__/video-*.test.ts`, `apps/web/src/lib/video/*.test.ts` | document validation, split/remove/add, project-file round-trip, timeline layout |
+| Wallet | Vitest | `packages/shared/src/__tests__/wallet-ledger.test.ts` | derived balance, no overdraft, idempotent entries, reserve/settle/release, concurrent double-spend |
+| Payments | Vitest | `apps/api/src/__tests__/payments*.test.ts`, `paystack.test.ts` | signature verification, amount checks, fail-closed checkout, webhook ack, test-mode only |
+| Translation | Vitest | `apps/api/src/__tests__/translate.test.ts` | auth required, language validation, fail-closed 503 |
+| Globalisation | Vitest | `packages/shared/src/__tests__/locale.test.ts`, `apps/web/src/lib/locale`, `components/layout/locale-menu.test.tsx` | locale model, preferences, menu behaviour |
 
-Current result: **559 tests passing** (189 shared, 91 API, 279 web).
+Current result: **706 tests passing** (219 shared, 176 API, 311 web). See
+`docs/24-stage-9-qa.md` for what the suites do **not** cover.
 
 ## Commands
 

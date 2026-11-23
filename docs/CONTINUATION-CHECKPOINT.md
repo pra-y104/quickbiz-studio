@@ -8,10 +8,9 @@ checkpoint, **not** a completion report. The roadmap is not finished.
 | Item | Value |
 |---|---|
 | Branch | `stage-6-p1-templates` |
-| Latest commit at time of writing | `2f66a58` (plus the commit that adds this file) |
 | Main | `12f1712` — untouched, no merge performed |
-| Tests | 635 passing (189 shared, 142 API, 295 web) |
-| Working tree | clean |
+| Tests | 706 passing (219 shared, 176 API, 311 web) |
+| Working tree | clean at the last commit |
 
 ## Completed and pushed on this branch
 
@@ -31,48 +30,51 @@ checkpoint, **not** a completion report. The roadmap is not finished.
 | Stage 7 wallet ledger domain | `8812374` |
 | Stage 8 payment provider contract + signature verification + simulation | `8812374` |
 | Stage 10 deployment and handover guide | `2f66a58` |
+| Continuation checkpoint | `3969905` |
+| M4 AI tool pages (all eight, honest unavailable state) | `6160a1a` |
+| M5 shared-store rate limiting abstraction | `46dc522` |
+| Video Studio: model, timeline, preview, WebM export | `2e5ff21` |
+| Wallet `0004` migration + customer wallet UI | `5078a76` |
+| Paystack test-mode adapter + payment routes | `516506c` |
+| Translation route + translator wiring | `7536843` |
+| Globalisation: locale/currency preferences, prepared languages | `f8329ce` |
+| Durable KV AI quota wired into the run route | `7e7c9d2` |
 
 ## Next tasks, in order
 
-1. **M4 — premium AI interface** (`apps/web/src/pages/tools/ai/*`, API client):
-   forms from `AI_TOOL_SCHEMAS`, result panel with copy/download/regenerate, loading
-   and error states, honest "AI unavailable" state while `PRODUCTION_ADAPTERS` is
-   empty.
-8. **M5 — AI security review**: shared-store rate limiting design, quota
-   enforcement, abuse tests, redacted-log assertions.
-3. **Video Studio**: new `creative/video/*` — document model, timeline, preview via
-   `<video>`, WebM export via `MediaRecorder` (labelled honestly, never "MP4").
-4. **Wallet persistence + UI**: `creative_projects`-style Supabase tables with RLS
-   (needs migration approval) and a wallet page reading server-side balances.
-5. **Payments**: map `PaymentProvider` onto Paystack's API shape (test-mode only),
-   signed webhook route, reconciliation job.
-6. **Globalisation**: locale switcher over complete catalogues, currency switcher for
-   display, regional date/number formats.
-6. **Stage 9**: browser/device QA matrix, accessibility audit, dependency audit.
-7. **Stage 10**: preview deployment verification of the CSP, then production approval.
+1. **Stage 9 QA**: `docs/24-stage-9-qa.md` records what is tested. Remaining
+   automated work: a dependency audit run (`pnpm audit --prod`) and, if practical,
+   an accessibility-oriented component test pass.
+2. **Video Studio polish**: project import is implemented; consider a media
+   browser, keyboard shortcuts, and drag-to-trim if time allows.
+3. **Docs**: keep `docs/08-security.md`, `docs/22-…m2…md`, `docs/23-…deployment.md`
+   and `docs/24-…qa.md` in step with the code.
+4. **Stage 10**: a preview deployment to load the CSP in a real browser, then owner
+   approval for production. Never deploy without explicit approval.
 
 ## Blockers that need the owner
 
 - `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`, `SUPABASE_URL` are **not visible**
   to the sandbox. Add `apps/web/.env.local` (git-ignored) and
-  `wrangler secret put` values to verify authentication.
-- Migration approval for any wallet/project tables and RLS.
+  `wrangler secret put` values to verify authentication and the database.
+- Migration approval for `0001`–`0004` (wallets + RLS are unapplied).
 - Business name, address, jurisdiction, support and privacy email for the legal pages.
-- AI provider decision (D1/D2) and funding (D3/D15/D19).
-- Paystack onboarding for live payments.
+- AI provider decision and funding.
+- Paystack live onboarding for live payments.
+- Cloudflare KV namespace bindings for `RATE_LIMIT_KV` and `AI_QUOTA_KV`.
 - Production deployment and CSP approval.
 
 ## Known high-severity gaps
 
-1. Per-isolate rate limiting (`apps/api/src/middleware/rate-limit.ts`) — needs a
-   shared store before any public AI endpoint.
+1. Rate limiting and AI quota fall back to per-isolate memory unless
+   `RATE_LIMIT_KV` / `AI_QUOTA_KV` are bound.
 2. CSP is committed and unit-tested but **not deploy-verified**.
-8. No browser or device testing has been performed anywhere in this project.
+3. No browser or device testing has been performed anywhere in this project.
+4. Database migrations are written but unapplied, so wallet RLS is unproven.
 
 ## Rules for the next session
 
 - Do not merge to `main`, deploy, apply migrations, activate providers or incur cost.
-- Keep changes scoped to Creative Studio, M2/M3, wallet, payments and globalisation.
 - Run `pnpm typecheck`, `pnpm lint`, `pnpm format:check`, `pnpm test`,
   `pnpm build:web`, `pnpm build:api` before every commit.
 - Do not delete or weaken existing tests.

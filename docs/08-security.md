@@ -37,17 +37,29 @@ Security is a product feature. Nothing in this document may be traded away for s
 
 ## Known limitations (must be closed before paid launch)
 
-1. **Rate limiting is per isolate.** Replace with Cloudflare rate limiting rules or
-   KV/Durable Objects. Without this, a distributed attacker can exceed the intended
-   limit.
-2. **No authentication yet.** JWT verification lands in Stage 4. Until then the API
-   exposes only public read-only endpoints.
-3. **No CSP for the frontend yet.** Add a strict Content-Security-Policy at Pages
-   level once the asset list is stable (Stage 9).
-4. **No dependency vulnerability scanning in CI.** Add `pnpm audit --prod` or
-   Dependabot at Stage 9.
-5. **No penetration test.** A manual security review is required before real money
+1. **Rate limiting defaults to per isolate.** The limiter now delegates to a
+   `RateLimitStore` (`apps/api/src/middleware/rate-limit-store.ts`): the default
+   `InMemoryRateLimitStore` is per isolate, while `KvRateLimitStore` shares the
+   counter across isolates when a KV namespace is bound. KV is eventually
+   consistent, so a burst can briefly overshoot; Cloudflare rate-limiting rules or
+   a Durable Object are stricter. Binding KV (or the native rule) is required
+   before any public AI endpoint.
+2. **AI quota is cost-limiting, not billing.** `InMemoryAiQuotaStore` is per
+   isolate; `KvAiQuotaStore` shares the daily allowance across isolates when
+   `AI_QUOTA_KV` is bound. Neither is a billing ledger; the wallet ledger is.
+3. **Authentication is implemented but not verified against a live project.** JWT
+   verification, the verified-email gate and cross-user isolation are implemented
+   and unit-tested; a real Supabase project must be connected and exercised before
+   launch.
+4. **CSP is committed and unit-tested, not deploy-verified.** The policy in
+   `apps/web/public/_headers` must be loaded in a real deployment to confirm it
+   does not break auth, downloads or the editors.
+5. **No dependency vulnerability scanning in CI yet.** Add `pnpm audit --prod` or
+   Dependabot.
+6. **No penetration test.** A manual security review is required before real money
    is accepted.
+7. **No browser or device testing has been performed.** The test suite is
+   unit/integration only; a manual Android and desktop QA pass is still required.
 
 ## Rules for money
 

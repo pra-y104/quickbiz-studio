@@ -41,16 +41,24 @@ for local builds. Only `VITE_*` names reach the browser.
 | `SUPABASE_JWT_SECRET` | legacy | HS256 fallback; prefer JWKS |
 | `AI_PROVIDER` / `AI_MODEL` | no | Preference only; no adapter is registered |
 | `AI_API_KEY` | no | Reserved; unused in this build |
-| `RATE_LIMIT_*` | no | Tunables for the per-isolate limiter |
+| `AI_REQUIRE_VERIFIED_EMAIL` | no | Defaults to `true` (fail closed) |
+| `RATE_LIMIT_ENABLED` / `RATE_LIMIT_WINDOW_SECONDS` / `RATE_LIMIT_MAX_REQUESTS` | no | Limiter tunables |
+| `PAYSTACK_SECRET_KEY` | no | **Test mode only** (`sk_test_`); a live key is ignored until owner approval |
+| `PAYSTACK_BASE_URL` | no | Override for tests |
+| `AI_QUOTA_KV` / `RATE_LIMIT_KV` | no | KV namespace bindings; when set, the AI quota and rate limiter use shared KV stores instead of per-isolate memory |
 
 Set secrets with `wrangler secret put <NAME>` — **never** in `wrangler.toml`, the
-repository, or a chat message.
+repository, or a chat message. `AI_QUOTA_KV` and `RATE_LIMIT_KV` are **bindings**,
+not secrets: declare them in `wrangler.toml` under `[[kv_namespaces]]` and reference
+the binding id, then deploy.
 
 ## 6. Deployment steps (dashboard, no CLI required)
 
 1. **Database**: create a Supabase project (free tier), then apply
    `supabase/migrations/0001_extensions.sql`, `0002_conventions.sql`,
-   `0003_profiles.sql` in order using the SQL editor. *Requires owner approval.*
+   `0003_profiles.sql`, `0004_wallet.sql` in order using the SQL editor.
+   *Requires owner approval.* `0004` adds wallets, an append-only ledger and the
+   service-role credit/debit/refund functions.
 4. **Web**: Cloudflare dashboard → Workers & Pages → Create → Pages → connect the
    GitHub repository → build command `pnpm install && pnpm build:web`, output
    directory `apps/web/dist` → add the `VITE_*` variables → deploy.
@@ -59,7 +67,9 @@ repository, or a chat message.
 6. **Connect**: set `VITE_API_BASE_URL` to the Worker URL and redeploy the Pages
    project; set `ALLOWED_ORIGINS` on the Worker to the Pages domain.
 7. **Verify**: `GET /health` returns 200; `GET /api/v1/ai/status` returns
-   `configured: false`; sign-in works if Supabase variables are set.
+   `configured: false`; `GET /api/v1/payments/status` returns `configured: false`
+   unless `PAYSTACK_SECRET_KEY` is a test key; `POST /api/v1/translate` returns 503
+   (no provider); sign-in works if Supabase variables are set.
 
 ### Rollback
 
@@ -98,19 +108,26 @@ expected future costs.
 | Area | Status |
 |---|---|
 | Web build, API build | Passing |
-| Tests | Passing (unit/integration, no browser) |
+| Tests | Passing (219 shared, 176 API, 311 web — unit/integration, no browser) |
 | Authentication | Implemented; **not verified against a live Supabase project** |
-| Database migrations | Written for profiles only; **not applied** |
+| Database migrations | Written (`0001`–`0004`, incl. wallet + RLS); **not applied** |
 | AI execution | Fail-closed 503; no provider activated |
-| Wallet | Domain ledger implemented and tested; **no tables, no UI** |
-| Payments | Simulated provider and signature verification; **no live gateway** |
+| AI interface (M4) | All eight tool pages live, honest unavailable state |
+| Translation | Provider-neutral route, fail-closed; voice input/playback work |
+| Wallet | Domain ledger + `0004` migration + customer UI (Supabase); **tables unapplied** |
+| Payments | Paystack **test-mode** adapter + routes + signature verification; **no live gateway** |
+| Creative Studio | Editor, templates, export, mobile layout implemented |
+| Video Studio | Multi-track editor, local save/reopen, WebM export implemented; **no device QA** |
+| Globalisation | Locale + currency display preferences, prepared language catalogues |
 | Legal pages | Scaffolding with placeholders; **needs owner details** |
 | CSP | Written and unit-tested; **not deploy-verified** |
-| Rate limiting | Per isolate — **high-severity gap** |
+| Rate limiting | Shared KV store implemented; **KV binding required**, else per isolate |
+| AI quota | Shared KV store implemented; **KV binding required**, else per isolate |
 
-**Not ready for production.** Mandatory blockers: shared rate limiting, a
-deploy-verified CSP, applied and reviewed migrations, owner legal details, and a
-manual Android/desktop QA pass.
+**Not ready for production.** Mandatory blockers: bind `RATE_LIMIT_KV` and
+`AI_QUOTA_KV` (or use Cloudflare rate-limiting rules), a deploy-verified CSP,
+applied and reviewed migrations, owner legal details, and a manual Android/desktop
+QA pass. See `docs/24-stage-9-qa.md` for the full QA record.
 ## 10. Supabase environment note
 
 The Kilo Environment settings are not injected into the sandbox process environment,

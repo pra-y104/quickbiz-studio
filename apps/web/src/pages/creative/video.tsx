@@ -27,6 +27,7 @@ import {
   serialiseVideoProjectFile,
   splitClip,
 } from '@quickbiz/shared';
+import { parseVideoProjectFile } from '@quickbiz/shared';
 import { Container } from '../../components/ui/container';
 import { Button } from '../../components/ui/button';
 import { Card, CardContent } from '../../components/ui/card';
@@ -176,6 +177,42 @@ function VideoProjectsView({
     onOpen(id);
   };
 
+  const importProjectFile = useRef<HTMLInputElement | null>(null);
+  const [importError, setImportError] = useState<string | null>(null);
+
+  const handleImport = async (file: File): Promise<void> => {
+    setImportError(null);
+    let raw: string;
+    try {
+      raw = await file.text();
+    } catch {
+      setImportError('That file could not be read.');
+      return;
+    }
+    const result = parseVideoProjectFile(raw);
+    if (!result.ok || !result.project) {
+      setImportError(result.error ?? 'That file is not a video project.');
+      return;
+    }
+    const imported = result.project.document;
+    // A re-imported project is stored as a new document so the original is kept.
+    const id = createVideoId();
+    const document: VideoDocument = {
+      ...imported,
+      id,
+      title: `${imported.title}`.slice(0, 120) || 'Imported video',
+      updatedAt: new Date().toISOString(),
+    };
+    try {
+      await saveVideoProject({ id, title: document.title, document, updatedAt: Date.now() });
+    } catch {
+      setImportError('That project could not be saved on this device.');
+      return;
+    }
+    await onRefresh();
+    onOpen(id);
+  };
+
   return (
     <Container className="py-8 sm:py-12">
       <Link
@@ -199,11 +236,34 @@ function VideoProjectsView({
             format, never labelled MP4.
           </p>
         </div>
-        <Button onClick={() => void create()}>
-          <Plus className="size-4" aria-hidden="true" />
-          New video project
-        </Button>
+        <div className="flex flex-wrap gap-2">
+          <Button variant="outline" onClick={() => importProjectFile.current?.click()}>
+            <Upload className="size-4" aria-hidden="true" />
+            Import project
+          </Button>
+          <Button onClick={() => void create()}>
+            <Plus className="size-4" aria-hidden="true" />
+            New video project
+          </Button>
+        </div>
+        <input
+          ref={importProjectFile}
+          type="file"
+          accept=".qbvideo,application/json"
+          className="sr-only"
+          onChange={(event) => {
+            const file = event.target.files?.[0];
+            if (file) void handleImport(file);
+            event.target.value = '';
+          }}
+        />
       </div>
+
+      {importError ? (
+        <Alert tone="danger" className="mt-4">
+          {importError}
+        </Alert>
+      ) : null}
 
       {storageError ? (
         <Alert tone="warning" className="mt-6">

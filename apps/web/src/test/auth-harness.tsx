@@ -2,6 +2,7 @@ import { render } from '@testing-library/react';
 import { MemoryRouter } from 'react-router';
 import type { Profile, ProfileUpdateInput } from '@quickbiz/shared';
 import { AuthProvider } from '../lib/auth/auth-provider';
+import { LocaleProvider } from '../lib/locale/locale-provider';
 import {
   AuthFailure,
   type AuthGateway,
@@ -168,7 +169,9 @@ export function renderWithAuth(ui: React.ReactNode, options: RenderWithAuthOptio
   const gateway = options.gateway ?? new FakeAuthGateway();
   const result = render(
     <MemoryRouter initialEntries={options.initialEntries ?? ['/']}>
-      <AuthProvider gateway={gateway}>{ui}</AuthProvider>
+      <LocaleProvider>
+        <AuthProvider gateway={gateway}>{ui}</AuthProvider>
+      </LocaleProvider>
     </MemoryRouter>,
   );
   return { ...result, gateway };

@@ -6,6 +6,7 @@ import { useAuth } from '../../lib/auth/auth-context';
 import { Logo } from '../brand/logo';
 import { Button } from '../ui/button';
 import { ThemeToggle } from '../ui/theme-toggle';
+import { LocaleMenu } from './locale-menu';
 
 export interface MobileMenuProps {
   open: boolean;
@@ -87,6 +88,10 @@ export function MobileMenu({ open, onOpenChange }: MobileMenuProps) {
                 </Button>
               </>
             )}
+            <div className="flex items-center justify-between">
+              <span className="text-xs text-ink-subtle">Language &amp; currency</span>
+              <LocaleMenu />
+            </div>
             <div className="flex items-center justify-between">
               <span className="text-xs text-ink-subtle">Colour theme</span>
               <ThemeToggle />

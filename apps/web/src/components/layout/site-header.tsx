@@ -6,6 +6,7 @@ import { Logo } from '../brand/logo';
 import { Button } from '../ui/button';
 import { Container } from '../ui/container';
 import { ThemeToggle } from '../ui/theme-toggle';
+import { LocaleMenu } from './locale-menu';
 import { useAuth } from '../../lib/auth/auth-context';
 
 /** Loaded on first open (and warmed during idle) to keep the first paint light. */
@@ -68,6 +69,7 @@ export function SiteHeader() {
           </nav>
 
           <div className="flex items-center gap-2">
+            <LocaleMenu className="hidden sm:block" />
             <ThemeToggle />
 
             {session ? (

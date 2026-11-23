@@ -1,6 +1,14 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import { BadgeCheck, MailWarning, RefreshCw } from 'lucide-react';
-import { LOCALES, SUPPORTED_LOCALES, profileUpdateSchema, type Profile } from '@quickbiz/shared';
+import {
+  LOCALES,
+  SUPPORTED_LOCALES,
+  formatDate,
+  formatMoney,
+  intlLocaleFor,
+  profileUpdateSchema,
+  type Profile,
+} from '@quickbiz/shared';
 import { AUTH_COPY } from '../content/auth';
 import { Alert } from '../components/ui/alert';
 import { Badge } from '../components/ui/badge';
@@ -11,8 +19,8 @@ import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
 import { AccountShell } from '../components/account/account-shell';
 import { useAuth } from '../lib/auth/auth-context';
+import { useLocale } from '../lib/locale/locale-provider';
 import { messageForAuthError } from '../lib/auth/messages';
-import { formatDate } from '@quickbiz/shared';
 
 type FieldErrors = Partial<Record<'displayName' | 'avatarUrl' | 'preferredLocale', string>>;
 type LoadState = 'loading' | 'ready' | 'missing' | 'error';
@@ -129,6 +137,7 @@ export function ProfilePage() {
   }
 
   const verified = Boolean(user?.emailConfirmedAt);
+  const { locale, currency } = useLocale();
 
   return (
     <AccountShell title={AUTH_COPY.profile.title} description={AUTH_COPY.profile.subtitle}>
@@ -290,6 +299,34 @@ export function ProfilePage() {
                 </dd>
               </div>
             </dl>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Regional format</CardTitle>
+            <CardDescription>
+              How numbers and dates appear for you. Change these from the language and currency menu
+              in the header.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3 text-sm">
+            <div className="flex items-center justify-between">
+              <span className="text-ink-muted">Display currency</span>
+              <span className="font-medium text-ink">{currency}</span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-ink-muted">Sample amount</span>
+              <span className="font-medium tabular-nums text-ink">
+                {formatMoney({ amountMinor: 1_234_567, currency, locale: intlLocaleFor(locale) })}
+              </span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-ink-muted">Sample date</span>
+              <span className="font-medium text-ink">
+                {formatDate('2026-01-01T09:00:00.000Z', { locale: intlLocaleFor(locale) })}
+              </span>
+            </div>
           </CardContent>
         </Card>
       </div>

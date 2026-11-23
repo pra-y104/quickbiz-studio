@@ -34,6 +34,10 @@ export interface Bindings {
   /** Server-only. Preferred model id for the requested provider. */
   readonly AI_MODEL?: string;
   readonly AI_API_KEY?: string;
+  /** Server-only. Paystack secret key. Only `sk_test_` is honoured. */
+  readonly PAYSTACK_SECRET_KEY?: string;
+  /** Server-only. Paystack API base override (tests). */
+  readonly PAYSTACK_BASE_URL?: string;
   /**
    * Require a verified email before AI runs. Defaults to true and fails closed:
    * a token without an `email_verified` claim is treated as unverified.

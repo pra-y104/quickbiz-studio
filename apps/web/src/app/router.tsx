@@ -110,6 +110,9 @@ const VideoStudioPage = lazy(() =>
 const ProfilePage = lazy(() =>
   import('../pages/profile').then((module) => ({ default: module.ProfilePage })),
 );
+const WalletPage = lazy(() =>
+  import('../pages/wallet').then((module) => ({ default: module.WalletPage })),
+);
 const NotFoundPage = lazy(() =>
   import('../pages/not-found').then((module) => ({ default: module.NotFoundPage })),
 );
@@ -204,6 +207,7 @@ export const router = createBrowserRouter([
 
   { path: '/dashboard', element: protectedRoute(<DashboardPage />) },
   { path: '/profile', element: protectedRoute(<ProfilePage />) },
+  { path: '/wallet', element: protectedRoute(<WalletPage />) },
 
   // Creative Studio. Local-first and account-free: the editor writes to this
   // browser only, so it sits outside the auth guard like the ordinary tools.

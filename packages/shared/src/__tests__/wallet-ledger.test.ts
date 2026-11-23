@@ -143,4 +143,45 @@ describe('wallet ledger (Stage 7 domain)', () => {
 
     expect(() => releaseReservation(released.entries, reservation)).toThrow(/already been applied/);
   });
+
+  it('models a concurrent double-spend: only the first hold fits', () => {
+    // Two tabs each try to hold 70,000 of a 100,000 balance. Applied in order —
+    // exactly how a serialised database evaluates them — the second is refused,
+    // so the wallet can never be spent twice.
+    const start = [credit('c1', 100_000)];
+    const first = reserveFunds(start, {
+      id: 'r1',
+      walletId: 'w1',
+      amountMinor: 70_000,
+      currency: 'NGN',
+      reference: 'tab-a',
+      createdAt: NOW.toISOString(),
+    });
+    expect(availableBalance(first.entries)).toBe(30_000);
+    expect(() =>
+      reserveFunds(first.entries, {
+        id: 'r2',
+        walletId: 'w1',
+        amountMinor: 70_000,
+        currency: 'NGN',
+        reference: 'tab-b',
+        createdAt: NOW.toISOString(),
+      }),
+    ).toThrow(/available balance/);
+  });
+
+  it('never reports a balance below zero after a bad debit', () => {
+    const start = [credit('c1', 5_000)];
+    expect(() =>
+      applyEntry(start, {
+        id: 'd1',
+        walletId: 'w1',
+        kind: 'debit',
+        amountMinor: 5_001,
+        currency: 'NGN',
+        reference: 'run_1',
+        createdAt: NOW.toISOString(),
+      }),
+    ).toThrow(/overdraw/);
+  });
 });

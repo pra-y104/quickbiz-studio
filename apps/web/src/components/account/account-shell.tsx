@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { LayoutDashboard, LogOut, UserRound } from 'lucide-react';
+import { LayoutDashboard, LogOut, UserRound, Wallet } from 'lucide-react';
 import { Link, NavLink, useNavigate } from 'react-router';
 import { BRAND } from '@quickbiz/shared';
 import { AUTH_COPY } from '../../content/auth';
@@ -12,6 +12,7 @@ import { cn } from '../../lib/cn';
 
 const NAV = [
   { to: '/dashboard', label: AUTH_COPY.account.dashboard, icon: LayoutDashboard },
+  { to: '/wallet', label: AUTH_COPY.account.wallet, icon: Wallet },
   { to: '/profile', label: AUTH_COPY.account.profile, icon: UserRound },
 ] as const;
 

@@ -5,6 +5,7 @@ import { meRoutes } from './me';
 import { metaRoutes } from './meta';
 import { toolRoutes } from './tools';
 import { paymentRoutes } from './payments';
+import { translateRoutes } from './translate';
 import type { AppContext } from '../types/context';
 
 export const apiRoutes = new Hono<AppContext>();
@@ -21,3 +22,4 @@ apiRoutes.route('/tools', toolRoutes);
 apiRoutes.route('/ai', aiRoutes);
 apiRoutes.route('/me', meRoutes);
 apiRoutes.route('/payments', paymentRoutes);
+apiRoutes.route('/translate', translateRoutes);

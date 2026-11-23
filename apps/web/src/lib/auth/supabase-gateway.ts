@@ -145,6 +145,11 @@ export class SupabaseAuthGateway implements AuthGateway {
     return toSession(data.session);
   }
 
+  async getAccessToken(): Promise<string | null> {
+    const { data } = await this.supabase.auth.getSession();
+    return data.session?.access_token ?? null;
+  }
+
   onAuthStateChange(listener: (session: AuthSession | null) => void): () => void {
     const { data } = this.supabase.auth.onAuthStateChange((_event, session) => {
       listener(toSession(session));

@@ -58,6 +58,8 @@ export interface SignUpResult {
 export interface AuthGateway {
   readonly configured: boolean;
   getSession(): Promise<AuthSession | null>;
+  /** Short-lived access token for authenticated API calls, or null. */
+  getAccessToken(): Promise<string | null>;
   /** Subscribe to session changes. Returns an unsubscribe function. */
   onAuthStateChange(listener: (session: AuthSession | null) => void): () => void;
   signUp(input: {

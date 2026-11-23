@@ -18,6 +18,10 @@ export class UnconfiguredAuthGateway implements AuthGateway {
     return null;
   }
 
+  async getAccessToken(): Promise<null> {
+    return null;
+  }
+
   onAuthStateChange(): () => void {
     return () => {};
   }

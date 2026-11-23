@@ -79,6 +79,11 @@ export class FakeAuthGateway implements AuthGateway {
     return this.session;
   }
 
+  async getAccessToken(): Promise<string | null> {
+    this.maybeFail();
+    return this.session ? 'test-access-token' : null;
+  }
+
   onAuthStateChange(listener: (session: AuthSession | null) => void): () => void {
     this.listeners.add(listener);
     return () => {

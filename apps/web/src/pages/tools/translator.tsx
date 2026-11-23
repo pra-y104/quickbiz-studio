@@ -6,6 +6,8 @@ import { AI_LANGUAGES } from '@quickbiz/shared';
 import { Container } from '../../components/ui/container';
 import { Button } from '../../components/ui/button';
 import { Card } from '../../components/ui/card';
+import { env } from '../../lib/env';
+import { useAuth } from '../../lib/auth/auth-context';
 import { useVoiceInput } from '../../lib/voice/use-voice-input';
 import {
   cancelSpeech,
@@ -37,6 +39,10 @@ export function TranslatorPage() {
   const [voiceURI, setVoiceURI] = useState<string>('');
   const [rate, setRate] = useState(1);
   const [notice, setNotice] = useState<string | null>(null);
+  const [translating, setTranslating] = useState(false);
+  const [translated, setTranslated] = useState<string | null>(null);
+
+  const { gateway, session } = useAuth();
 
   const synthesis = useMemo(() => getSynthesisApi(), []);
   const voices = useMemo<readonly SpeechVoice[]>(
@@ -77,6 +83,60 @@ export function TranslatorPage() {
   const stop = () => {
     cancelSpeech(synthesis);
     setPlayback('idle');
+  };
+
+  const translate = async () => {
+    if (text.trim().length === 0) {
+      setNotice(t('translator.nothingToRead'));
+      return;
+    }
+    setNotice(null);
+    setTranslated(null);
+    setTranslating(true);
+    try {
+      const token = session ? await gateway.getAccessToken() : null;
+      const response = await fetch(`${env.apiBaseUrl.replace(/\/$/, '')}/api/v1/translate`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify({ text, source: 'auto', target: targetLanguage }),
+      });
+
+      if (response.status === 503) {
+        setNotice(t('translator.translateUnavailable'));
+        return;
+      }
+      if (response.status === 401) {
+        setNotice(t('translator.translateSignIn'));
+        return;
+      }
+      if (!response.ok) {
+        setNotice(t('translator.translateFailed'));
+        return;
+      }
+      const payload = (await response.json()) as { data?: { translatedText?: string } };
+      const value = payload.data?.translatedText;
+      if (value) setTranslated(value);
+      else setNotice(t('translator.translateFailed'));
+    } catch {
+      setNotice(t('translator.translateFailed'));
+    } finally {
+      setTranslating(false);
+    }
+  };
+
+  const speakTranslation = async () => {
+    if (!translated || !synthesis) {
+      if (!synthesis) setNotice(t('translator.ttsUnsupported'));
+      return;
+    }
+    const outcome = await speak(
+      { text: translated, lang: targetLanguage, rate, ...(voiceURI ? { voiceURI } : {}) },
+      synthesis,
+    );
+    if (!outcome.ok) setNotice(t('translator.ttsFailed'));
   };
 
   return (
@@ -255,10 +315,38 @@ export function TranslatorPage() {
               {t('translator.voiceNote', { language: languageLabel(targetLanguage) })}
             </p>
 
-            <Button disabled className="w-full">
+            <Button
+              className="w-full"
+              onClick={() => void translate()}
+              loading={translating}
+              disabled={text.trim().length === 0}
+            >
               {t('translator.translate')}
             </Button>
             <p className="text-xs text-ink-subtle">{t('translator.translateHint')}</p>
+
+            {translated ? (
+              <div className="rounded-lg border border-border bg-surface-muted p-3">
+                <p className="text-xs font-medium uppercase tracking-wide text-ink-subtle">
+                  {t('translator.translationResult')}
+                </p>
+                <p
+                  className="mt-1 whitespace-pre-wrap text-sm text-ink"
+                  dir={targetLanguage === 'ar' ? 'rtl' : 'ltr'}
+                >
+                  {translated}
+                </p>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="mt-2"
+                  onClick={() => void speakTranslation()}
+                >
+                  <Volume2 className="size-4" aria-hidden="true" />
+                  {t('translator.listen')}
+                </Button>
+              </div>
+            ) : null}
 
             {notice ? (
               <p role="status" className="text-xs font-medium text-ink">

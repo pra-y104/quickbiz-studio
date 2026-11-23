@@ -1,15 +1,25 @@
 /**
- * Per-user daily run allowance.
+ * Per-user daily AI run allowance.
  *
- * This is **not** a security boundary. It is a cost-damage limiter that stops one
- * account from firing hundreds of runs in a loop against a paid provider. It is
- * held in worker memory, so it is per isolate and resets when the isolate is
- * recycled; a distributed counter (Durable Object, KV or database) is required
- * before this can be relied on for billing or abuse prevention.
+ * This is a cost-damage limiter, not a security boundary: it stops one account
+ * from firing hundreds of runs in a loop against a paid provider. Two stores are
+ * provided behind one contract:
  *
- * The interface exists so a shared implementation can replace the in-memory one
- * without touching the route.
+ * - `InMemoryAiQuotaStore` — the default. Per isolate and reset when the isolate
+ *   is recycled; fine for tests and single-instance development, not distributed.
+ * - `KvAiQuotaStore` (see `quota-kv.ts`) — a shared KV-backed counter, so the
+ *   allowance holds across isolates. KV is eventually consistent, so a burst at
+ *   the window boundary can briefly overshoot; a Durable Object or database
+ *   counter is stronger. Documented in docs/22-stage-6-m2-secure-execution.md.
+ *
+ * Both satisfy the same interface so the route can switch on configuration
+ * without knowing which backing is in use.
  */
+
+export interface AiQuotaDecision {
+  readonly allowed: boolean;
+  retryAfterSeconds?: number;
+}
 
 export interface AiQuotaStore {
   /** Seconds until the caller's allowance resets, or null when unlimited. */
@@ -17,10 +27,14 @@ export interface AiQuotaStore {
     userId: string,
     limit: number | null,
     now?: number,
-  ): { allowed: boolean; retryAfterSeconds?: number };
+  ): AiQuotaDecision | Promise<AiQuotaDecision>;
   /** Remaining runs today, or null when no limit applies. */
-  remaining(userId: string, limit: number | null, now?: number): number | null;
-  reset(userId: string): void;
+  remaining(
+    userId: string,
+    limit: number | null,
+    now?: number,
+  ): number | null | Promise<number | null>;
+  reset(userId: string): void | Promise<void>;
 }
 
 const WINDOW_MS = 24 * 60 * 60 * 1000;
@@ -42,11 +56,7 @@ export class InMemoryAiQuotaStore implements AiQuotaStore {
     if (this.#windows.size >= MAX_TRACKED_USERS) this.#windows.clear();
   }
 
-  consume(
-    userId: string,
-    limit: number | null,
-    now = Date.now(),
-  ): { allowed: boolean; retryAfterSeconds?: number } {
+  consume(userId: string, limit: number | null, now = Date.now()): AiQuotaDecision {
     if (limit === null || limit <= 0) return { allowed: true };
 
     this.#prune(now);

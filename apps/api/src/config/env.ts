@@ -38,6 +38,12 @@ export interface Bindings {
   readonly PAYSTACK_SECRET_KEY?: string;
   /** Server-only. Paystack API base override (tests). */
   readonly PAYSTACK_BASE_URL?: string;
+  /** Optional Cloudflare KV namespace binding for the shared AI quota store. */
+  readonly AI_QUOTA_KV?: {
+    get(key: string): Promise<string | null>;
+    put(key: string, value: string, options?: { expirationTtl?: number }): Promise<void>;
+    delete(key: string): Promise<void>;
+  };
   /**
    * Require a verified email before AI runs. Defaults to true and fails closed:
    * a token without an `email_verified` claim is treated as unverified.

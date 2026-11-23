@@ -12,6 +12,7 @@ import {
 import { describeAiAvailability, productionRegistry } from '../ai/registry';
 import { describeAiFailure, executeAiTool } from '../ai/execution';
 import { inMemoryAiQuotaStore } from '../ai/quota';
+import { KvAiQuotaStore } from '../ai/quota-kv';
 import { requireAuth } from '../middleware/auth';
 import { AppError } from '../lib/errors';
 import { IDEMPOTENCY_HEADER, idempotencyCache, readIdempotencyKey } from '../lib/idempotency';
@@ -22,7 +23,8 @@ import type { AppContext } from '../types/context';
 
 export const aiRoutes = new Hono<AppContext>();
 
-const MAX_RUNS_PER_DAY = 50;
+/** Daily AI run allowance per user. Enforced in the route via a pluggable store. */
+export const MAX_AI_RUNS_PER_DAY = 50;
 
 /**
  * Availability probe for the AI tools.
@@ -133,8 +135,13 @@ aiRoutes.post('/run', async (c) => {
     throw AppError.unavailable('AI generation is not available in this build.');
   }
 
-  // 4. Cost limiter (per isolate). Only relevant once a provider exists.
-  const quota = inMemoryAiQuotaStore.consume(identity.userId, MAX_RUNS_PER_DAY);
+  // 4. Cost limiter. Uses the shared KV store when a namespace is bound so the
+  //    allowance holds across isolates; otherwise the per-isolate fallback. Only
+  //    relevant once a provider exists.
+  const quotaStore = c.env.AI_QUOTA_KV
+    ? new KvAiQuotaStore(c.env.AI_QUOTA_KV)
+    : inMemoryAiQuotaStore;
+  const quota = await quotaStore.consume(identity.userId, MAX_AI_RUNS_PER_DAY);
   if (!quota.allowed) {
     c.header('Retry-After', String(quota.retryAfterSeconds ?? 3600));
     logger.warn('ai.quota-exhausted', { requestId, userId: identity.userId });

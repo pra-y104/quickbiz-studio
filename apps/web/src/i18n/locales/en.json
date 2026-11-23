@@ -244,5 +244,18 @@
     "pending": "No support inbox has been published yet.",
     "legal": "Legal pages",
     "legalBody": "Read how we handle your data and what the terms of service are."
+  },
+  "ai": {
+    "unavailableTitle": "AI tools are not available yet",
+    "unavailableBody": "These AI tools are planned. The interface is ready, but no provider is connected in this build, so nothing can run and nothing can be charged.",
+    "formTitle": "Describe what you need",
+    "prompt": "Prompt",
+    "promptPlaceholder": "Describe what you want to create…",
+    "inputHint": "Up to {{max}} characters.",
+    "run": "Generate",
+    "resultTitle": "Result",
+    "copy": "Copy",
+    "copied": "Copied",
+    "meta": "Prompt version {{promptVersion}} · input cap {{maxInput}} characters · output cap {{maxOutput}} tokens"
   }
 }

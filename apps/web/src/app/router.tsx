@@ -56,6 +56,9 @@ const WordCounterPage = lazy(() =>
 const TranslatorPage = lazy(() =>
   import('../pages/tools/translator').then((module) => ({ default: module.TranslatorPage })),
 );
+const AiToolPage = lazy(() =>
+  import('../pages/tools/ai-tool').then((module) => ({ default: module.AiToolPage })),
+);
 const TextFormatterPage = lazy(() =>
   import('../pages/tools/text-formatter').then((module) => ({
     default: module.TextFormatterPage,
@@ -157,6 +160,32 @@ export const router = createBrowserRouter([
   { path: '/tools/quotation-maker', element: withShell(UtilityShell, <QuotationMakerPage />) },
   { path: '/tools/word-counter', element: withShell(UtilityShell, <WordCounterPage />) },
   { path: '/tools/text-formatter', element: withShell(UtilityShell, <TextFormatterPage />) },
+  { path: '/tools/ai-writer', element: withShell(UtilityShell, <AiToolPage slug="ai-writer" />) },
+  {
+    path: '/tools/ad-generator',
+    element: withShell(UtilityShell, <AiToolPage slug="ad-generator" />),
+  },
+  { path: '/tools/translator', element: withShell(UtilityShell, <AiToolPage slug="translator" />) },
+  {
+    path: '/tools/text-improver',
+    element: withShell(UtilityShell, <AiToolPage slug="text-improver" />),
+  },
+  {
+    path: '/tools/product-description',
+    element: withShell(UtilityShell, <AiToolPage slug="product-description" />),
+  },
+  {
+    path: '/tools/business-name-generator',
+    element: withShell(UtilityShell, <AiToolPage slug="business-name-generator" />),
+  },
+  {
+    path: '/tools/social-caption',
+    element: withShell(UtilityShell, <AiToolPage slug="social-caption" />),
+  },
+  {
+    path: '/tools/business-plan-assistant',
+    element: withShell(UtilityShell, <AiToolPage slug="business-plan-assistant" />),
+  },
   { path: '/tools/translator', element: withShell(UtilityShell, <TranslatorPage />) },
 
   { path: '/register', element: guest(<RegisterPage />) },

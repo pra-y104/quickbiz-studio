@@ -405,6 +405,69 @@ export async function executeAiTool<S extends AiToolSlug>(
   };
 }
 
+/** Reasons for which trying a different configured provider is worthwhile. */
+const FAILOVER_REASONS: ReadonlySet<AiErrorReason> = new Set(['upstream', 'timeout']);
+
+export interface ExecuteAiToolWithFailoverOptions<S extends AiToolSlug> {
+  readonly tool: S;
+  readonly input: unknown;
+  /** Providers tried in registration order. */
+  readonly providers: readonly AiProvider[];
+  readonly model?: string;
+  readonly signal?: AbortSignal;
+  readonly timeoutMs?: number;
+  readonly retries?: number;
+  readonly retryBaseMs?: number;
+}
+
+/**
+ * Run one tool across configured providers in order.
+ *
+ * A transient provider failure (`upstream`, `timeout`) moves to the next
+ * provider; validation, blocked, rate-limited, cancelled and
+ * not-configured failures propagate immediately. Quota and idempotency belong
+ * to the caller, so this runs once per request regardless of how many
+ * providers are attempted.
+ */
+export async function executeAiToolWithFailover<S extends AiToolSlug>(
+  options: ExecuteAiToolWithFailoverOptions<S>,
+): Promise<AiToolRunResult<AiToolOutput<S>>> {
+  const { tool, providers } = options;
+  if (providers.length === 0) {
+    throw new AiExecutionError('not-configured', 'No AI provider is configured.');
+  }
+
+  let lastError: AiExecutionError | undefined;
+  for (const provider of providers) {
+    try {
+      return await executeAiTool({
+        tool,
+        input: options.input,
+        provider,
+        ...(options.model === undefined ? {} : { model: options.model }),
+        ...(options.signal === undefined ? {} : { signal: options.signal }),
+        ...(options.timeoutMs === undefined ? {} : { timeoutMs: options.timeoutMs }),
+        ...(options.retries === undefined ? {} : { retries: options.retries }),
+        ...(options.retryBaseMs === undefined ? {} : { retryBaseMs: options.retryBaseMs }),
+      });
+    } catch (error) {
+      // Validation failures are terminal and must stay validation errors, so the
+      // caller (route) can answer 422 instead of a generic provider failure.
+      if (error instanceof AiInputError) throw error;
+      lastError = toExecutionError(error);
+      const failure = describeAiFailure(lastError);
+      const canFailover =
+        failure !== null &&
+        failure.kind === 'provider' &&
+        failure.reason !== undefined &&
+        FAILOVER_REASONS.has(failure.reason) &&
+        provider !== providers[providers.length - 1];
+      if (!canFailover) throw lastError;
+    }
+  }
+  throw lastError ?? new AiExecutionError('upstream', SAFE_PROVIDER_MESSAGES.upstream);
+}
+
 /** How a future route should classify a pipeline failure. */
 export type AiFailureKind = 'validation' | 'unavailable' | 'provider';
 

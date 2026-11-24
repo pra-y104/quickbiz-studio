@@ -11,10 +11,11 @@ import {
 } from '@quickbiz/shared';
 import { describeAiAvailability } from '../ai/registry';
 import { buildAdapterRegistry } from '../ai/adapters';
-import { describeAiFailure, executeAiTool } from '../ai/execution';
+import { describeAiFailure, executeAiToolWithFailover } from '../ai/execution';
 import { inMemoryAiQuotaStore } from '../ai/quota';
 import { KvAiQuotaStore } from '../ai/quota-kv';
 import { requireAuth } from '../middleware/auth';
+import type { AiProvider } from '../ai/provider';
 import { AppError } from '../lib/errors';
 import { IDEMPOTENCY_HEADER, idempotencyCache, readIdempotencyKey } from '../lib/idempotency';
 import { logger } from '../lib/logger';
@@ -162,20 +163,29 @@ aiRoutes.post('/run', async (c) => {
   }
 
   // A requested provider must be the one that runs; otherwise fail closed rather
-  // than silently using a different vendor's model.
-  const provider = config.ai.providerId
-    ? registry.require(config.ai.providerId)
-    : registry.configured()[0];
-  if (!provider) {
+  // than silently using a different vendor's model. With no explicit request,
+  // configured providers are tried in registration order with failover on
+  // transient provider failures.
+  let providers: readonly AiProvider[];
+  if (config.ai.providerId) {
+    const requested = registry.get(config.ai.providerId);
+    if (!requested || !requested.isConfigured()) {
+      throw AppError.unavailable('AI generation is not available in this build.');
+    }
+    providers = [requested];
+  } else {
+    providers = registry.configured();
+  }
+  if (providers.length === 0) {
     throw AppError.unavailable('AI generation is not available in this build.');
   }
   const startedAt = Date.now();
 
   try {
-    const result = await executeAiTool({
+    const result = await executeAiToolWithFailover({
       tool,
       input: validated,
-      provider,
+      providers,
       ...(config.ai.model === null ? {} : { model: config.ai.model }),
       signal: c.req.raw.signal,
     });

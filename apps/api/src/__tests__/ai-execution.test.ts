@@ -6,6 +6,7 @@ import {
   DEFAULT_AI_TIMEOUT_MS,
   describeAiFailure,
   executeAiTool,
+  executeAiToolWithFailover,
 } from '../ai/execution';
 import { AiProviderError } from '../ai/provider';
 import { FakeProvider } from '../ai/testing/fake-provider';
@@ -348,5 +349,86 @@ describe('describeAiFailure', () => {
     expect(describeAiFailure(new RangeError('timeoutMs must be between 1 and 120000'))).toBeNull();
     expect(describeAiFailure(new Error('database password rotation failed'))).toBeNull();
     expect(describeAiFailure('string failure')).toBeNull();
+  });
+});
+
+describe('executeAiToolWithFailover', () => {
+  const failing = () =>
+    new FakeProvider({ failWith: 'upstream', text: JSON.stringify(writerOutput) });
+  const succeeding = (model = 'backup-1') =>
+    new FakeProvider({ defaultModel: model, text: JSON.stringify(writerOutput) });
+
+  it('tries the next provider when the first fails with a transient reason', async () => {
+    const first = failing();
+    const second = succeeding();
+
+    const result = await executeAiToolWithFailover({
+      tool: 'ai-writer',
+      input: writerInput,
+      providers: [first, second],
+      retries: 0,
+    });
+
+    expect(result.output).toEqual(writerOutput);
+    expect(result.metadata.providerId).toBe('fake');
+    expect(result.metadata.model).toBe('backup-1');
+    expect(first.calls).toHaveLength(1);
+    expect(second.calls).toHaveLength(1);
+  });
+
+  it('does not fail over on a rate-limited failure and surfaces the retry hint', async () => {
+    const first = new FakeProvider({
+      failWith: 'rate-limited',
+      text: JSON.stringify(writerOutput),
+    });
+
+    const error = await executeAiToolWithFailover({
+      tool: 'ai-writer',
+      input: writerInput,
+      providers: [first, succeeding()],
+      retries: 0,
+    }).catch((value: unknown) => value);
+
+    expect(error).toBeInstanceOf(AiExecutionError);
+    expect(error).toMatchObject({ reason: 'rate-limited' });
+    expect(first.calls).toHaveLength(1);
+  });
+
+  it('propagates the last error when every provider fails transiently', async () => {
+    const first = failing();
+    const second = failing();
+
+    const error = await executeAiToolWithFailover({
+      tool: 'ai-writer',
+      input: writerInput,
+      providers: [first, second],
+      retries: 0,
+    }).catch((value: unknown) => value);
+
+    expect(error).toMatchObject({ reason: 'upstream' });
+    expect(first.calls).toHaveLength(1);
+    expect(second.calls).toHaveLength(1);
+  });
+
+  it('does not fail over on a validation failure and never calls a provider', async () => {
+    const first = failing();
+    const second = succeeding();
+
+    const error = await executeAiToolWithFailover({
+      tool: 'ai-writer',
+      input: { topic: 'too short' },
+      providers: [first, second],
+      retries: 0,
+    }).catch((value: unknown) => value);
+
+    expect(error).toBeInstanceOf(AiInputError);
+    expect(first.calls).toHaveLength(0);
+    expect(second.calls).toHaveLength(0);
+  });
+
+  it('throws not-configured when no providers are supplied', async () => {
+    await expect(
+      executeAiToolWithFailover({ tool: 'ai-writer', input: writerInput, providers: [] }),
+    ).rejects.toMatchObject({ reason: 'not-configured' });
   });
 });

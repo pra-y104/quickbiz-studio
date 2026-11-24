@@ -117,7 +117,7 @@ export default tseslint.config(
     // for the same files would otherwise replace this rule's options.
     name: 'quickbiz/ai-provider-boundary',
     files: ['apps/api/src/ai/**/*.ts'],
-    ignores: ['apps/api/src/ai/testing/**'],
+    ignores: ['apps/api/src/ai/testing/**', 'apps/api/src/ai/adapters/**'],
     rules: {
       'no-restricted-globals': [
         'error',
@@ -180,6 +180,76 @@ export default tseslint.config(
               ],
               message:
                 'Provider SDKs, HTTP clients and Node networking are not allowed in AI modules.',
+            },
+            {
+              group: ['**/ai/testing/*', '**/ai/testing/**', '**/testing/*'],
+              message: 'Test doubles must not be imported by production modules.',
+            },
+          ],
+        },
+      ],
+    },
+  },
+  {
+    // M1B adapter boundary: the reviewed provider adapters are the allowed
+    // network boundary and may use the global `fetch`. Vendor SDKs, Node
+    // networking and test doubles remain banned.
+    name: 'quickbiz/ai-adapter-network',
+    files: ['apps/api/src/ai/adapters/**/*.ts'],
+    rules: {
+      'no-restricted-globals': [
+        'error',
+        { name: 'WebSocket', message: 'AI adapters must not open sockets.' },
+        { name: 'XMLHttpRequest', message: 'AI adapters must not call the network via XHR.' },
+        { name: 'EventSource', message: 'AI adapters must not open event streams.' },
+      ],
+      'no-restricted-syntax': [
+        'error',
+        {
+          selector: "MemberExpression[object.name='globalThis'][property.name='WebSocket']",
+          message: 'AI adapters must not open sockets.',
+        },
+        {
+          selector: "MemberExpression[object.name='globalThis'][property.name='XMLHttpRequest']",
+          message: 'AI adapters must not call the network via XHR.',
+        },
+        {
+          selector: "MemberExpression[object.name='globalThis'][property.name='EventSource']",
+          message: 'AI adapters must not open event streams.',
+        },
+        {
+          selector: 'ImportExpression[source.value=/^https?:/]',
+          message: 'AI adapters must not import remote modules by URL.',
+        },
+        {
+          selector: "ImportExpression[source.type='TemplateLiteral']",
+          message: 'AI adapters must not build import specifiers dynamically.',
+        },
+      ],
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            {
+              group: [
+                'openai',
+                '@google/*',
+                '@anthropic-ai/*',
+                'groq-sdk',
+                'axios',
+                'undici',
+                'ky',
+                'got',
+                'node-fetch',
+                'node:*',
+                'http',
+                'https',
+                'net',
+                'tls',
+                'dgram',
+              ],
+              message:
+                'Provider SDKs, HTTP clients and Node networking are not allowed in AI adapters.',
             },
             {
               group: ['**/ai/testing/*', '**/ai/testing/**', '**/testing/*'],

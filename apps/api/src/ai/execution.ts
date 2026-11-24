@@ -119,9 +119,13 @@ export const DEFAULT_AI_RETRIES = 2;
 export const DEFAULT_AI_RETRY_BASE_MS = 250;
 const MAX_RETRY_BASE_MS = 5_000;
 
-/** Only these failures are worth retrying; everything else is terminal. */
+/** Only these failures are worth retrying; everything else is terminal.
+ *
+ * `rate-limited` is deliberately retried by the *caller* honoring
+ * `retryAfterSeconds`, not by the pipeline: the pause belongs to the caller,
+ * and retrying inside the budget would obscure the retry hint.
+ */
 const RETRYABLE_CODES: ReadonlySet<AiProviderErrorCode> = new Set<AiProviderErrorCode>([
-  'rate-limited',
   'upstream',
   'timeout',
 ]);
@@ -366,9 +370,7 @@ export async function executeAiTool<S extends AiToolSlug>(
 
             const retryAfter = isAiProviderError(error) ? error.retryAfterSeconds : undefined;
             const backoff =
-              retryAfter !== undefined
-                ? retryAfter * 1000
-                : retryBaseMs * 2 ** attempt;
+              retryAfter !== undefined ? retryAfter * 1000 : retryBaseMs * 2 ** attempt;
             await sleep(backoff, signal);
           }
         }

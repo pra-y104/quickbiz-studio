@@ -17,7 +17,7 @@
  * back to `executeAiTool`.
  */
 
-import type { AiToolOutput, AiToolRunResult, AiToolSlug } from '@quickbiz/shared';
+import type { AiFinishReason, AiToolOutput, AiToolRunResult, AiToolSlug } from '@quickbiz/shared';
 import { getAiToolLimits, getAiToolSchemas } from '@quickbiz/shared';
 import { ZodError } from 'zod';
 import { getPrompt } from './prompts';
@@ -109,7 +109,7 @@ export async function* executeAiToolStream<S extends AiToolSlug>(
 
   const startedAt = Date.now();
   let text = '';
-  let finishReason: 'stop' | 'length' | 'content-filter' | 'error' = 'stop';
+  let finishReason: AiFinishReason = 'stop';
   let model = options.model ?? provider.defaultModel;
 
   try {

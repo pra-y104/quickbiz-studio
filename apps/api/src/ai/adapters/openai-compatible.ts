@@ -59,9 +59,7 @@ function mapFinishReason(reason: string | null | undefined): AiFinishReason {
   }
 }
 
-export function createOpenAICompatibleAdapter(
-  options: OpenAICompatibleOptions,
-): AiProvider {
+export function createOpenAICompatibleAdapter(options: OpenAICompatibleOptions): AiProvider {
   const base = options.baseUrl.replace(/\/$/, '');
   const doFetch = options.fetchImpl ?? fetch;
 

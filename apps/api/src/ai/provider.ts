@@ -58,11 +58,11 @@ export interface AiProvider {
    * Optional incremental transport. Providers that do not implement it cannot be
    * streamed; callers fall back to `generate`.
    */
-  stream?(request: AiGenerateRequest): AsyncIterable<AiStreamEvent>;
+  stream?(request: AiGenerateRequest): AsyncIterable<AiProviderStreamEvent>;
 }
 
 /** One incremental event from a streaming provider. */
-export type AiStreamEvent =
+export type AiProviderStreamEvent =
   | { readonly type: 'delta'; readonly text: string }
   | { readonly type: 'done'; readonly response: AiGenerateResponse };
 

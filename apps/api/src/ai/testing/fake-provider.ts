@@ -16,7 +16,7 @@ import {
   type AiGenerateRequest,
   type AiGenerateResponse,
   type AiProvider,
-  type AiStreamEvent,
+  type AiProviderStreamEvent,
 } from '../provider';
 
 export interface FakeProviderOptions {
@@ -120,7 +120,7 @@ export class FakeProvider implements AiProvider {
     };
   }
 
-  async *stream(request: AiGenerateRequest): AsyncIterable<AiStreamEvent> {
+  async *stream(request: AiGenerateRequest): AsyncIterable<AiProviderStreamEvent> {
     if (!this.isConfigured()) {
       throw new AiProviderError('not-configured', 'No AI provider is configured.');
     }

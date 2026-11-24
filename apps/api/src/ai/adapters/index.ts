@@ -56,10 +56,7 @@ function buildAdapters(bindings: Bindings, config: AppConfig): AiProvider[] {
   return adapters;
 }
 
-export function buildAdapterRegistry(
-  bindings: Bindings,
-  config: AppConfig,
-): AdapterBuildResult {
+export function buildAdapterRegistry(bindings: Bindings, config: AppConfig): AdapterBuildResult {
   const registry = new AiProviderRegistry();
   const adapters = buildAdapters(bindings, config);
   for (const adapter of adapters) registry.register(adapter);

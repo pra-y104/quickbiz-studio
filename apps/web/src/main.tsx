@@ -4,6 +4,9 @@ import './i18n';
 import './styles/globals.css';
 import { App } from './app/app';
 import { AppProviders } from './app/providers';
+import { registerServiceWorker } from './lib/offline/sw-registration';
+
+registerServiceWorker();
 
 const rootElement = document.getElementById('root');
 if (!rootElement) {

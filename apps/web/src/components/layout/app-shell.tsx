@@ -2,6 +2,7 @@ import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { SiteFooter } from './site-footer';
 import { SiteHeader } from './site-header';
+import { OfflineIndicator } from '../ui/offline-indicator';
 
 function SkipLink() {
   const { t } = useTranslation();
@@ -21,6 +22,7 @@ export function AppShell({ children }: { children: ReactNode }) {
     <div className="flex min-h-dvh flex-col">
       <SkipLink />
       <SiteHeader />
+      <OfflineIndicator />
       <main id="main" className="flex-1">
         {children}
       </main>

@@ -136,6 +136,7 @@ export const AUTH_COPY = {
   },
   account: {
     dashboard: 'Dashboard',
+    referral: 'Referrals',
     profile: 'Profile',
     wallet: 'Wallet',
     signOut: 'Sign out',

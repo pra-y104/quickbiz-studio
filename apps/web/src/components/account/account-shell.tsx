@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { LayoutDashboard, LogOut, UserRound, Wallet } from 'lucide-react';
+import { LayoutDashboard, LogOut, Share2, UserRound, Wallet } from 'lucide-react';
 import { Link, NavLink, useNavigate } from 'react-router';
 import { BRAND } from '@quickbiz/shared';
 import { AUTH_COPY } from '../../content/auth';
@@ -7,11 +7,13 @@ import { Logo } from '../brand/logo';
 import { Button } from '../ui/button';
 import { Container } from '../ui/container';
 import { ThemeToggle } from '../ui/theme-toggle';
+import { LocaleMenu } from '../layout/locale-menu';
 import { useAuth } from '../../lib/auth/auth-context';
 import { cn } from '../../lib/cn';
 
 const NAV = [
   { to: '/dashboard', label: AUTH_COPY.account.dashboard, icon: LayoutDashboard },
+  { to: '/referral', label: AUTH_COPY.account.referral, icon: Share2 },
   { to: '/wallet', label: AUTH_COPY.account.wallet, icon: Wallet },
   { to: '/profile', label: AUTH_COPY.account.profile, icon: UserRound },
 ] as const;
@@ -74,6 +76,7 @@ export function AccountShell({ children, title, description }: AccountShellProps
               </span>
             ) : null}
             <ThemeToggle />
+            <LocaleMenu />
             <Button variant="outline" size="sm" onClick={handleSignOut}>
               <LogOut className="size-3.5" aria-hidden="true" />
               <span className="hidden sm:inline">{AUTH_COPY.account.signOut}</span>

@@ -5,6 +5,7 @@ import { BRAND } from '@quickbiz/shared';
 import { Logo } from '../brand/logo';
 import { Container } from '../ui/container';
 import { ThemeToggle } from '../ui/theme-toggle';
+import { LocaleMenu } from './locale-menu';
 
 /**
  * Chrome for secondary pages (design system, 404).
@@ -42,6 +43,7 @@ export function UtilityShell({ children }: { children: ReactNode }) {
               Home
             </Link>
             <ThemeToggle />
+            <LocaleMenu />
           </div>
         </Container>
       </header>

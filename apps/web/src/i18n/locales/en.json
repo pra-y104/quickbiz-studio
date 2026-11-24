@@ -258,9 +258,21 @@
     "promptPlaceholder": "Describe what you want to create…",
     "inputHint": "Up to {{max}} characters.",
     "run": "Generate",
+    "generating": "Generating…",
     "resultTitle": "Result",
     "copy": "Copy",
     "copied": "Copied",
-    "meta": "Prompt version {{promptVersion}} · input cap {{maxInput}} characters · output cap {{maxOutput}} tokens"
+    "download": "Download JSON",
+    "meta": "Prompt version {{promptVersion}} · input cap {{maxInput}} characters · output cap {{maxOutput}} tokens",
+    "errorInvalidInput": "Please fix the highlighted fields",
+    "errorEmailRequired": "Confirm your email address to use AI tools",
+    "errorUnavailable": "AI generation is not available right now",
+    "errorRateLimited": "You have used today's AI allowance. Try again tomorrow.",
+    "errorProvider": "The AI provider could not complete this request",
+    "errorUnknown": "Something went wrong. Please try again.",
+    "errorSignInRequiredTitle": "Sign in to use AI tools",
+    "errorSignInRequiredBody": "Create an account and verify your email, then return here to generate content.",
+    "authNotConfigured": "Sign-in is not configured on this instance.",
+    "requestIdLabel": "Reference:"
   }
 }

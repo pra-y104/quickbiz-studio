@@ -157,3 +157,37 @@ paymentRoutes.post('/webhook', async (c) => {
     throw AppError.provider();
   }
 });
+
+const refundBodySchema = z
+  .object({
+    reference: z.string().min(1).max(120),
+    amountMinor: z.number().int().positive().max(100_000_000),
+    reason: z.string().min(1).max(500).optional(),
+  })
+  .strict();
+
+paymentRoutes.post('/refund', async (c) => {
+  await requireAuth(c, async () => undefined);
+  const provider = resolvePaymentProvider(c.env);
+  if (!provider) throw AppError.unavailable('Payments are not available in this build.');
+
+  const body = parseOrThrow(refundBodySchema, await c.req.json().catch(() => null));
+
+  try {
+    const result = await provider.refund({
+      reference: body.reference,
+      amountMinor: body.amountMinor,
+      reason: body.reason,
+    });
+    logger.info('payments.refund.created', {
+      requestId: c.get('requestId'),
+      reference: body.reference,
+      amountMinor: body.amountMinor,
+      status: result.status,
+    });
+    return ok(c, result);
+  } catch (error) {
+    if (error instanceof PaymentProviderError) throw mapProviderError(error);
+    throw AppError.provider();
+  }
+});

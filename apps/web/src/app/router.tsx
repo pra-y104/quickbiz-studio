@@ -86,6 +86,9 @@ const VerifyEmailPage = lazy(() =>
 const AuthCallbackPage = lazy(() =>
   import('../pages/auth/callback').then((module) => ({ default: module.AuthCallbackPage })),
 );
+const ReferralPage = lazy(() =>
+  import('../pages/referral').then((module) => ({ default: module.ReferralDashboardPage })),
+);
 const DashboardPage = lazy(() =>
   import('../pages/dashboard').then((module) => ({ default: module.DashboardPage })),
 );
@@ -206,6 +209,7 @@ export const router = createBrowserRouter([
   { path: '/auth/callback', element: withSuspense(<AuthCallbackPage />) },
 
   { path: '/dashboard', element: protectedRoute(<DashboardPage />) },
+  { path: '/referral', element: protectedRoute(<ReferralPage />) },
   { path: '/profile', element: protectedRoute(<ProfilePage />) },
   { path: '/wallet', element: protectedRoute(<WalletPage />) },
 

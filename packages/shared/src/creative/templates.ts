@@ -980,6 +980,120 @@ function buildBanner(variant: number): CreativeTemplate {
   };
 }
 
+/**
+ * Black Friday promotional templates.
+ * Seasonal campaigns for the November sales period.
+ */
+function buildBlackFridayFlyer(): CreativeTemplate {
+  const frame = frameFor('a4-portrait');
+  const palette = paletteAt(9);
+  return {
+    id: 'bf-flyer-0',
+    name: 'Black Friday flyer',
+    category: 'flyer',
+    presetId: 'a4-portrait',
+    description: 'A4 Black Friday flyer with bold discount messaging.',
+    build: () => [
+      ...compose({
+        prefix: 'bf-flyer',
+        frame,
+        palette,
+        variant: 0,
+        eyebrow: 'BLACK FRIDAY',
+        headline: 'Everything must go',
+        body: 'Up to 50% off everything in store and online. One day only — Friday 28 November.',
+        footer: '14 Market Road  ·  9am – 9pm  ·  +234 800 000 0000',
+        headlineTop: 0.24,
+        headlineScale: 120,
+      }),
+    ],
+  };
+}
+
+function buildBlackFridaySocial(): CreativeTemplate {
+  const frame = frameFor('social-square');
+  const palette = paletteAt(10);
+  return {
+    id: 'bf-social-0',
+    name: 'Black Friday social post',
+    category: 'social',
+    presetId: 'social-square',
+    description: 'Square Black Friday social post for Instagram and Facebook.',
+    build: () => [
+      ...compose({
+        prefix: 'bf-social',
+        frame,
+        palette,
+        variant: 0,
+        eyebrow: 'BLACK FRIDAY',
+        headline: '50% OFF EVERYTHING',
+        body: 'One day only. Friday 28 November. Shop now before it is gone.',
+        footer: 'Link in bio',
+        headlineTop: 0.28,
+        headlineScale: 100,
+        align: 'center',
+      }),
+    ],
+  };
+}
+
+/**
+ * December holiday templates.
+ * Seasonal campaigns for the December holidays.
+ */
+function buildDecemberPoster(): CreativeTemplate {
+  const presetId = 'a4-landscape';
+  const frame = frameFor(presetId);
+  const palette = paletteAt(11);
+  return {
+    id: 'dec-poster-0',
+    name: 'December holiday poster',
+    category: 'poster',
+    presetId,
+    description: 'A4 landscape December holiday poster with festive messaging.',
+    build: () => [
+      ...compose({
+        prefix: 'dec-poster',
+        frame,
+        palette,
+        variant: 0,
+        eyebrow: 'DECEMBER HOLIDAYS',
+        headline: 'Season\'s greetings',
+        body: 'Thank you for shopping with us all year. Holiday hours from 20 December to 2 January.',
+        footer: '14 Market Road  ·  +234 800 000 0000',
+        headlineTop: 0.22,
+        headlineScale: 90,
+      }),
+    ],
+  };
+}
+
+function buildDecemberStory(): CreativeTemplate {
+  const frame = frameFor('social-story');
+  const palette = paletteAt(12);
+  return {
+    id: 'dec-story-0',
+    name: 'December holiday story',
+    category: 'story',
+    presetId: 'social-story',
+    description: 'Vertical December holiday story for WhatsApp and Instagram.',
+    build: () => [
+      ...compose({
+        prefix: 'dec-story',
+        frame,
+        palette,
+        variant: 0,
+        eyebrow: 'DECEMBER',
+        headline: 'Holiday hours',
+        body: 'Open every day from 20 December to 2 January. See you soon!',
+        footer: 'Tap for details',
+        headlineTop: 0.3,
+        headlineScale: 92,
+      }),
+    ],
+  };
+}
+
 export const CREATIVE_TEMPLATES: readonly CreativeTemplate[] = [
   buildFlyer(0),
   buildFlyer(1),
@@ -1005,6 +1119,10 @@ export const CREATIVE_TEMPLATES: readonly CreativeTemplate[] = [
   buildBanner(0),
   buildBanner(1),
   buildBanner(2),
+  buildBlackFridayFlyer(),
+  buildBlackFridaySocial(),
+  buildDecemberPoster(),
+  buildDecemberStory(),
 ];
 
 export const CREATIVE_TEMPLATE_CATEGORIES: readonly CreativeTemplateCategory[] = [

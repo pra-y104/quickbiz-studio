@@ -10,7 +10,7 @@ starts before the previous one is reviewed.
 | 3 | Brand identity, homepage, navigation, footer | Complete - awaiting review |
 | 4 | Auth (register, verify, login, reset), profile, dashboard shell | Complete - awaiting review |
 | 5 | Ordinary tools: calculator, percentage, unit, date, word count, text formatter, invoice, quotation | Complete - awaiting review |
-| 6 | AI tools behind the provider adapter (M0 + M1A foundation complete) | In progress - M1A complete, awaiting review |
+| 6 | AI tools behind the provider adapter (M0 + M1A + M1B complete) | In progress - M1B delivered, awaiting review |
 | 7 | Wallet: ledger, atomic spend, reversals, history, saved results, AI credit settlement | Planned |
 | 8 | Paystack integration (sandbox first), webhook verification, purchase flow | Blocked on owner decision and business onboarding |
 | 9 | QA, accessibility, performance, CSP, deployment, monitoring | Planned |
@@ -90,6 +90,24 @@ starts before the previous one is reviewed.
   `POST /api/v1/ai/run` stays 501 even when `AI_PROVIDER` is set.
 - Cost interfaces exist with no prices; no wallet, credits or billing code is added.
 - 559 automated tests pass across shared, API and web.
+
+**Stage 6 (M1B delivered)**
+- Real provider adapters (Gemini, OpenAI-compatible) behind the provider-independent
+  contract; all fail-closed until a credential is present and `AI_ENABLED=true`.
+- Streaming transport (`executeAiToolStream`) with schema-validated final event;
+  non-streaming pipeline remains the reference path.
+- Bounded retries with exponential backoff and provider failover on transient
+  failures (`upstream`, `timeout`); `rate-limited` is terminal so callers honor
+  `retryAfterSeconds`.
+- `POST /api/v1/ai/run` is authenticated, verified-email gated, idempotency-keyed,
+  quota-limited (per-user per-day, pluggable KV/memory store), and fail-closed when
+  no provider is configured.
+- `GET /api/v1/ai/status` reports the actually-configured providers; ESLint keeps
+  non-adapter AI modules network-free (adapters are the reviewed `fetch` boundary).
+- All eight AI tools remain `planned` with `creditCost: null`; credit display,
+  deduction and reversal belong to Stage 7.
+- ESLint bans vendor SDKs, Node networking and test-double imports in production AI
+  code; the fake provider is test-only.
 
 **Stage 7**
 - Concurrent spend cannot overdraw a wallet.

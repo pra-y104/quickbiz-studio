@@ -124,10 +124,18 @@ Decisions that this response encodes:
 |---|---|
 | `AI_PROVIDER` | lowercase identifier; empty means unset |
 | `AI_MODEL` | model id; empty means unset |
+| `AI_ENABLED` | master switch: exactly `true` enables adapters; absent or anything else keeps AI fail-closed. A credential alone never activates AI. |
+| `AI_API_KEY` | server-only key read by the Gemini adapter when `AI_ENABLED=true` |
+| `GEMINI_API_KEY` | server-only Google AI Studio key for the Gemini adapter |
+| `AI_OPENAI_BASE_URL` | base URL of a Chat-Completions-compatible provider (OpenAI, Groq, OpenRouter, …) |
+| `AI_OPENAI_API_KEY` | key for the OpenAI-compatible provider |
+| `AI_OPENAI_MODEL` | model id for the OpenAI-compatible provider |
+| `AI_OPENAI_PROVIDER_ID` | registry id for the OpenAI-compatible provider (default `openai`) |
+| `AI_OPENAI_LABEL` | display label for the OpenAI-compatible provider |
 
-Both are validated once per isolate. Neither activates anything. `AI_API_KEY` is
-declared but unused: no adapter reads it. Keys and quota numbers are deliberately not
-part of the public status response.
+Both `AI_PROVIDER` and `AI_MODEL` are validated once per isolate. Neither activates
+anything. Keys and quota numbers are deliberately not part of the public status
+response.
 
 ## Test coverage
 
@@ -152,13 +160,53 @@ Offline only, no network:
 - No database migration and no `ai_runs` table.
 - No credit display, deduction or reversal. Those belong to Stage 7 (decision D6).
 - No streaming (D8) and no provider activation (D12).
-- No fabricated output path: nothing in this build can produce text presented as AI.
+- No fabricated output path: nothing in M0 can produce text presented as AI.
+
+## M1B (delivered): provider adapters, streaming and failover
+
+M1B adds real provider adapters behind the provider-independent contract, all of
+them **fail-closed by default**: nothing is reachable until a credential is
+present **and** `AI_ENABLED=true`, so a stray secret cannot start billable
+traffic, and nothing is presented as AI when no provider is configured.
+
+| Piece | Location |
+|---|---|
+| Gemini adapter (Google Generative Language REST API, `fetch`, no SDK) | `apps/api/src/ai/adapters/gemini.ts` |
+| OpenAI-compatible adapter (Chat Completions shape) | `apps/api/src/ai/adapters/openai-compatible.ts` |
+| Adapter selection from configuration | `apps/api/src/ai/adapters/index.ts` |
+| Streaming transport with schema-validated final event | `apps/api/src/ai/streaming.ts` |
+| Bounded retries + provider failover | `apps/api/src/ai/execution.ts` |
+| Run route wiring (auth, verified email, idempotency, quota, failover) | `apps/api/src/routes/ai.ts` |
+
+Behaviour:
+- **Adapter selection.** `buildAdapterRegistry` builds the registry from `c.env`. An
+  adapter counts as configured only when its credential is present **and**
+  `AI_ENABLED=true`. `GET /api/v1/ai/status` reports the configured providers;
+  without any configured adapter it stays `configured: false`, reason
+  `no-adapters-registered`, and `POST /api/v1/ai/run` answers 503.
+- **No silent failover between vendors.** A requested `AI_PROVIDER` must run; the
+  route never substitutes a different vendor's model. With no explicit request,
+  configured providers are tried in registration order and the route fails over to
+  the next provider on transient failures (`upstream`, `timeout`).
+- **Streaming.** `executeAiToolStream` yields `delta` events and a final
+  `done` event whose text is validated against the tool's output schema. Providers
+  without `stream` fall back to `executeAiTool`.
+- **Retries.** Up to `DEFAULT_AI_RETRIES` (2) attempts with exponential backoff
+  for transient failures; `rate-limited` is terminal so callers honor
+  `retryAfterSeconds`.
+- **No vendor SDKs, no network in prompts/execution/registry.** The ESLint
+  `ai-provider-boundary` guard keeps non-adapter AI modules network-free; adapters
+  are the reviewed network boundary and may use the global `fetch`.
+- **No fake output.** The deterministic fake provider lives only under
+  `ai/testing/` and is excluded from the production barrel.
 
 ## Decisions still open for later milestones
 
 | ID | Decision |
 |---|---|
-| D1 | Provider selection (deferred; no adapter chosen) |
+| D1 | Provider selection — resolved: adapter-based, multiple providers (Gemini and any
+  OpenAI-compatible gateway) selectable via configuration; none active without
+  `AI_ENABLED=true` and a credential. |
 | D2 | Model per tool |
 | D3 | Quota numbers and their server-side enforcement |
 | D4 | Whether verified email is required to run AI tools |
@@ -171,5 +219,8 @@ Offline only, no network:
 | D16 | Free-preview wording if any tool is offered before payment |
 | D17 | Whether `ai_runs` ships at all |
 
-M1 must not start until the owner approves a provider plan and the enforcement design
-in D3.
+M1B is delivered behind a fail-closed gate: adapters exist but none are active
+until the owner sets `AI_ENABLED=true` and supplies a credential. Remaining open
+decisions (D3 quota numbers/enforcement, D4 verified-email gate, D5 usage
+persistence, D13 migration applier, D15 caps/token ceilings/temperatures) await
+owner approval and, for D3/D5, applied migrations.

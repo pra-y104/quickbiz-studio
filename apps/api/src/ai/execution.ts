@@ -104,10 +104,65 @@ export interface ExecuteAiToolOptions<S extends AiToolSlug> {
   readonly signal?: AbortSignal;
   /** Per-run budget. Defaults to `DEFAULT_AI_TIMEOUT_MS`. */
   readonly timeoutMs?: number;
+  /**
+   * Extra attempts after the first for retryable provider failures. Defaults to
+   * `DEFAULT_AI_RETRIES`. Retries never happen for blocked, invalid-response,
+   * not-configured or cancelled runs, and never after the caller aborts.
+   */
+  readonly retries?: number;
+  /** Base delay for exponential backoff. Defaults to `DEFAULT_AI_RETRY_BASE_MS`. */
+  readonly retryBaseMs?: number;
+}
+
+/** Retry budget. Two extra attempts covers a single transient blip. */
+export const DEFAULT_AI_RETRIES = 2;
+export const DEFAULT_AI_RETRY_BASE_MS = 250;
+const MAX_RETRY_BASE_MS = 5_000;
+
+/** Only these failures are worth retrying; everything else is terminal. */
+const RETRYABLE_CODES: ReadonlySet<AiProviderErrorCode> = new Set<AiProviderErrorCode>([
+  'rate-limited',
+  'upstream',
+  'timeout',
+]);
+
+function assertRetries(retries: number | undefined): number {
+  if (retries === undefined) return DEFAULT_AI_RETRIES;
+  if (!Number.isInteger(retries) || retries < 0 || retries > 5) {
+    throw new RangeError('retries must be an integer between 0 and 5');
+  }
+  return retries;
+}
+
+function assertRetryBase(retryBaseMs: number | undefined): number {
+  if (retryBaseMs === undefined) return DEFAULT_AI_RETRY_BASE_MS;
+  if (!Number.isFinite(retryBaseMs) || retryBaseMs < 0 || retryBaseMs > MAX_RETRY_BASE_MS) {
+    throw new RangeError(`retryBaseMs must be between 0 and ${MAX_RETRY_BASE_MS}`);
+  }
+  return Math.floor(retryBaseMs);
+}
+
+/** Promise that rejects on abort, resolves after `ms`. */
+function sleep(ms: number, signal: AbortSignal | undefined): Promise<void> {
+  return new Promise((resolve, reject) => {
+    if (signal?.aborted) {
+      reject(new AiExecutionError('cancelled', 'The AI request was cancelled.'));
+      return;
+    }
+    const timer = setTimeout(() => {
+      signal?.removeEventListener('abort', onAbort);
+      resolve();
+    }, ms);
+    function onAbort(): void {
+      clearTimeout(timer);
+      reject(new AiExecutionError('cancelled', 'The AI request was cancelled.'));
+    }
+    signal?.addEventListener('abort', onAbort, { once: true });
+  });
 }
 
 /** Translate any adapter failure into the shared vocabulary with safe text. */
-function toExecutionError(error: unknown): AiExecutionError {
+export function toExecutionError(error: unknown): AiExecutionError {
   if (error instanceof AiExecutionError) return error;
   if (isAiProviderError(error)) {
     return new AiExecutionError(error.code, SAFE_PROVIDER_MESSAGES[error.code], {
@@ -134,7 +189,7 @@ function assertTimeout(timeoutMs: number | undefined): number {
  * The race is deliberate: an adapter that ignores the signal still cannot make
  * the request hang, because the abort promise settles the pipeline anyway.
  */
-async function withBudget<T>(
+export async function withBudget<T>(
   task: (signal: AbortSignal) => Promise<T>,
   timeoutMs: number,
   callerSignal: AbortSignal | undefined,
@@ -278,20 +333,47 @@ export async function executeAiTool<S extends AiToolSlug>(
 
   const startedAt = Date.now();
 
-  // 3. Provider call with one shared budget.
+  // 3. Provider call with one shared budget, plus bounded retries for transient
+  //    failures. A retry reuses the same budget window per attempt.
   let response: AiGenerateResponse;
+  const retries = assertRetries(options.retries);
+  const retryBaseMs = assertRetryBase(options.retryBaseMs);
+
   try {
     response = await withBudget(
-      (signal) =>
-        provider.generate({
-          tool,
-          system,
-          messages: [{ role: 'user', content: user }],
-          ...(options.model === undefined ? {} : { model: options.model }),
-          temperature: limits.temperature,
-          maxOutputTokens: limits.maxOutputTokens,
-          signal,
-        }),
+      async (signal) => {
+        let lastError: AiExecutionError | undefined;
+        for (let attempt = 0; attempt <= retries; attempt += 1) {
+          if (signal.aborted) {
+            throw new AiExecutionError('cancelled', 'The AI request was cancelled.');
+          }
+          try {
+            return await provider.generate({
+              tool,
+              system,
+              messages: [{ role: 'user', content: user }],
+              ...(options.model === undefined ? {} : { model: options.model }),
+              temperature: limits.temperature,
+              maxOutputTokens: limits.maxOutputTokens,
+              signal,
+            });
+          } catch (error) {
+            const mapped = toExecutionError(error);
+            lastError = mapped;
+            const retryable =
+              isAiProviderError(error) && RETRYABLE_CODES.has(error.code) && attempt < retries;
+            if (!retryable) throw mapped;
+
+            const retryAfter = isAiProviderError(error) ? error.retryAfterSeconds : undefined;
+            const backoff =
+              retryAfter !== undefined
+                ? retryAfter * 1000
+                : retryBaseMs * 2 ** attempt;
+            await sleep(backoff, signal);
+          }
+        }
+        throw lastError ?? new AiExecutionError('upstream', SAFE_PROVIDER_MESSAGES.upstream);
+      },
       timeoutMs,
       options.signal,
       'The AI provider did not answer in time.',

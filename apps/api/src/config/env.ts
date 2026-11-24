@@ -34,6 +34,24 @@ export interface Bindings {
   /** Server-only. Preferred model id for the requested provider. */
   readonly AI_MODEL?: string;
   readonly AI_API_KEY?: string;
+  /**
+   * Master switch for every AI adapter. Adapters are configured only when this is
+   * exactly `true` **and** a credential is present, so a stray key cannot start
+   * billable traffic. Defaults to false (fail closed).
+   */
+  readonly AI_ENABLED?: string;
+  /** Server-only. Google AI Studio key for the Gemini adapter. */
+  readonly GEMINI_API_KEY?: string;
+  /** Server-only. Base URL of a Chat-Completions-compatible provider. */
+  readonly AI_OPENAI_BASE_URL?: string;
+  /** Server-only. Key for the OpenAI-compatible provider. */
+  readonly AI_OPENAI_API_KEY?: string;
+  /** Server-only. Model id for the OpenAI-compatible provider. */
+  readonly AI_OPENAI_MODEL?: string;
+  /** Server-only. Registry id for the OpenAI-compatible provider (default `openai`). */
+  readonly AI_OPENAI_PROVIDER_ID?: string;
+  /** Server-only. Display label for the OpenAI-compatible provider. */
+  readonly AI_OPENAI_LABEL?: string;
   /** Server-only. Paystack secret key. Only `sk_test_` is honoured. */
   readonly PAYSTACK_SECRET_KEY?: string;
   /** Server-only. Paystack API base override (tests). */

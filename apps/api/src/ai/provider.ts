@@ -54,7 +54,17 @@ export interface AiProvider {
   readonly defaultModel: string;
   isConfigured(): boolean;
   generate(request: AiGenerateRequest): Promise<AiGenerateResponse>;
+  /**
+   * Optional incremental transport. Providers that do not implement it cannot be
+   * streamed; callers fall back to `generate`.
+   */
+  stream?(request: AiGenerateRequest): AsyncIterable<AiStreamEvent>;
 }
+
+/** One incremental event from a streaming provider. */
+export type AiStreamEvent =
+  | { readonly type: 'delta'; readonly text: string }
+  | { readonly type: 'done'; readonly response: AiGenerateResponse };
 
 /**
  * The only error an adapter may throw across the boundary.

@@ -9,7 +9,8 @@ import {
   type AiStatus,
   type AiToolStatus,
 } from '@quickbiz/shared';
-import { describeAiAvailability, productionRegistry } from '../ai/registry';
+import { describeAiAvailability } from '../ai/registry';
+import { buildAdapterRegistry } from '../ai/adapters';
 import { describeAiFailure, executeAiTool } from '../ai/execution';
 import { inMemoryAiQuotaStore } from '../ai/quota';
 import { KvAiQuotaStore } from '../ai/quota-kv';
@@ -29,17 +30,18 @@ export const MAX_AI_RUNS_PER_DAY = 50;
 /**
  * Availability probe for the AI tools.
  *
- * Status is derived from the provider registry, not from environment variables.
- * An environment may name a preferred provider and model, but that is only a
- * preference: this build registers no adapter, so the endpoint keeps reporting
- * `no-adapters-registered` and `configured: false`.
+ * Status is derived from the adapters that are actually configured, never from a
+ * name in an environment variable. An adapter counts as configured only when a
+ * credential is present **and** `AI_ENABLED=true`, so this endpoint cannot report
+ * `ready` by accident.
  *
- * `quota` is always `null`. No allowance is enforced anywhere yet, so the API
- * must not imply that one exists.
+ * `quota` is always `null`: the per-user allowance is enforced on `/run`, not
+ * advertised here.
  */
 aiRoutes.get('/status', (c) => {
   const config = c.get('config');
-  const availability = describeAiAvailability(config, productionRegistry);
+  const { registry } = buildAdapterRegistry(c.env, config);
+  const availability = describeAiAvailability(config, registry);
 
   const tools: AiToolStatus[] = AI_TOOL_SLUGS.map((slug) => {
     const entry = TOOL_CATALOGUE.find((tool) => tool.slug === slug);
@@ -51,12 +53,19 @@ aiRoutes.get('/status', (c) => {
     };
   });
 
-  const body: AiStatus = {
+  const body: AiStatus & {
+    providers: readonly { id: string; label: string; model: string }[];
+  } = {
     configured: availability.configured,
     reason: availability.reason,
     requestedProvider: availability.requestedProvider,
     model: availability.model,
     quota: null,
+    providers: registry.configured().map((provider) => ({
+      id: provider.id,
+      label: provider.label,
+      model: provider.defaultModel,
+    })),
     tools,
     total: tools.length,
   };
@@ -127,7 +136,8 @@ aiRoutes.post('/run', async (c) => {
   const { tool, input } = body;
   const validated: unknown = parseOrThrow(getAiToolSchemas(tool).input as ZodType<unknown>, input);
 
-  const availability = describeAiAvailability(config, productionRegistry);
+  const { registry } = buildAdapterRegistry(c.env, config);
+  const availability = describeAiAvailability(config, registry);
 
   if (!availability.configured) {
     // Fail closed: no adapter, no key, no request, no charge.
@@ -151,7 +161,14 @@ aiRoutes.post('/run', async (c) => {
     );
   }
 
-  const provider = productionRegistry.require(config.ai.providerId ?? '');
+  // A requested provider must be the one that runs; otherwise fail closed rather
+  // than silently using a different vendor's model.
+  const provider = config.ai.providerId
+    ? registry.require(config.ai.providerId)
+    : registry.configured()[0];
+  if (!provider) {
+    throw AppError.unavailable('AI generation is not available in this build.');
+  }
   const startedAt = Date.now();
 
   try {

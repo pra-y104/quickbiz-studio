@@ -16,6 +16,7 @@ import {
   type AiGenerateRequest,
   type AiGenerateResponse,
   type AiProvider,
+  type AiStreamEvent,
 } from '../provider';
 
 export interface FakeProviderOptions {
@@ -37,6 +38,11 @@ export interface FakeProviderOptions {
    * timeout does not depend on adapter cooperation.
    */
   readonly ignoreSignal?: boolean;
+  /**
+   * Split the text into these deltas when streaming. Defaults to a single delta
+   * containing the whole text, so streaming and non-streaming agree.
+   */
+  readonly streamChunks?: readonly string[];
 }
 
 function sleep(delayMs: number, signal: AbortSignal | undefined): Promise<void> {
@@ -111,6 +117,41 @@ export class FakeProvider implements AiProvider {
       model: request.model ?? this.defaultModel,
       finishReason: this.#options.finishReason ?? 'stop',
       ...(this.#options.usage === undefined ? {} : { usage: this.#options.usage }),
+    };
+  }
+
+  async *stream(request: AiGenerateRequest): AsyncIterable<AiStreamEvent> {
+    if (!this.isConfigured()) {
+      throw new AiProviderError('not-configured', 'No AI provider is configured.');
+    }
+
+    const { failWith } = this.#options;
+    if (failWith !== undefined) {
+      throw new AiProviderError(failWith, `Fake provider failure: ${failWith}.`);
+    }
+
+    const text =
+      typeof this.#options.text === 'function'
+        ? this.#options.text(request)
+        : (this.#options.text ?? '{}');
+
+    const chunks = this.#options.streamChunks ?? [text];
+    for (const chunk of chunks) {
+      if (request.signal?.aborted) {
+        throw new AiProviderError('cancelled', 'The AI request was cancelled.');
+      }
+      yield { type: 'delta', text: chunk };
+    }
+
+    yield {
+      type: 'done',
+      response: {
+        text,
+        providerId: this.id,
+        model: request.model ?? this.defaultModel,
+        finishReason: this.#options.finishReason ?? 'stop',
+        ...(this.#options.usage === undefined ? {} : { usage: this.#options.usage }),
+      },
     };
   }
 }

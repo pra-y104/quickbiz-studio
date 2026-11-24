@@ -10,3 +10,4 @@ export * from './cost';
 export * from './execution';
 export * from './provider';
 export * from './registry';
+export * from './streaming';

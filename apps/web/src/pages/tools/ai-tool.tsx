@@ -1,17 +1,9 @@
-import {
-  useCallback,
-  useEffect,
-  useRef,
-  useState,
-} from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router';
 import { ArrowLeft, Copy, Download, Sparkles } from 'lucide-react';
 import type { AiToolSlug } from '@quickbiz/shared';
-import {
-  AI_PROMPT_VERSIONS,
-  getAiToolLimits,
-} from '@quickbiz/shared';
+import { AI_PROMPT_VERSIONS, getAiToolLimits } from '@quickbiz/shared';
 import { HOMEPAGE } from '../../content/homepage';
 import { Container } from '../../components/ui/container';
 import { Button } from '../../components/ui/button';
@@ -41,7 +33,7 @@ function errorTitleFor(code: string): string {
     case 'SERVICE_UNAVAILABLE':
       return 'AI generation is not available right now';
     case 'RATE_LIMITED':
-      return 'You have used today\'s AI allowance. Try again tomorrow.';
+      return "You have used today's AI allowance. Try again tomorrow.";
     case 'PROVIDER_ERROR':
       return 'The AI provider could not complete this request';
     default:
@@ -65,9 +57,20 @@ export function AiToolPage({ slug }: AiToolPageProps) {
 
   const [input, setInput] = useState('');
   const [running, setRunning] = useState(false);
-  const [result, setResult] = useState<{ output: unknown; providerId: string; model: string } | null>(null);
-  const [error, setError] = useState<{ code: string; message: string; requestId?: string; details?: RunError['details'] } | null>(null);
-  const [statusNotice, setStatusNotice] = useState<'checking' | 'available' | 'unavailable' | 'signin-required'>('checking');
+  const [result, setResult] = useState<{
+    output: unknown;
+    providerId: string;
+    model: string;
+  } | null>(null);
+  const [error, setError] = useState<{
+    code: string;
+    message: string;
+    requestId?: string;
+    details?: RunError['details'];
+  } | null>(null);
+  const [statusNotice, setStatusNotice] = useState<
+    'checking' | 'available' | 'unavailable' | 'signin-required'
+  >('checking');
 
   const abortRef = useRef<AbortController | null>(null);
 
@@ -83,7 +86,11 @@ export function AiToolPage({ slug }: AiToolPageProps) {
 
   const downloadResult = useCallback((): void => {
     if (!result) return;
-    const json = JSON.stringify({ tool: slug, output: result.output, provider: result.providerId, model: result.model }, null, 2);
+    const json = JSON.stringify(
+      { tool: slug, output: result.output, provider: result.providerId, model: result.model },
+      null,
+      2,
+    );
     const bytes = new TextEncoder().encode(json);
     const blob = new Blob([bytes], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
@@ -129,19 +136,27 @@ export function AiToolPage({ slug }: AiToolPageProps) {
       }
 
       if (!response.ok) {
-        const apiError = payload as { error?: { code?: string; message?: string; requestId?: string; details?: unknown } };
+        const apiError = payload as {
+          error?: { code?: string; message?: string; requestId?: string; details?: unknown };
+        };
         const err = apiError.error ?? {};
-        throw new Error(JSON.stringify({
-          code: err.code ?? 'UNKNOWN',
-          message: err.message ?? 'The request could not be completed.',
-          requestId: err.requestId,
-          details: err.details,
-        }));
+        throw new Error(
+          JSON.stringify({
+            code: err.code ?? 'UNKNOWN',
+            message: err.message ?? 'The request could not be completed.',
+            requestId: err.requestId,
+            details: err.details,
+          }),
+        );
       }
 
-      const data = payload as { data?: { output?: unknown; metadata?: { providerId?: string; model?: string } } };
+      const data = payload as {
+        data?: { output?: unknown; metadata?: { providerId?: string; model?: string } };
+      };
       if (!data.data) {
-        throw new Error(JSON.stringify({ code: 'INVALID_RESPONSE', message: 'Unexpected server response.' }));
+        throw new Error(
+          JSON.stringify({ code: 'INVALID_RESPONSE', message: 'Unexpected server response.' }),
+        );
       }
 
       setResult({
@@ -159,7 +174,10 @@ export function AiToolPage({ slug }: AiToolPageProps) {
       try {
         parsed = JSON.parse(message);
       } catch {
-        parsed = { code: 'NETWORK_ERROR', message: 'Could not reach QuickBiz Studio. Check your connection and try again.' };
+        parsed = {
+          code: 'NETWORK_ERROR',
+          message: 'Could not reach QuickBiz Studio. Check your connection and try again.',
+        };
       }
       setError({
         code: parsed.code,
@@ -304,7 +322,9 @@ export function AiToolPage({ slug }: AiToolPageProps) {
 
         {error ? (
           <Alert tone="danger" title={errorTitleFor(error.code)} className="mt-5">
-            <p className="text-sm text-ink-muted">{formatErrorMessage(error.message, error.details)}</p>
+            <p className="text-sm text-ink-muted">
+              {formatErrorMessage(error.message, error.details)}
+            </p>
             {error.requestId ? (
               <p className="mt-1 text-xs text-ink-subtle">
                 {`${t('ai.requestIdLabel')} ${error.requestId}`}
@@ -320,7 +340,9 @@ export function AiToolPage({ slug }: AiToolPageProps) {
             </CardHeader>
             <CardContent className="space-y-3">
               <pre className="overflow-auto rounded-lg border border-border bg-surface-muted p-3.5 text-sm font-mono text-ink whitespace-pre-wrap break-words max-h-96">
-                {typeof result.output === 'string' ? result.output : JSON.stringify(result.output, null, 2)}
+                {typeof result.output === 'string'
+                  ? result.output
+                  : JSON.stringify(result.output, null, 2)}
               </pre>
               <div className="flex items-center justify-between gap-2 pt-2 border-t border-border">
                 <span className="text-xs text-ink-subtle">

@@ -1058,7 +1058,7 @@ function buildDecemberPoster(): CreativeTemplate {
         palette,
         variant: 0,
         eyebrow: 'DECEMBER HOLIDAYS',
-        headline: 'Season\'s greetings',
+        headline: "Season's greetings",
         body: 'Thank you for shopping with us all year. Holiday hours from 20 December to 2 January.',
         footer: '14 Market Road  ·  +234 800 000 0000',
         headlineTop: 0.22,

@@ -21,11 +21,7 @@
  */
 
 const CACHE_NAME = 'quickbiz-v1';
-const APP_SHELL = [
-  '/',
-  '/favicon.svg',
-  '/theme-init.js',
-];
+const APP_SHELL = ['/', '/favicon.svg', '/theme-init.js'];
 
 // Ordinary tool routes that are fully client-side and work offline.
 const OFFLINE_TOOLS = [
@@ -57,19 +53,17 @@ function isCacheable(url) {
 }
 
 self.addEventListener('install', (event) => {
-  event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => cache.addAll(APP_SHELL)),
-  );
+  event.waitUntil(caches.open(CACHE_NAME).then((cache) => cache.addAll(APP_SHELL)));
   self.skipWaiting();
 });
 
 self.addEventListener('activate', (event) => {
   event.waitUntil(
-    caches.keys().then((keys) =>
-      Promise.all(
-        keys.filter((key) => key !== CACHE_NAME).map((key) => caches.delete(key)),
+    caches
+      .keys()
+      .then((keys) =>
+        Promise.all(keys.filter((key) => key !== CACHE_NAME).map((key) => caches.delete(key))),
       ),
-    ),
   );
   self.clients.claim();
 });
@@ -108,9 +102,7 @@ self.addEventListener('fetch', (event) => {
   // HTML navigations: network first, fall back to index.html so the SPA
   // router can render the right tool page offline.
   if (request.mode === 'navigate') {
-    event.respondWith(
-      fetch(request).catch(() => caches.match('/')),
-    );
+    event.respondWith(fetch(request).catch(() => caches.match('/')));
     return;
   }
 

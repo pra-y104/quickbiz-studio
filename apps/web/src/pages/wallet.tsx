@@ -150,9 +150,7 @@ export function WalletPage() {
       window.location.href = session_.authorizationUrl;
     } catch (caught) {
       const message =
-        caught instanceof Error
-          ? caught.message
-          : 'Could not start checkout. Try again.';
+        caught instanceof Error ? caught.message : 'Could not start checkout. Try again.';
       setPurchaseError({ code: 'UNKNOWN', message });
     } finally {
       setPurchasing(false);
@@ -186,8 +184,7 @@ export function WalletPage() {
     } catch (caught) {
       setPurchaseError({
         code: 'UNKNOWN',
-        message:
-          caught instanceof Error ? caught.message : 'Could not process the refund.',
+        message: caught instanceof Error ? caught.message : 'Could not process the refund.',
       });
     } finally {
       setRefunding(false);
@@ -199,7 +196,10 @@ export function WalletPage() {
       title="Your wallet"
       description="Top up to use paid AI tools. Balances are held in the currency shown and only change after a verified payment or a completed run."
     >
-      <Link to="/dashboard" className="inline-flex items-center gap-1.5 text-xs font-semibold text-primary hover:underline mb-4">
+      <Link
+        to="/dashboard"
+        className="inline-flex items-center gap-1.5 text-xs font-semibold text-primary hover:underline mb-4"
+      >
         <ArrowLeft className="size-3.5" aria-hidden="true" />
         Back to dashboard
       </Link>
@@ -342,9 +342,7 @@ export function WalletPage() {
                 </>
               ) : (
                 <div className="flex flex-col items-center gap-3 py-6 text-center">
-                  <p className="text-sm text-ink-muted">
-                    Credit purchases are not available yet.
-                  </p>
+                  <p className="text-sm text-ink-muted">Credit purchases are not available yet.</p>
                   <p className="text-xs text-ink-subtle">
                     A Paystack test-mode key and the payment migration must be applied before
                     balances can change.
@@ -402,13 +400,13 @@ export function WalletPage() {
             <CardContent>
               <p className="text-sm text-ink-muted mb-4">
                 If a paid AI generation failed and you were still charged, use your payment
-                reference to request a refund. Refunds are processed by Paystack and may take
-                time to appear.
+                reference to request a refund. Refunds are processed by Paystack and may take time
+                to appear.
               </p>
               {refundResult ? (
                 <Alert tone="success" title="Refund requested">
-                  Reference {refundResult.reference}: {refundResult.amountMinor} minor units,
-                  status {refundResult.status}.
+                  Reference {refundResult.reference}: {refundResult.amountMinor} minor units, status{' '}
+                  {refundResult.status}.
                 </Alert>
               ) : null}
               <Button
@@ -421,7 +419,9 @@ export function WalletPage() {
                 {refunding ? 'Processing…' : 'Start refund'}
               </Button>
               {purchaseError && !purchasing ? (
-                <Alert tone="danger" className="mt-4" title="Refund failed">{purchaseError.message}</Alert>
+                <Alert tone="danger" className="mt-4" title="Refund failed">
+                  {purchaseError.message}
+                </Alert>
               ) : null}
             </CardContent>
           </Card>

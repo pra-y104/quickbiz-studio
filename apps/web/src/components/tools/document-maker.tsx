@@ -337,7 +337,10 @@ export function DocumentMaker({ kind }: DocumentMakerProps) {
 
   function copyContent(): void {
     const linesText = parsedLines
-      .map((line) => `• ${line.description} — ${line.quantity} × ${formatAmount(lineTotalMinor(line), currency)}`)
+      .map(
+        (line) =>
+          `• ${line.description} — ${line.quantity} × ${formatAmount(lineTotalMinor(line), currency)}`,
+      )
       .join('\n');
     const content = [
       `${isInvoice ? 'INVOICE' : 'QUOTATION'} #${draft.number}`,
@@ -449,17 +452,25 @@ export function DocumentMaker({ kind }: DocumentMakerProps) {
 
         <div className="grid sm:grid-cols-2 gap-8 mb-8">
           <div>
-            <h2 className="text-xs font-semibold uppercase tracking-wider text-ink-subtle mb-3">From</h2>
+            <h2 className="text-xs font-semibold uppercase tracking-wider text-ink-subtle mb-3">
+              From
+            </h2>
             <p className="text-sm text-ink font-medium">{draft.sellerName || '—'}</p>
             {splitDetails(draft.sellerDetails).map((line) => (
-              <p key={line} className="text-sm text-ink-muted">{line}</p>
+              <p key={line} className="text-sm text-ink-muted">
+                {line}
+              </p>
             ))}
           </div>
           <div>
-            <h2 className="text-xs font-semibold uppercase tracking-wider text-ink-subtle mb-3">To</h2>
+            <h2 className="text-xs font-semibold uppercase tracking-wider text-ink-subtle mb-3">
+              To
+            </h2>
             <p className="text-sm text-ink font-medium">{draft.clientName || '—'}</p>
             {splitDetails(draft.clientDetails).map((line) => (
-              <p key={line} className="text-sm text-ink-muted">{line}</p>
+              <p key={line} className="text-sm text-ink-muted">
+                {line}
+              </p>
             ))}
           </div>
         </div>
@@ -500,24 +511,32 @@ export function DocumentMaker({ kind }: DocumentMakerProps) {
         <div className="ml-auto w-full sm:w-96 space-y-2">
           <div className="flex justify-between">
             <span className="text-sm text-ink-muted">Subtotal</span>
-            <span className="text-sm tabular-nums text-ink">{formatAmount(totals.subtotalMinor, currency)}</span>
+            <span className="text-sm tabular-nums text-ink">
+              {formatAmount(totals.subtotalMinor, currency)}
+            </span>
           </div>
           {totals.discountMinor > 0 && (
             <div className="flex justify-between">
               <span className="text-sm text-ink-muted">Discount</span>
-              <span className="text-sm tabular-nums text-success">−{formatAmount(totals.discountMinor, currency)}</span>
+              <span className="text-sm tabular-nums text-success">
+                −{formatAmount(totals.discountMinor, currency)}
+              </span>
             </div>
           )}
           {totals.taxMinor > 0 && (
             <div className="flex justify-between">
               <span className="text-sm text-ink-muted">Tax</span>
-              <span className="text-sm tabular-nums text-ink">{formatAmount(totals.taxMinor, currency)}</span>
+              <span className="text-sm tabular-nums text-ink">
+                {formatAmount(totals.taxMinor, currency)}
+              </span>
             </div>
           )}
           {totals.shippingMinor > 0 && (
             <div className="flex justify-between">
               <span className="text-sm text-ink-muted">Shipping</span>
-              <span className="text-sm tabular-nums text-ink">{formatAmount(totals.shippingMinor, currency)}</span>
+              <span className="text-sm tabular-nums text-ink">
+                {formatAmount(totals.shippingMinor, currency)}
+              </span>
             </div>
           )}
           <div className="border-t border-border-strong pt-3 flex justify-between">
@@ -559,8 +578,8 @@ export function DocumentMaker({ kind }: DocumentMakerProps) {
             <div>
               <CardTitle>{isInvoice ? 'Invoice details' : 'Quotation details'}</CardTitle>
               <CardDescription>
-                Totals update as you type. Save drafts to return later, preview before you
-                download, or print directly from the browser.
+                Totals update as you type. Save drafts to return later, preview before you download,
+                or print directly from the browser.
               </CardDescription>
             </div>
             <div className="flex gap-1.5">
@@ -855,7 +874,9 @@ export function DocumentMaker({ kind }: DocumentMakerProps) {
                     <Select
                       id="document-discount-type"
                       value={draft.discountType}
-                      onChange={(event) => update('discountType', event.target.value as DiscountType)}
+                      onChange={(event) =>
+                        update('discountType', event.target.value as DiscountType)
+                      }
                     >
                       {DISCOUNT_OPTIONS.map((option) => (
                         <option key={option.value} value={option.value}>
@@ -866,9 +887,13 @@ export function DocumentMaker({ kind }: DocumentMakerProps) {
                   </div>
 
                   <Field
-                    label={draft.discountType === 'amount' ? `Discount (${currency})` : 'Discount (%)'}
+                    label={
+                      draft.discountType === 'amount' ? `Discount (${currency})` : 'Discount (%)'
+                    }
                     htmlFor="document-discount-value"
-                    error={errors['discountValue'] ? ERROR_TEXT[errors['discountValue']] : undefined}
+                    error={
+                      errors['discountValue'] ? ERROR_TEXT[errors['discountValue']] : undefined
+                    }
                   >
                     <Input
                       id="document-discount-value"
@@ -902,7 +927,9 @@ export function DocumentMaker({ kind }: DocumentMakerProps) {
                   <Field
                     label={`Shipping (${currency})`}
                     htmlFor="document-shipping"
-                    error={errors['shippingMinor'] ? ERROR_TEXT[errors['shippingMinor']] : undefined}
+                    error={
+                      errors['shippingMinor'] ? ERROR_TEXT[errors['shippingMinor']] : undefined
+                    }
                   >
                     <Input
                       id="document-shipping"
@@ -949,7 +976,8 @@ export function DocumentMaker({ kind }: DocumentMakerProps) {
                 <CardContent className="p-4">
                   <h3 className="text-sm font-semibold text-ink">Saved documents</h3>
                   <p className="text-xs text-ink-muted mt-1">
-                    Drafts are saved in this browser on this device. Clearing site data removes them.
+                    Drafts are saved in this browser on this device. Clearing site data removes
+                    them.
                   </p>
                   <div className="mt-3 flex flex-col sm:flex-row sm:items-center gap-3">
                     <Button
@@ -1136,9 +1164,8 @@ export function DocumentMaker({ kind }: DocumentMakerProps) {
         ) : null}
 
         <Alert tone="info" title="Nothing is stored on a server">
-          This {kind} exists only in this tab and in your browser's local storage.
-          Download it before closing the page, and check the tax rules that apply where
-          you trade.
+          This {kind} exists only in this tab and in your browser's local storage. Download it
+          before closing the page, and check the tax rules that apply where you trade.
         </Alert>
       </aside>
     </ToolPage>

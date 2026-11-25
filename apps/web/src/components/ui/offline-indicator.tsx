@@ -18,12 +18,15 @@ export function OfflineIndicator({ className }: { className?: string }) {
   return (
     <Alert
       tone="warning"
-      className={cn('fixed bottom-4 left-4 right-4 sm:bottom-6 sm:left-6 sm:right-6 z-50', className)}
+      className={cn(
+        'fixed bottom-4 left-4 right-4 sm:bottom-6 sm:left-6 sm:right-6 z-50',
+        className,
+      )}
       title="You are offline"
     >
-      Ordinary tools (calculator, word counter, invoice maker, etc.) keep
-      working because they run on this device. AI, wallet and payments need a
-      network connection and will not work until you are back online.
+      Ordinary tools (calculator, word counter, invoice maker, etc.) keep working because they run
+      on this device. AI, wallet and payments need a network connection and will not work until you
+      are back online.
     </Alert>
   );
 }

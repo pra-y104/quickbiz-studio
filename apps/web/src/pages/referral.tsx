@@ -117,9 +117,7 @@ export function ReferralDashboardPage() {
 
   const shareWhatsApp = useCallback((): void => {
     if (!url) return;
-    const text = encodeURIComponent(
-      `Join me on ${BRAND.name} using my referral link: ${url}`,
-    );
+    const text = encodeURIComponent(`Join me on ${BRAND.name} using my referral link: ${url}`);
     window.open(`https://wa.me/?text=${text}`, '_blank', 'noopener,noreferrer');
   }, [url]);
 
@@ -222,8 +220,8 @@ export function ReferralDashboardPage() {
               </Button>
             </div>
             <p className="mt-3 text-xs text-ink-muted">
-              Send this link to a business owner. They sign up, verify their email, and make
-              their first credit purchase — that is a qualifying referral.
+              Send this link to a business owner. They sign up, verify their email, and make their
+              first credit purchase — that is a qualifying referral.
             </p>
             <Alert tone="info" className="mt-3" title="How referrals work">
               <ul className="list-inside list-disc space-y-1 text-sm text-ink-muted mt-1">
@@ -236,8 +234,8 @@ export function ReferralDashboardPage() {
                   purchase. Rewards are not paid out in this build.
                 </li>
                 <li>
-                  Referrals are recorded in this browser only. Clear your site data and the
-                  record is gone. A backend referral service is required for payouts.
+                  Referrals are recorded in this browser only. Clear your site data and the record
+                  is gone. A backend referral service is required for payouts.
                 </li>
               </ul>
             </Alert>
@@ -332,7 +330,10 @@ export function ReferralDashboardPage() {
                   .slice()
                   .sort((a, b) => b.referredAt.localeCompare(a.referredAt))
                   .map((entry) => (
-                    <li key={entry.id} className="flex items-center justify-between gap-3 py-2 text-sm">
+                    <li
+                      key={entry.id}
+                      className="flex items-center justify-between gap-3 py-2 text-sm"
+                    >
                       <div className="flex-1 min-w-0">
                         <p className="font-medium text-ink truncate">
                           Referred {entry.code.slice(-6)}…

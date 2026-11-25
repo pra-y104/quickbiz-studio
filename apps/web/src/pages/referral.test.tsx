@@ -44,9 +44,7 @@ describe('ReferralDashboardPage', () => {
     await userEvent.type(input, 'user_self_1');
     await userEvent.click(screen.getByRole('button', { name: /Record referral/i }));
 
-    await waitFor(() =>
-      screen.getByText(/You cannot use your own referral code/i),
-    );
+    await waitFor(() => screen.getByText(/You cannot use your own referral code/i));
   });
 
   it('detects duplicate referral codes from localStorage', async () => {
@@ -141,9 +139,7 @@ describe('ReferralDashboardPage', () => {
     renderWithAuth(<ReferralDashboardPage />, { gateway });
     await waitFor(() => screen.getByText('Your referral link'));
 
-    expect(
-      screen.getByRole('button', { name: /Share$/i }),
-    ).toBeDisabled();
+    expect(screen.getByRole('button', { name: /Share$/i })).toBeDisabled();
   });
 
   it('shows recent referrals list', async () => {

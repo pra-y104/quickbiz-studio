@@ -9,7 +9,7 @@ checkpoint, **not** a completion report. The roadmap is not finished.
 |---|---|
 | Branch | `stage-6-p1-templates` |
 | Main | `12f1712` — untouched, no merge performed |
-| Tests | 712 passing (219 shared, 180 API, 313 web) |
+| Tests | 774 passing (223 shared, 219 API, 332 web) |
 | Working tree | clean at the last commit |
 
 ## Completed and pushed on this branch
@@ -57,7 +57,7 @@ checkpoint, **not** a completion report. The roadmap is not finished.
 - `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`, `SUPABASE_URL` are **not visible**
   to the sandbox. Add `apps/web/.env.local` (git-ignored) and
   `wrangler secret put` values to verify authentication and the database.
-- Migration approval for `0001`–`0004` (wallets + RLS are unapplied).
+- Migration approval for `0001`–`0005` (wallets, payments + RLS are unapplied; 0004/0005 corrected at `d14c3cc`).
 - Business name, address, jurisdiction, support and privacy email for the legal pages.
 - AI provider decision and funding.
 - Paystack live onboarding for live payments.

@@ -8,9 +8,9 @@ real browser: the suites are unit and integration only.
 
 | Suite | Count | What it proves |
 |---|---|---|
-| Shared (`packages/shared`) | 219 | catalogue invariants, currency/date maths, tool logic, Creative Studio document model, Video Studio document model, wallet ledger invariants, locale model |
-| API (`apps/api`) | 176 | real Hono middleware chain: health, tools, auth, AI guards, rate limiting, idempotency, logging redaction, payments, Paystack adapter, translation |
-| Web (`apps/web`) | 311 | every tool, auth screens, guards, Creative Studio, Video Studio timeline, wallet page, locale menu, CSP header |
+| Shared (`packages/shared`) | 223 | catalogue invariants, currency/date maths, tool logic, Creative Studio document model, Video Studio document model, wallet ledger invariants, locale model |
+| API (`apps/api`) | 219 | real Hono middleware chain: health, tools, auth, AI guards, rate limiting, idempotency, logging redaction, payments, Paystack adapter, translation, migration-function contracts |
+| Web (`apps/web`) | 332 | every tool, auth screens, guards, Creative Studio, Video Studio timeline, wallet page, locale menu, CSP header |
 
 Run `pnpm verify` for typecheck, lint, tests and both builds.
 

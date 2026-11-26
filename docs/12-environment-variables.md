@@ -29,12 +29,27 @@ Anything prefixed `VITE_` is compiled into the JavaScript bundle. Treat it as pu
 | `SUPABASE_URL` | for auth | no | project URL; derives the JWKS endpoint and issuer |
 | `SUPABASE_JWKS_URL` | no | no | explicit JWKS override for non-standard deployments |
 | `SUPABASE_JWT_SECRET` | legacy | **secret** | HS256 verification for older projects |
-| `SUPABASE_SERVICE_ROLE_KEY` | not used yet | **secret** | bypasses RLS; server only |
-| `AI_PROVIDER` | Stage 6 | no | preferred provider id; naming it does not enable AI |
-| `AI_MODEL` | Stage 6 | no | preferred model id for that provider |
-| `AI_API_KEY` | Stage 6 | **secret** | provider key, server only |
-| `PAYSTACK_SECRET_KEY` | Stage 8 | **secret** | payment verification |
-| `PAYSTACK_WEBHOOK_SECRET` | Stage 8 | **secret** | webhook signature check |
+| `SUPABASE_SERVICE_ROLE_KEY` | ledger only | **secret** | bypasses RLS; required once migrations 0004/0005 are wired |
+| `AI_ENABLED` | for AI | no | must be exactly `true` (with a key) before any adapter runs; default fail closed |
+| `AI_PROVIDER` | no | no | preferred provider id; naming it does not enable AI |
+| `AI_MODEL` | no | no | preferred model id for that provider |
+| `AI_API_KEY` | no | **secret** | fallback Gemini key, server only |
+| `GEMINI_API_KEY` | no | **secret** | Google AI Studio key for the Gemini adapter |
+| `AI_OPENAI_BASE_URL` | no | no | Chat-Completions base URL; required to register that adapter |
+| `AI_OPENAI_API_KEY` | no | **secret** | key for the OpenAI-compatible provider |
+| `AI_OPENAI_MODEL` | no | no | model id for that provider (default `gpt-4o-mini`) |
+| `AI_OPENAI_PROVIDER_ID` | no | no | registry id for that provider (default `openai`) |
+| `AI_OPENAI_LABEL` | no | no | display label for that provider |
+| `AI_REQUIRE_VERIFIED_EMAIL` | no | no | defaults to `true` (fail closed) |
+| `PAYSTACK_SECRET_KEY` | Stage 8 | **secret** | only `sk_test_` honoured; used for API calls and webhook signature |
+| `PAYSTACK_BASE_URL` | no | no | Paystack API base override (tests only) |
+| `RATE_LIMIT_KV` | no | no | KV namespace **binding** for distributed rate limiting (not a secret) |
+| `AI_QUOTA_KV` | no | no | KV namespace **binding** for the shared AI quota store (not a secret) |
+
+`PAYSTACK_SECRET_KEY` is also the HMAC secret used to verify webhook signatures;
+there is no separate webhook secret. `RATE_LIMIT_KV` and `AI_QUOTA_KV` are Cloudflare
+bindings declared in `wrangler.toml` under `[[kv_namespaces]]`, not secrets. When they
+are absent, the rate limiter and AI quota fall back to per-isolate memory.
 
 ## Authentication pair
 

@@ -9,14 +9,34 @@ RATE_LIMIT_MAX_REQUESTS=120
 
 # Stage 4 authentication. SUPABASE_URL derives the JWKS endpoint used to verify
 # access tokens. Set SUPABASE_JWT_SECRET only for older projects that still sign
-# HS256 tokens. The service role key is not used by this stage.
+# HS256 tokens. The service role key is required only once the wallet/payment
+# ledger (migrations 0004/0005) is wired.
 SUPABASE_URL=
 SUPABASE_JWKS_URL=
 SUPABASE_JWT_SECRET=
 SUPABASE_SERVICE_ROLE_KEY=
 
-# Stage 6+ (leave empty for now - no provider is activated in Stage 2)
-# Naming a provider/model here does not enable AI: no adapter is compiled in.
+# ---- AI provider (server-side only) ----------------------------------------
+# AI_ENABLED must be exactly "true" AND a credential present before any adapter
+# runs. A key alone never starts billable traffic (fail closed by default).
+AI_ENABLED=
 AI_PROVIDER=
 AI_MODEL=
 AI_API_KEY=
+GEMINI_API_KEY=
+AI_OPENAI_BASE_URL=
+AI_OPENAI_API_KEY=
+AI_OPENAI_MODEL=
+AI_OPENAI_PROVIDER_ID=
+AI_OPENAI_LABEL=
+AI_REQUIRE_VERIFIED_EMAIL=
+
+# ---- Payments (server-side only) -------------------------------------------
+# Only "sk_test_" is honoured; a live key is ignored until owner approval.
+PAYSTACK_SECRET_KEY=
+PAYSTACK_BASE_URL=
+
+# ---- Cloudflare KV bindings (optional, declared in wrangler.toml) ----------
+# When absent, rate limiting and AI quota use per-isolate memory.
+RATE_LIMIT_KV=
+AI_QUOTA_KV=

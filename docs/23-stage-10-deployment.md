@@ -110,7 +110,7 @@ expected future costs.
 | Area | Status |
 |---|---|
 | Web build, API build | Passing |
-| Tests | Passing (219 shared, 180 API, 313 web — unit/integration, no browser) |
+| Tests | Passing (223 shared, 219 API, 332 web — unit/integration, no browser) |
 | Authentication | Implemented; **not verified against a live Supabase project** |
 | Database migrations | Written (`0001`–`0005`, incl. wallet + payments + RLS); **not applied** |
 | AI execution | Fail-closed 503; no provider activated |

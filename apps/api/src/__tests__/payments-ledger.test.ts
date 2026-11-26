@@ -3,6 +3,8 @@ import {
   UnconfiguredPaymentLedger,
   type PaymentEventInput,
   type PaymentLedger,
+  type PaymentRecord,
+  type RefundRecordInput,
 } from '../payments/ledger';
 
 class FakeLedger implements PaymentLedger {
@@ -10,6 +12,7 @@ class FakeLedger implements PaymentLedger {
   readonly events: PaymentEventInput[] = [];
   readonly settled: string[] = [];
   readonly failed: string[] = [];
+  readonly refunds: RefundRecordInput[] = [];
   #configured: boolean;
   #seen = new Set<string>();
 
@@ -36,6 +39,14 @@ class FakeLedger implements PaymentLedger {
   async fail(reference: string): Promise<void> {
     this.failed.push(reference);
   }
+
+  async getPayment(_reference: string): Promise<PaymentRecord | null> {
+    return null;
+  }
+
+  async recordRefund(input: RefundRecordInput): Promise<void> {
+    this.refunds.push(input);
+  }
 }
 
 const event = (overrides: Partial<PaymentEventInput> = {}): PaymentEventInput => ({
@@ -56,6 +67,12 @@ describe('payment ledger port', () => {
     // settle/fail resolve without error and without any side effect to observe.
     await expect(ledger.settle('qb_1')).resolves.toBeUndefined();
     await expect(ledger.fail('qb_1')).resolves.toBeUndefined();
+    // No database is wired: getPayment returns null so callers fail closed, and
+    // recordRefund is a no-op (it must never be reached because refunds fail closed).
+    await expect(ledger.getPayment('qb_1')).resolves.toBeNull();
+    await expect(
+      ledger.recordRefund({ reference: 'qb_1', refundReference: 'r1', amountMinor: 100 }),
+    ).resolves.toBeUndefined();
   });
 
   it('rejects a redelivered event as a duplicate', async () => {

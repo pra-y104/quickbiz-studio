@@ -13,12 +13,18 @@
 --     existing event is compared with the incoming event; conflicts are rejected.
 --   * Crediting is idempotent: the ledger entry id is derived from the payment
 --     reference, so replaying the credit cannot double-pay.
---   * External refunds (payment_refund) record the refund on the payment row and
---     mark it 'refunded' but do NOT credit the QuickBiz wallet. The Worker must
---     obtain provider confirmation BEFORE calling payment_refund.
---   * Internal wallet compensation (wallet_compensate in 0004) is a separate
---     operation for cases where QuickBiz owes the customer wallet credit without
---     an external provider refund.
+--   * External refunds (payment_refund) record the provider-confirmed refund
+--     (reference + amount) on the payment row and mark it 'refunded' but do NOT
+--     credit the QuickBiz wallet. The Worker must obtain provider confirmation
+--     BEFORE calling payment_refund.
+--   * Internal wallet compensation (payment_compensate) credits the wallet once
+--     via a deterministic 'comp:<reference>' ledger entry, for cases where
+--     QuickBiz owes the customer wallet credit without an external provider
+--     refund.
+--   * A payment can be externally refunded OR internally compensated, never both.
+--     payment_refund and payment_compensate lock the same payment row FOR UPDATE
+--     and check the other's marker, so concurrent calls serialise and double
+--     benefit is impossible.
 --   * Partial refunds and partial compensation are NOT supported (full amount
 --     only). This limitation is explicit.
 --   * Only the service role (the Worker) may write these tables.
@@ -58,12 +64,15 @@ create table if not exists public.payments (
   authorization_url text,
   paid_at timestamptz,
   refunded_at timestamptz,
+  refund_reference text,
+  refund_amount_minor bigint,
+  compensation_at timestamptz,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
 
 comment on table public.payments is
-  'One row per checkout attempt. Balances are never accepted from the browser; only the provider response, re-verified server-side, may change status. paid_at records settlement time; refunded_at records external refund time.';
+  'One row per checkout attempt. Balances are never accepted from the browser; only the provider response, re-verified server-side, may change status. paid_at records settlement time; refunded_at/refund_reference record a provider-confirmed external refund; compensation_at records an internal wallet compensation. A payment can be externally refunded OR internally compensated, never both.';
 
 create index if not exists payments_user_created_idx on public.payments (user_id, created_at desc);
 create index if not exists payments_status_idx on public.payments (status);
@@ -411,21 +420,25 @@ $$;
 --   1. Already-refunded returns successfully BEFORE any other status checks.
 --   2. Only status = 'success' payments can be externally refunded;
 --      pending/failed/abandoned payments are rejected.
---   3. This function does NOT credit the QuickBiz wallet. It only records that
---      the external provider refunded the customer and marks the payment as
---      'refunded' with refunded_at set.
---   4. Duplicate external refunds are prevented by the status check.
---   5. All steps run in one PL/pgSQL transaction: atomic.
+--   3. A payment already internally compensated (compensation_at set) is rejected,
+--      so the same payment cannot benefit from BOTH an external refund and an
+--      internal wallet compensation.
+--   4. Full-refund-only: the provider-confirmed refund amount must equal the
+--      captured amount.
+--   5. This function does NOT credit the QuickBiz wallet. It records the
+--      provider-confirmed refund (reference + amount) and marks the payment
+--      'refunded'. The row lock serialises concurrent refund/compensation calls.
 --
--- CRITICAL: This function does NOT trigger an external refund to the original
--- payment method. The Worker must obtain provider confirmation (signature
--- verification, amount check, currency check, reference check) BEFORE calling
--- this function. A database function call alone is not proof that the external
--- provider refunded money.
+-- CRITICAL: This function does NOT trigger an external refund. The Worker must
+-- obtain provider confirmation (signature/amount/currency/reference) and pass the
+-- provider's refund id and confirmed amount BEFORE calling this function. A DB
+-- status update alone is not an external refund.
 --
 -- LIMITATION: Full refund only. Partial external refunds are not supported.
 create or replace function public.payment_refund(
   p_reference text,
+  p_refund_reference text,
+  p_refund_amount_minor bigint,
   p_refund_at timestamptz default now()
 )
 returns void
@@ -440,7 +453,7 @@ begin
     raise exception 'forbidden' using errcode = 'insufficient_privilege';
   end if;
 
-  -- Lock the payment row first to serialize concurrent refund attempts.
+  -- Lock the payment row first to serialize concurrent refund/compensation calls.
   select * into v_payment
   from public.payments
   where reference = p_reference
@@ -455,6 +468,14 @@ begin
     return;
   end if;
 
+  -- A payment already compensated internally cannot also be externally refunded.
+  if v_payment.compensation_at is not null then
+    raise exception
+      'payment % already internally compensated; external refund refused',
+      p_reference
+      using errcode = 'check_violation';
+  end if;
+
   -- Only successful payments can be externally refunded.
   if v_payment.status <> 'success' then
     raise exception
@@ -463,9 +484,116 @@ begin
       using errcode = 'check_violation';
   end if;
 
-  -- Record external refund. Does NOT credit the QuickBiz wallet.
+  -- Full-refund-only: the provider-confirmed amount must equal the captured amount.
+  if p_refund_amount_minor is distinct from v_payment.amount_minor then
+    raise exception
+      'refund amount % does not equal captured amount % for payment %',
+      p_refund_amount_minor, v_payment.amount_minor, p_reference
+      using errcode = 'check_violation';
+  end if;
+
+  -- Record the provider-confirmed external refund. Does NOT credit the wallet.
   update public.payments
-  set status = 'refunded', refunded_at = coalesce(p_refund_at, now())
+  set status = 'refunded',
+      refunded_at = coalesce(p_refund_at, now()),
+      refund_reference = p_refund_reference,
+      refund_amount_minor = p_refund_amount_minor
+  where reference = p_reference;
+end;
+$$;
+
+-- Internal wallet compensation for a specific payment.
+--
+-- This is the ONLY path that credits the wallet for compensation, and it is tied
+-- to a payment so the same payment cannot be both externally refunded and
+-- internally compensated:
+--   * locks the payment row FOR UPDATE (same lock as payment_refund) so a
+--     concurrent refund and compensation serialise;
+--   * rejects a payment already externally refunded (status='refunded') or already
+--     compensated (compensation_at set);
+--   * requires status='success';
+--   * credits the wallet via wallet_compensate with a deterministic ledger id
+--     'comp:<reference>' (the ledger PK guarantees one compensation per payment);
+--   * sets compensation_at for audit.
+--
+-- LIMITATION: Full amount only. Partial compensation is not supported.
+create or replace function public.payment_compensate(
+  p_reference text,
+  p_description text default ''
+)
+returns void
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_payment public.payments;
+  v_wallet_id uuid;
+begin
+  if auth.role() is distinct from 'service_role' then
+    raise exception 'forbidden' using errcode = 'insufficient_privilege';
+  end if;
+
+  -- Lock the payment row first (same lock order as payment_refund).
+  select * into v_payment
+  from public.payments
+  where reference = p_reference
+  for update;
+
+  if v_payment.reference is null then
+    raise exception 'unknown payment' using errcode = 'no_data_found';
+  end if;
+
+  -- Already compensated: idempotent no-op.
+  if v_payment.compensation_at is not null then
+    return;
+  end if;
+
+  -- A payment already externally refunded cannot also be compensated.
+  if v_payment.status = 'refunded' then
+    raise exception
+      'payment % already externally refunded; compensation refused',
+      p_reference
+      using errcode = 'check_violation';
+  end if;
+
+  if v_payment.status <> 'success' then
+    raise exception
+      'payment % is not successful (current status: %)',
+      p_reference, v_payment.status
+      using errcode = 'check_violation';
+  end if;
+
+  -- Find or create the user's wallet (same pattern as payment_settle).
+  select id into v_wallet_id
+  from public.wallets
+  where user_id = v_payment.user_id;
+
+  if v_wallet_id is null then
+    insert into public.wallets (user_id, currency)
+    values (v_payment.user_id, v_payment.currency)
+    on conflict (user_id) do nothing
+    returning id into v_wallet_id;
+  end if;
+
+  if v_wallet_id is null then
+    select id into v_wallet_id
+    from public.wallets
+    where user_id = v_payment.user_id;
+  end if;
+
+  -- Credit the wallet via the internal compensation path (distinct kind/reference).
+  perform public.wallet_compensate(
+    v_wallet_id,
+    'comp:' || v_payment.reference,
+    v_payment.amount_minor,
+    v_payment.currency,
+    v_payment.reference,
+    p_description
+  );
+
+  update public.payments
+  set compensation_at = now()
   where reference = p_reference;
 end;
 $$;
@@ -504,14 +632,17 @@ revoke all on function public.payment_settle(text, timestamptz)
   from public, anon, authenticated;
 revoke all on function public.payment_fail(text)
   from public, anon, authenticated;
-revoke all on function public.payment_refund(text, timestamptz)
+revoke all on function public.payment_refund(text, text, bigint, timestamptz)
+  from public, anon, authenticated;
+revoke all on function public.payment_compensate(text, text)
   from public, anon, authenticated;
 
 grant execute on function public.payment_record_attempt(text, uuid, text, bigint, text, text) to service_role;
 grant execute on function public.payment_store_event(text, text, text, text, text, jsonb) to service_role;
 grant execute on function public.payment_settle(text, timestamptz) to service_role;
 grant execute on function public.payment_fail(text) to service_role;
-grant execute on function public.payment_refund(text, timestamptz) to service_role;
+grant execute on function public.payment_refund(text, text, bigint, timestamptz) to service_role;
+grant execute on function public.payment_compensate(text, text) to service_role;
 
 -- Reconciliation view: service_role only. No client access.
 revoke all on public.payment_reconciliation from public, anon, authenticated;

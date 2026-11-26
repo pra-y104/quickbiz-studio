@@ -168,22 +168,62 @@ const refundBodySchema = z
 
 paymentRoutes.post('/refund', async (c) => {
   await requireAuth(c, async () => undefined);
+  const identity = c.get('auth');
+  if (!identity) throw AppError.unauthorized();
+
   const provider = resolvePaymentProvider(c.env);
   if (!provider) throw AppError.unavailable('Payments are not available in this build.');
 
+  // Refunds require the durable ledger: without it we cannot verify ownership or
+  // record the provider-confirmed refund, so we fail closed rather than move money.
+  const ledger = defaultPaymentLedger;
+  if (!ledger.isConfigured()) {
+    throw AppError.unavailable('Refunds are not available until the payment ledger is configured.');
+  }
+
   const body = parseOrThrow(refundBodySchema, await c.req.json().catch(() => null));
 
+  // 1. Load the payment and authorise: the caller must own it.
+  const payment = await ledger.getPayment(body.reference);
+  if (!payment) throw AppError.notFound('That payment could not be found.');
+  if (payment.userId !== identity.userId) {
+    throw AppError.forbidden('You can only refund your own payments.');
+  }
+
+  // 2. Only a successfully captured payment can be refunded.
+  if (payment.status !== 'success') {
+    throw AppError.badRequest('Only a successful payment can be refunded.');
+  }
+
+  // 3. Full-refund-only: the requested amount must equal the captured amount.
+  if (body.amountMinor !== payment.amountMinor) {
+    throw AppError.badRequest('Only a full refund of the captured amount is supported.');
+  }
+
   try {
+    // 4. Ask the provider. The adapter re-verifies the transaction and the amount.
     const result = await provider.refund({
       reference: body.reference,
       amountMinor: body.amountMinor,
-      reason: body.reason,
+      ...(body.reason ? { reason: body.reason } : {}),
     });
-    logger.info('payments.refund.created', {
+
+    // 5. Record the refund ONLY after the provider confirms success. Pending/failed
+    //    provider responses are returned to the caller but never stored as completed.
+    if (result.status === 'success') {
+      await ledger.recordRefund({
+        reference: body.reference,
+        refundReference: result.refundReference ?? '',
+        amountMinor: result.amountMinor,
+      });
+    }
+
+    logger.info('payments.refund.processed', {
       requestId: c.get('requestId'),
       reference: body.reference,
-      amountMinor: body.amountMinor,
+      amountMinor: result.amountMinor,
       status: result.status,
+      recorded: result.status === 'success',
     });
     return ok(c, result);
   } catch (error) {

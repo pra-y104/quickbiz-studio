@@ -161,6 +161,7 @@ export function createSimulatedPaymentProvider(
         providerId,
         reference: request.reference,
         amountMinor: request.amountMinor,
+        refundReference: `sim_refund_${request.reference}`,
         status: 'success',
       };
     },

@@ -20,6 +20,23 @@ export interface PaymentEventInput {
   readonly payload: unknown;
 }
 
+/** Minimal payment row the API needs to authorise and validate a refund. */
+export interface PaymentRecord {
+  readonly reference: string;
+  readonly userId: string;
+  readonly status: string;
+  readonly amountMinor: number;
+  readonly currency: string;
+}
+
+export interface RefundRecordInput {
+  readonly reference: string;
+  /** Provider's own refund id (proof of an external refund). */
+  readonly refundReference: string;
+  /** Provider-confirmed refunded amount. */
+  readonly amountMinor: number;
+}
+
 export interface PaymentLedger {
   readonly id: string;
   isConfigured(): boolean;
@@ -29,6 +46,10 @@ export interface PaymentLedger {
   settle(reference: string): Promise<void>;
   /** Mark a payment failed without moving money. */
   fail(reference: string): Promise<void>;
+  /** Read a payment for ownership/status/amount checks. Null when unknown. */
+  getPayment(reference: string): Promise<PaymentRecord | null>;
+  /** Record a provider-confirmed external refund (never credits the wallet). */
+  recordRefund(input: RefundRecordInput): Promise<void>;
 }
 
 export class UnconfiguredPaymentLedger implements PaymentLedger {
@@ -47,6 +68,15 @@ export class UnconfiguredPaymentLedger implements PaymentLedger {
   }
 
   async fail(_reference: string): Promise<void> {
+    // No database is wired.
+  }
+
+  async getPayment(_reference: string): Promise<PaymentRecord | null> {
+    // No database is wired: the caller must fail closed.
+    return null;
+  }
+
+  async recordRefund(_input: RefundRecordInput): Promise<void> {
     // No database is wired.
   }
 }

@@ -63,7 +63,11 @@ export interface RefundRequest {
 export interface RefundResult {
   readonly providerId: string;
   readonly reference: string;
+  /** Provider-confirmed refunded amount (full amount only in this build). */
   readonly amountMinor: number;
+  /** Provider's own refund id, stored for audit. Absent if the provider omits it. */
+  readonly refundReference?: string;
+  /** Only 'success' authorises recording the refund as completed. */
   readonly status: 'pending' | 'success' | 'failed';
 }
 

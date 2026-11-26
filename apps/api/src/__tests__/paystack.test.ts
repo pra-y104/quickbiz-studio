@@ -125,4 +125,60 @@ describe('Paystack adapter (test mode, no real network)', () => {
     const provider = createPaystackProvider({ secretKey: SECRET, baseUrl: BASE }, impl);
     await expect(provider.initialise(checkout)).rejects.toBeInstanceOf(PaymentProviderError);
   });
+
+  it('refund verifies the transaction, then returns the provider refund id and success', async () => {
+    const { impl, calls } = fakeFetch((call) => {
+      if (call.url.includes('/transaction/verify/')) {
+        return { data: { status: 'success', amount: 250_000, currency: 'NGN' } };
+      }
+      // POST /refund
+      return { data: { id: 987654, status: 'success' } };
+    });
+    const provider = createPaystackProvider({ secretKey: SECRET, baseUrl: BASE }, impl);
+
+    const result = await provider.refund({ reference: 'qb_1', amountMinor: 250_000 });
+
+    expect(result.status).toBe('success');
+    expect(result.refundReference).toBe('987654');
+    expect(result.amountMinor).toBe(250_000);
+    // It verified the transaction before refunding.
+    expect(calls[0]!.url).toBe(`${BASE}/transaction/verify/qb_1`);
+    expect(calls[1]!.url).toBe(`${BASE}/refund`);
+  });
+
+  it('refund refuses a transaction that is not successful', async () => {
+    const { impl } = fakeFetch(() => ({
+      data: { status: 'failed', amount: 250_000, currency: 'NGN' },
+    }));
+    const provider = createPaystackProvider({ secretKey: SECRET, baseUrl: BASE }, impl);
+
+    await expect(
+      provider.refund({ reference: 'qb_1', amountMinor: 250_000 }),
+    ).rejects.toMatchObject({ code: 'provider' });
+  });
+
+  it('refund refuses an amount greater than the captured amount', async () => {
+    const { impl } = fakeFetch(() => ({
+      data: { status: 'success', amount: 250_000, currency: 'NGN' },
+    }));
+    const provider = createPaystackProvider({ secretKey: SECRET, baseUrl: BASE }, impl);
+
+    await expect(
+      provider.refund({ reference: 'qb_1', amountMinor: 300_000 }),
+    ).rejects.toMatchObject({ code: 'amount-mismatch' });
+  });
+
+  it('refund maps a non-success provider response to pending (never recorded as success)', async () => {
+    const { impl } = fakeFetch((call) => {
+      if (call.url.includes('/transaction/verify/')) {
+        return { data: { status: 'success', amount: 250_000, currency: 'NGN' } };
+      }
+      return { data: { id: 111, status: 'pending' } };
+    });
+    const provider = createPaystackProvider({ secretKey: SECRET, baseUrl: BASE }, impl);
+
+    const result = await provider.refund({ reference: 'qb_1', amountMinor: 250_000 });
+    expect(result.status).toBe('pending');
+    expect(result.refundReference).toBe('111');
+  });
 });

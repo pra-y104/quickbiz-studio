@@ -92,6 +92,9 @@ describe('payment provider (simulated, no network)', () => {
 
     const refund = await provider.refund({ reference: 'qb_1001', amountMinor: 50_000 });
     expect(refund.status).toBe('success');
+    // The provider's own refund id is returned so the caller can record it.
+    expect(refund.refundReference).toBe('sim_refund_qb_1001');
+    expect(refund.amountMinor).toBe(50_000);
   });
 });
 

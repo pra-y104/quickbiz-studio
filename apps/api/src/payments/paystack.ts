@@ -105,6 +105,34 @@ export function createPaystackProvider(
     return parsed as T;
   }
 
+  async function verifyRef(reference: string): Promise<PaymentVerification> {
+    requireConfigured();
+    const result = await call<{
+      data?: {
+        status?: string;
+        amount?: number;
+        currency?: string;
+        paid_at?: string;
+        channel?: string;
+      };
+    }>('/transaction/verify/' + encodeURIComponent(reference), { method: 'GET' });
+
+    const data = result.data;
+    if (!data || typeof data.amount !== 'number' || !data.currency) {
+      throw new PaymentProviderError('not-found', 'Paystack returned no transaction.');
+    }
+
+    return {
+      providerId: 'paystack',
+      reference,
+      status: normaliseStatus(data.status),
+      amountMinor: Math.round(data.amount),
+      currency: data.currency,
+      ...(data.paid_at ? { paidAt: data.paid_at } : {}),
+      ...(data.channel ? { channel: data.channel } : {}),
+    };
+  }
+
   return {
     id: 'paystack',
     label: 'Paystack (test mode)',
@@ -151,31 +179,7 @@ export function createPaystackProvider(
     },
 
     async verify(reference: string): Promise<PaymentVerification> {
-      requireConfigured();
-      const result = await call<{
-        data?: {
-          status?: string;
-          amount?: number;
-          currency?: string;
-          paid_at?: string;
-          channel?: string;
-        };
-      }>('/transaction/verify/' + encodeURIComponent(reference), { method: 'GET' });
-
-      const data = result.data;
-      if (!data || typeof data.amount !== 'number' || !data.currency) {
-        throw new PaymentProviderError('not-found', 'Paystack returned no transaction.');
-      }
-
-      return {
-        providerId: 'paystack',
-        reference,
-        status: normaliseStatus(data.status),
-        amountMinor: Math.round(data.amount),
-        currency: data.currency,
-        ...(data.paid_at ? { paidAt: data.paid_at } : {}),
-        ...(data.channel ? { channel: data.channel } : {}),
-      };
+      return verifyRef(reference);
     },
 
     async verifyWebhook(input): Promise<WebhookEvent | null> {
@@ -226,7 +230,22 @@ export function createPaystackProvider(
         throw new PaymentProviderError('amount-mismatch', 'Refund amount must be positive.');
       }
 
-      await call('/refund', {
+      // Verify the transaction is successful and get the captured amount/currency
+      // from the provider — never trust a browser-supplied amount.
+      const verification = await verifyRef(request.reference);
+      if (verification.status !== 'success') {
+        throw new PaymentProviderError(
+          'provider',
+          'Only a successful transaction can be refunded.',
+        );
+      }
+      if (request.amountMinor > verification.amountMinor) {
+        throw new PaymentProviderError('amount-mismatch', 'Refund exceeds the captured amount.');
+      }
+
+      const result = await call<{
+        data?: { id?: number | string; status?: string };
+      }>('/refund', {
         method: 'POST',
         body: JSON.stringify({
           transaction: request.reference,
@@ -234,11 +253,17 @@ export function createPaystackProvider(
         }),
       });
 
+      const data = result.data;
+      const refundReference = data?.id != null ? String(data.id) : undefined;
+      const status: RefundResult['status'] =
+        data?.status === 'success' ? 'success' : data?.status === 'failed' ? 'failed' : 'pending';
+
       return {
         providerId: 'paystack',
         reference: request.reference,
         amountMinor: request.amountMinor,
-        status: 'pending',
+        ...(refundReference ? { refundReference } : {}),
+        status,
       };
     },
   };

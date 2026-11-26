@@ -44,6 +44,9 @@ type Payment = {
   authorization_url: string | null;
   paid_at: Date | null;
   refunded_at: Date | null;
+  refund_reference: string | null;
+  refund_amount_minor: number | null;
+  compensation_at: Date | null;
   created_at: Date;
   updated_at: Date;
 };
@@ -85,6 +88,9 @@ function createTestPayment(
     authorization_url: null,
     paid_at: null,
     refunded_at: null,
+    refund_reference: null,
+    refund_amount_minor: null,
+    compensation_at: null,
     created_at: new Date(),
     updated_at: new Date(),
     ...overrides,
@@ -441,22 +447,82 @@ class MigrationSimulator {
     payment.updated_at = new Date();
   }
 
-  // --- payment_refund (external, no wallet credit) ---
+  // --- payment_refund (external, provider-confirmed, no wallet credit) ---
 
-  paymentRefund(reference: string, refundAt = new Date()): void {
+  paymentRefund(
+    reference: string,
+    refundReference: string,
+    refundAmountMinor: number,
+    refundAt = new Date(),
+  ): void {
     const payment = this.payments.get(reference);
     if (!payment) throw new Error('unknown payment');
 
     if (payment.status === 'refunded') return; // already refunded: safe no-op
 
+    // A payment already internally compensated cannot also be externally refunded.
+    if (payment.compensation_at !== null) {
+      throw new Error(
+        `payment ${reference} already internally compensated; external refund refused`,
+      );
+    }
+
     if (payment.status !== 'success') {
       throw new Error(`payment ${reference} is not successful (current status: ${payment.status})`);
     }
 
+    // Full-refund-only: provider-confirmed amount must equal the captured amount.
+    if (refundAmountMinor !== payment.amount_minor) {
+      throw new Error(
+        `refund amount ${refundAmountMinor} does not equal captured amount ${payment.amount_minor} for payment ${reference}`,
+      );
+    }
+
     payment.status = 'refunded';
     payment.refunded_at = refundAt;
+    payment.refund_reference = refundReference;
+    payment.refund_amount_minor = refundAmountMinor;
     payment.updated_at = new Date();
     // NO wallet credit - external refund only
+  }
+
+  // --- payment_compensate (internal wallet credit, tied to a payment) ---
+
+  paymentCompensate(reference: string, description = ''): void {
+    const payment = this.payments.get(reference);
+    if (!payment) throw new Error('unknown payment');
+
+    // Already compensated: idempotent no-op.
+    if (payment.compensation_at !== null) return;
+
+    // A payment already externally refunded cannot also be compensated.
+    if (payment.status === 'refunded') {
+      throw new Error(`payment ${reference} already externally refunded; compensation refused`);
+    }
+
+    if (payment.status !== 'success') {
+      throw new Error(`payment ${reference} is not successful (current status: ${payment.status})`);
+    }
+
+    // Find or create the user's wallet.
+    let wallet = this.getWallet(payment.user_id);
+    if (!wallet) {
+      wallet = createTestWallet(payment.user_id, payment.currency);
+      this.wallets.set(wallet.id, wallet);
+    }
+
+    // Credit via the internal compensation path (deterministic id 'comp:<reference>').
+    this.walletCompensate(
+      wallet.id,
+      `comp:${payment.reference}`,
+      payment.amount_minor,
+      payment.currency,
+      payment.reference,
+      description,
+    );
+
+    payment.compensation_at = new Date();
+    payment.updated_at = new Date();
   }
 }
 
@@ -620,29 +686,46 @@ describe('Migration function behavior (simulated)', () => {
     expect(balanceBefore).toBe(1000);
 
     // External refund - should NOT credit wallet
-    sim.paymentRefund('P1');
+    sim.paymentRefund('P1', 'paystack_refund_1', 1000);
 
     const paymentAfter = sim.payments.get('P1')!;
     expect(paymentAfter.status).toBe('refunded');
     expect(paymentAfter.refunded_at).toBeTruthy();
+    // Provider-confirmed refund reference and amount are stored for audit.
+    expect(paymentAfter.refund_reference).toBe('paystack_refund_1');
+    expect(paymentAfter.refund_amount_minor).toBe(1000);
 
     // Wallet balance unchanged
     const balanceAfter = sim.walletBalanceMinor(sim.getWallet(userId)!.id);
     expect(balanceAfter).toBe(1000);
   });
 
+  it('scenario 1b: external refund with mismatched amount is rejected', () => {
+    const payment = createTestPayment('P1', userId, { status: 'success', amount_minor: 1000 });
+    sim.payments.set('P1', payment);
+
+    expect(() => sim.paymentRefund('P1', 'paystack_refund_1', 500)).toThrow(
+      'does not equal captured amount',
+    );
+    // Payment remains successful and unrefunded.
+    expect(sim.payments.get('P1')!.status).toBe('success');
+    expect(sim.payments.get('P1')!.refunded_at).toBeNull();
+  });
+
   it('scenario 2: external refund of pending payment throws', () => {
     const payment = createTestPayment('P1', userId, { status: 'pending' });
     sim.payments.set('P1', payment);
 
-    expect(() => sim.paymentRefund('P1')).toThrow('payment P1 is not successful');
+    expect(() => sim.paymentRefund('P1', 'paystack_refund_1', 100000)).toThrow(
+      'payment P1 is not successful',
+    );
   });
 
   it('scenario 3: external refund of already-refunded payment is safe no-op', () => {
     const payment = createTestPayment('P1', userId, { status: 'refunded' });
     sim.payments.set('P1', payment);
 
-    expect(() => sim.paymentRefund('P1')).not.toThrow();
+    expect(() => sim.paymentRefund('P1', 'paystack_refund_1', 100000)).not.toThrow();
     expect(sim.payments.get('P1')!.status).toBe('refunded');
   });
 
@@ -653,6 +736,96 @@ describe('Migration function behavior (simulated)', () => {
     // Worker does NOT call payment_refund because provider said refund failed
     // Payment remains 'success', wallet not affected
     expect(sim.payments.get('P1')!.status).toBe('success');
+    expect(sim.payments.get('P1')!.refunded_at).toBeNull();
+  });
+
+  // ========================================================================
+  // Internal compensation tests (payment_compensate)
+  // ========================================================================
+
+  it('compensation: credits the wallet once with a comp:<reference> ledger entry', () => {
+    const payment = createTestPayment('P1', userId, { status: 'success', amount_minor: 1000 });
+    sim.payments.set('P1', payment);
+
+    sim.paymentCompensate('P1', 'service credit');
+
+    const entries = Array.from(sim.walletEntries.values());
+    expect(entries).toHaveLength(1);
+    expect(entries[0]!.id).toBe('comp:P1');
+    expect(entries[0]!.kind).toBe('compensation');
+    expect(entries[0]!.amount_minor).toBe(1000);
+    expect(sim.getWallet(userId)!.id).toBe(entries[0]!.wallet_id);
+    expect(sim.payments.get('P1')!.compensation_at).not.toBeNull();
+    // Compensation is an internal credit, not an external refund.
+    expect(sim.payments.get('P1')!.status).toBe('success');
+    expect(sim.payments.get('P1')!.refunded_at).toBeNull();
+  });
+
+  it('compensation: replay is an idempotent no-op (no second credit)', () => {
+    const payment = createTestPayment('P1', userId, { status: 'success', amount_minor: 1000 });
+    sim.payments.set('P1', payment);
+
+    sim.paymentCompensate('P1');
+    sim.paymentCompensate('P1');
+
+    const compEntries = Array.from(sim.walletEntries.values()).filter((e) => e.id === 'comp:P1');
+    expect(compEntries).toHaveLength(1);
+  });
+
+  it('compensation: of a pending payment throws', () => {
+    const payment = createTestPayment('P1', userId, { status: 'pending' });
+    sim.payments.set('P1', payment);
+
+    expect(() => sim.paymentCompensate('P1')).toThrow('payment P1 is not successful');
+  });
+
+  // ========================================================================
+  // Double-benefit guard: external refund XOR internal compensation
+  // ========================================================================
+
+  it('double-benefit: external refund after compensation is refused', () => {
+    const payment = createTestPayment('P1', userId, { status: 'success', amount_minor: 1000 });
+    sim.payments.set('P1', payment);
+
+    sim.paymentCompensate('P1');
+
+    expect(() => sim.paymentRefund('P1', 'paystack_refund_1', 1000)).toThrow(
+      'already internally compensated; external refund refused',
+    );
+    // Compensation stands; no refund recorded.
+    expect(sim.payments.get('P1')!.refunded_at).toBeNull();
+    expect(sim.payments.get('P1')!.compensation_at).not.toBeNull();
+  });
+
+  it('double-benefit: compensation after external refund is refused', () => {
+    const payment = createTestPayment('P1', userId, { status: 'success', amount_minor: 1000 });
+    sim.payments.set('P1', payment);
+
+    sim.paymentRefund('P1', 'paystack_refund_1', 1000);
+
+    expect(() => sim.paymentCompensate('P1')).toThrow(
+      'already externally refunded; compensation refused',
+    );
+    // No compensation ledger entry was created.
+    const compEntries = Array.from(sim.walletEntries.values()).filter((e) => e.id === 'comp:P1');
+    expect(compEntries).toHaveLength(0);
+  });
+
+  it('double-benefit: whichever settles first wins; the other is refused (serialised)', () => {
+    // Simulate the DB row lock: the first call completes, the second observes it.
+    const payment = createTestPayment('P1', userId, { status: 'success', amount_minor: 1000 });
+    sim.payments.set('P1', payment);
+
+    // Compensation wins the race.
+    sim.paymentCompensate('P1');
+    // Refund attempt afterwards is refused.
+    expect(() => sim.paymentRefund('P1', 'paystack_refund_1', 1000)).toThrow(
+      'already internally compensated',
+    );
+
+    // Exactly one benefit exists: one compensation entry, no refund.
+    const compEntries = Array.from(sim.walletEntries.values()).filter((e) => e.id === 'comp:P1');
+    expect(compEntries).toHaveLength(1);
     expect(sim.payments.get('P1')!.refunded_at).toBeNull();
   });
 
@@ -845,6 +1018,10 @@ describe('Migration function behavior (simulated)', () => {
 
   it('permission: payment_refund requires service role', () => {
     expect(typeof sim.paymentRefund).toBe('function');
+  });
+
+  it('permission: payment_compensate requires service role', () => {
+    expect(typeof sim.paymentCompensate).toBe('function');
   });
 
   it('permission: payment_store_event requires service role', () => {

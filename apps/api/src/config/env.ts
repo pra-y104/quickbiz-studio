@@ -67,6 +67,18 @@ export interface Bindings {
    * a token without an `email_verified` claim is treated as unverified.
    */
   readonly AI_REQUIRE_VERIFIED_EMAIL?: string;
+  /** Server-only. Resend API key for transactional email. */
+  readonly RESEND_API_KEY?: string;
+  /** Server-only. Verified Resend sender, e.g. `QuickBiz <noreply@example.com>`. */
+  readonly RESEND_FROM_EMAIL?: string;
+  /** Server-only. Resend API base override (tests only). */
+  readonly RESEND_BASE_URL?: string;
+  /** Server-only. Sentry DSN for API error monitoring. */
+  readonly SENTRY_DSN?: string;
+  /** Server-only. Sentry environment label (defaults to ENVIRONMENT). */
+  readonly SENTRY_ENVIRONMENT?: string;
+  /** Server-only. Sentry release label (defaults to APP_VERSION). */
+  readonly SENTRY_RELEASE?: string;
 }
 
 export const ENVIRONMENTS = ['development', 'preview', 'production'] as const;

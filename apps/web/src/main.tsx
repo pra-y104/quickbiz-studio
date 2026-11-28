@@ -5,7 +5,9 @@ import './styles/globals.css';
 import { App } from './app/app';
 import { AppProviders } from './app/providers';
 import { registerServiceWorker } from './lib/offline/sw-registration';
+import { initMonitoring } from './lib/monitoring/sentry';
 
+initMonitoring();
 registerServiceWorker();
 
 const rootElement = document.getElementById('root');

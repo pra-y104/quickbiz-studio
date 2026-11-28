@@ -43,6 +43,13 @@ Anything prefixed `VITE_` is compiled into the JavaScript bundle. Treat it as pu
 | `AI_REQUIRE_VERIFIED_EMAIL` | no | no | defaults to `true` (fail closed) |
 | `PAYSTACK_SECRET_KEY` | Stage 8 | **secret** | only `sk_test_` honoured; used for API calls and webhook signature |
 | `PAYSTACK_BASE_URL` | no | no | Paystack API base override (tests only) |
+| `RESEND_API_KEY` | no | **secret** | Resend key for transactional email; absent → email skipped |
+| `RESEND_FROM_EMAIL` | no | no | verified Resend sender (required with the key) |
+| `RESEND_BASE_URL` | no | no | Resend API base override (tests only) |
+| `SENTRY_DSN` | no | **secret** | server-side Sentry DSN for API error monitoring |
+| `SENTRY_ENVIRONMENT` | no | no | Sentry environment label (defaults to `ENVIRONMENT`) |
+| `SENTRY_RELEASE` | no | no | Sentry release label (defaults to `APP_VERSION`) |
+| `VITE_SENTRY_DSN` | no | no (public) | browser Sentry DSN; absent → no browser monitoring |
 | `RATE_LIMIT_KV` | no | no | KV namespace **binding** for distributed rate limiting (not a secret) |
 | `AI_QUOTA_KV` | no | no | KV namespace **binding** for the shared AI quota store (not a secret) |
 

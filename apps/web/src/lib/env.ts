@@ -9,6 +9,7 @@ const publicEnvSchema = z.object({
   appVersion: z.string().min(1),
   supabaseUrl: z.string().min(1).nullable(),
   supabaseAnonKey: z.string().min(1).nullable(),
+  sentryDsn: z.string().min(1).nullable(),
 });
 
 export interface PublicEnv {
@@ -18,6 +19,8 @@ export interface PublicEnv {
   readonly supabaseUrl: string | null;
   /** Public anon key. Never the service-role key. */
   readonly supabaseAnonKey: string | null;
+  /** Public Sentry DSN, or null when monitoring is not configured. */
+  readonly sentryDsn: string | null;
 }
 
 function optional(value: string | undefined): string | null {
@@ -31,6 +34,7 @@ function readEnv(): PublicEnv {
     appVersion: import.meta.env.VITE_APP_VERSION || '0.1.0',
     supabaseUrl: optional(import.meta.env.VITE_SUPABASE_URL),
     supabaseAnonKey: optional(import.meta.env.VITE_SUPABASE_ANON_KEY),
+    sentryDsn: optional(import.meta.env.VITE_SENTRY_DSN),
   });
 
   if (!parsed.success) {

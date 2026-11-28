@@ -4,6 +4,8 @@ import { ZodError } from 'zod';
 import { AppError, isAppError } from '../lib/errors';
 import { logger } from '../lib/logger';
 import { fail } from '../lib/response';
+import { resolveSentryReporter, type SentryReporter } from '../monitoring';
+import type { Bindings } from '../config/env';
 import type { ApiErrorCode } from '@quickbiz/shared';
 import type { AppContext } from '../types/context';
 
@@ -28,6 +30,44 @@ function safeRequestId(c: Parameters<ErrorHandler<AppContext>>[1]): string | und
   }
 }
 
+// Resolve the reporter once per bindings object; a no-op when SENTRY_DSN is unset.
+const reporterCache = new WeakMap<object, SentryReporter>();
+function reporterFor(c: Parameters<ErrorHandler<AppContext>>[1]): SentryReporter {
+  try {
+    const env = c.env as Bindings;
+    let reporter = reporterCache.get(env as object);
+    if (!reporter) {
+      reporter = resolveSentryReporter(env);
+      reporterCache.set(env as object, reporter);
+    }
+    return reporter;
+  } catch {
+    return { isConfigured: () => false, captureException: () => undefined };
+  }
+}
+
+/** Report a server-side failure to monitoring without ever throwing. */
+function report(c: Parameters<ErrorHandler<AppContext>>[1], error: unknown, message: string): void {
+  try {
+    reporterFor(c).captureException(error, {
+      level: 'error',
+      message,
+      tags: { path: safePath(c) },
+      extra: { requestId: safeRequestId(c) },
+    });
+  } catch {
+    // Monitoring must never affect the response.
+  }
+}
+
+function safePath(c: Parameters<ErrorHandler<AppContext>>[1]): string {
+  try {
+    return new URL(c.req.url).pathname;
+  } catch {
+    return 'unknown';
+  }
+}
+
 /**
  * Central error boundary. Client-safe messages only; stacks and internal
  * details stay in the logs.
@@ -44,6 +84,9 @@ export const errorHandler: ErrorHandler<AppContext> = (error, c) => {
       message: error.message,
       ...(error.status >= 500 && error.stack ? { stack: error.stack } : {}),
     });
+    if (error.status >= 500) {
+      report(c, error, `AppError ${error.code}: ${error.message}`);
+    }
     return fail(
       c,
       { code: error.code, message: error.message, details: error.details },
@@ -79,6 +122,8 @@ export const errorHandler: ErrorHandler<AppContext> = (error, c) => {
     message: error instanceof Error ? error.message : String(error),
     ...(error instanceof Error && error.stack ? { stack: error.stack } : {}),
   });
+
+  report(c, error, error instanceof Error ? error.message : String(error));
 
   return fail(c, { code: 'INTERNAL_ERROR', message: 'Something went wrong on our side.' }, 500);
 };

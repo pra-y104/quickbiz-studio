@@ -1,5 +1,6 @@
 import { createRemoteJWKSet, jwtVerify, type JWTPayload } from 'jose';
 import type { Bindings } from '../config/env';
+import { logger } from './logger';
 
 /**
  * Access-token verification for Supabase-issued JWTs.
@@ -53,6 +54,36 @@ function trimTrailingSlash(value: string): string {
   return value.replace(/\/+$/, '');
 }
 
+/** Host of a URL, or null — safe to log (never a secret). */
+function hostOf(value: string | undefined): string | null {
+  if (!value) return null;
+  try {
+    return new URL(value).host;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * A safe, non-sensitive summary of the resolved verification configuration.
+ * Logs which mode is active and the public hosts involved — never the URL path
+ * of a secret, tokens, keys or any personal data.
+ */
+function describeConfig(config: AuthTokenConfig): Record<string, unknown> {
+  if (config.kind === 'jwks') {
+    return {
+      mode: 'jwks',
+      jwksHost: hostOf(config.jwksUrl),
+      issuerConfigured: Boolean(config.issuer),
+      algorithms: ['ES256', 'RS256'],
+    };
+  }
+  if (config.kind === 'secret') {
+    return { mode: 'secret', issuerConfigured: Boolean(config.issuer), algorithms: ['HS256'] };
+  }
+  return { mode: 'none' };
+}
+
 export function resolveAuthTokenConfig(bindings: Bindings): AuthTokenConfig {
   const cached = configCache.get(bindings as object);
   if (cached) return cached;
@@ -78,6 +109,14 @@ export function resolveAuthTokenConfig(bindings: Bindings): AuthTokenConfig {
       secret: new TextEncoder().encode(secret),
       ...(issuer ? { issuer } : {}),
     };
+  }
+
+  // Log the resolved mode once per configuration (cache miss). This never
+  // includes secrets, tokens or personal data — only the mode and public hosts.
+  if (config.kind === 'none') {
+    logger.warn('auth.config.unconfigured', {});
+  } else {
+    logger.info('auth.config.resolved', describeConfig(config));
   }
 
   configCache.set(bindings as object, config);
@@ -107,8 +146,12 @@ export async function verifyAccessToken(
     throw new AuthTokenError('unconfigured', 'Authentication is not configured on this server');
   }
 
+  // Small clock-skew tolerance: Render and Supabase clocks can differ by a few
+  // seconds, which otherwise makes an otherwise-valid token fail the `nbf`/`exp`
+  // checks. This does not weaken signature, issuer or audience validation.
   const options = {
     audience: 'authenticated',
+    clockTolerance: 60,
     ...(config.issuer ? { issuer: config.issuer } : {}),
   };
 
@@ -136,8 +179,19 @@ export async function verifyAccessToken(
     if (error instanceof AuthTokenError) throw error;
     const name = error instanceof Error ? error.name : '';
     if (name === 'JWTExpired') {
+      logger.warn('auth.verify.failed', { reason: 'expired' });
       throw new AuthTokenError('expired', 'Session expired');
     }
+    // Categorise the failure for diagnostics without ever logging the token or
+    // any personal data. `code`/`claim` come from the jose error and describe
+    // the verification step that failed (signature, issuer, audience, JWKS…).
+    const detail = error as { code?: unknown; claim?: unknown };
+    logger.warn('auth.verify.failed', {
+      reason: 'invalid',
+      errorName: name || 'UnknownError',
+      errorCode: typeof detail.code === 'string' ? detail.code : undefined,
+      failedClaim: typeof detail.claim === 'string' ? detail.claim : undefined,
+    });
     throw new AuthTokenError('invalid', 'Invalid access token');
   }
 }

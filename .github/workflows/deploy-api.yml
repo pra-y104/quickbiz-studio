@@ -1,0 +1,47 @@
+name: Deploy API Worker
+
+# Manual, one-click deploy of the existing apps/api Worker. This does NOT use
+# Cloudflare's GitHub Worker integration: it runs Wrangler (which reads the
+# committed apps/api/wrangler.toml) and creates/updates the Worker named
+# quickbiz-studio-api. Trigger it from the Actions tab ("Run workflow").
+#
+# Required repository secret (Settings > Secrets and variables > Actions):
+#   CLOUDFLARE_API_TOKEN  — a Cloudflare API token with "Edit Workers" scope.
+# The token is never stored in the repo or printed in logs.
+
+on:
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-api
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    name: Deploy quickbiz-studio-api
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 12.14.0
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Deploy Worker (wrangler deploy --env production)
+        run: pnpm --filter @quickbiz/api deploy
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}

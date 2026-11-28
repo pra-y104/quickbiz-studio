@@ -29,6 +29,12 @@ RATE_LIMIT_ENABLED = "true"
 RATE_LIMIT_WINDOW_SECONDS = "60"
 RATE_LIMIT_MAX_REQUESTS = "60"
 
+# Pin the production Worker name so the workers.dev URL is stable
+# (https://quickbiz-studio-api.<subdomain>.workers.dev) regardless of the
+# environment suffix Wrangler would otherwise append.
+[env.production]
+name = "quickbiz-studio-api"
+
 [env.production.vars]
 ENVIRONMENT = "production"
 APP_VERSION = "0.1.0"

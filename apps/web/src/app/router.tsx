@@ -119,6 +119,9 @@ const WalletPage = lazy(() =>
 const NotFoundPage = lazy(() =>
   import('../pages/not-found').then((module) => ({ default: module.NotFoundPage })),
 );
+const AdminPage = lazy(() =>
+  import('../pages/admin/admin-dashboard').then((module) => ({ default: module.AdminPage })),
+);
 
 function RouteFallback() {
   return (
@@ -224,6 +227,20 @@ export const router = createBrowserRouter([
 
   { path: '/legal/:document', element: withShell(UtilityShell, <LegalDocumentPage />) },
   { path: '/contact', element: withShell(UtilityShell, <ContactPage />) },
+
+  // Admin dashboard. The route guard only requires a signed-in session; admin
+  // authorization is enforced by the server on every /api/v1/admin call, so an
+  // ordinary user who reaches these URLs sees an "admin access required" state
+  // and the API rejects their requests with 403.
+  { path: '/admin', element: protectedRoute(<AdminPage section="overview" />) },
+  { path: '/admin/users', element: protectedRoute(<AdminPage section="users" />) },
+  { path: '/admin/wallets', element: protectedRoute(<AdminPage section="wallets" />) },
+  { path: '/admin/payments', element: protectedRoute(<AdminPage section="payments" />) },
+  { path: '/admin/referrals', element: protectedRoute(<AdminPage section="referrals" />) },
+  { path: '/admin/tools', element: protectedRoute(<AdminPage section="tools" />) },
+  { path: '/admin/ai', element: protectedRoute(<AdminPage section="ai" />) },
+  { path: '/admin/settings', element: protectedRoute(<AdminPage section="settings" />) },
+  { path: '/admin/audit', element: protectedRoute(<AdminPage section="audit" />) },
 
   { path: '*', element: withShell(UtilityShell, <NotFoundPage />) },
 ]);

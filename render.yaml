@@ -96,6 +96,13 @@ services:
       # derive the JWKS URL from SUPABASE_URL.
       - key: SUPABASE_JWKS_URL
         sync: false
+      # Admin dashboard access. Comma-separated allow-list of admin user ids
+      # (Supabase sub) and/or emails. Empty = no admins (fail closed). Users
+      # cannot change these, so they can never self-promote.
+      - key: ADMIN_USER_IDS
+        sync: false
+      - key: ADMIN_EMAILS
+        sync: false
       # Optional until each feature is enabled (all fail closed when unset):
       - key: SUPABASE_SERVICE_ROLE_KEY
         sync: false

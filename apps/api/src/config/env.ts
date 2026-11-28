@@ -79,6 +79,15 @@ export interface Bindings {
   readonly SENTRY_ENVIRONMENT?: string;
   /** Server-only. Sentry release label (defaults to APP_VERSION). */
   readonly SENTRY_RELEASE?: string;
+  /**
+   * Server-only. Comma-separated allow-list of admin user ids (Supabase `sub`).
+   * A caller is an admin only when their verified token matches this list or
+   * `ADMIN_EMAILS`. Empty means nobody is an admin (fail closed). Users cannot
+   * change these values, so they can never promote themselves.
+   */
+  readonly ADMIN_USER_IDS?: string;
+  /** Server-only. Comma-separated allow-list of admin email addresses. */
+  readonly ADMIN_EMAILS?: string;
 }
 
 export const ENVIRONMENTS = ['development', 'preview', 'production'] as const;
@@ -117,6 +126,15 @@ export interface AppConfig {
     /** Fail-closed switch: AI runs require a verified email unless disabled. */
     readonly requireVerifiedEmail: boolean;
   };
+  /**
+   * Admin allow-list resolved from the environment. A request is authorized as
+   * admin only when the verified token's user id or email appears here. Empty
+   * lists mean no admins exist (fail closed).
+   */
+  readonly admin: {
+    readonly userIds: readonly string[];
+    readonly emails: readonly string[];
+  };
 }
 
 /** Empty string from a var or secret means "not set", not "set to empty". */
@@ -137,6 +155,26 @@ const nullableModelId = z
   .refine((value) => value === null || /^[A-Za-z0-9][A-Za-z0-9._:-]{0,119}$/.test(value), {
     message: 'must be a model id of at most 120 characters',
   });
+
+/** Split a comma-separated env value into a trimmed, de-duplicated list. */
+function toList(value: string | undefined): string[] {
+  if (!value) return [];
+  const items = value
+    .split(',')
+    .map((item) => item.trim())
+    .filter((item) => item.length > 0);
+  return [...new Set(items)];
+}
+
+const stringList = z
+  .string()
+  .optional()
+  .transform((value) => toList(value));
+
+const emailList = z
+  .string()
+  .optional()
+  .transform((value) => toList(value).map((email) => email.toLowerCase()));
 
 const rawEnvSchema = z.object({
   ENVIRONMENT: z.enum(ENVIRONMENTS).default('development'),
@@ -160,6 +198,9 @@ const rawEnvSchema = z.object({
   /** Preferred provider/model. Not a capability switch: see `AppConfig.ai`. */
   AI_PROVIDER: nullableIdentifier,
   AI_MODEL: nullableModelId,
+  /** Admin allow-lists. Empty means no admins (fail closed). */
+  ADMIN_USER_IDS: stringList,
+  ADMIN_EMAILS: emailList,
 });
 
 /** Cache keyed by the env object so parsing happens once per isolate. */
@@ -198,6 +239,10 @@ export function resolveConfig(bindings: Bindings): AppConfig {
       providerId: parsed.AI_PROVIDER,
       model: parsed.AI_MODEL,
       requireVerifiedEmail: parsed.AI_REQUIRE_VERIFIED_EMAIL === 'true',
+    },
+    admin: {
+      userIds: parsed.ADMIN_USER_IDS,
+      emails: parsed.ADMIN_EMAILS,
     },
   };
 

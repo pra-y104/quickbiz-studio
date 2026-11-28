@@ -1,0 +1,110 @@
+# Render Blueprint for QuickBiz Studio (frontend + API).
+#
+# Provisions two services from the existing code on Render's free tiers:
+#   1. quickbiz-studio-web  — static site (the existing React/Vite frontend,
+#      unchanged design/routes/assets) with SPA rewrite for client-side routing.
+#   2. quickbiz-studio-api  — Node web service running the existing Hono API via
+#      the thin src/server-node.ts entry (same app as before, no rewrite).
+#
+# Connect this repo in Render (New > Blueprint) and both are created from branch
+# stage-6-p1-templates with auto-deploy. Secrets are NOT stored here: values
+# marked sync:false are entered once in the Render dashboard and never committed.
+services:
+  # --- Frontend: existing Vite build as a Render Static Site ---
+  - type: web
+    name: quickbiz-studio-web
+    runtime: static
+    plan: free
+    branch: stage-6-p1-templates
+    autoDeploy: true
+    rootDir: .
+    buildCommand: pnpm install --frozen-lockfile && pnpm --filter @quickbiz/web build
+    staticPublishPath: apps/web/dist
+    pullRequestPreviewsEnabled: false
+    envVars:
+      - key: NODE_VERSION
+        value: 20
+      # Build-time public values (Vite inlines VITE_* at build).
+      # Point the frontend at the API service below.
+      - key: VITE_API_BASE_URL
+        value: https://quickbiz-studio-api.onrender.com
+      - key: VITE_APP_VERSION
+        value: 0.1.0
+      # Public Supabase values — set in the dashboard (sync: false).
+      - key: VITE_SUPABASE_URL
+        sync: false
+      - key: VITE_SUPABASE_ANON_KEY
+        sync: false
+      # Optional public Sentry DSN (browser monitoring).
+      - key: VITE_SENTRY_DSN
+        sync: false
+    # SPA routing: serve index.html for any path so client-side routes work.
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
+    # Replicate the Cloudflare Pages _headers policy (Render ignores _headers).
+    headers:
+      - path: /*
+        name: Content-Security-Policy
+        value: "default-src 'self'; base-uri 'none'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self'; connect-src 'self' https://*.supabase.co https://quickbiz-studio-api.onrender.com; manifest-src 'self'; worker-src 'self'; upgrade-insecure-requests"
+      - path: /*
+        name: X-Content-Type-Options
+        value: nosniff
+      - path: /*
+        name: X-Frame-Options
+        value: DENY
+      - path: /*
+        name: Referrer-Policy
+        value: no-referrer
+      - path: /*
+        name: Permissions-Policy
+        value: 'camera=(), microphone=(self), geolocation=()'
+
+  # --- Backend: existing Hono API as a Render Web Service ---
+  - type: web
+    name: quickbiz-studio-api
+    runtime: node
+    plan: free
+    branch: stage-6-p1-templates
+    autoDeploy: true
+    rootDir: .
+    buildCommand: pnpm install --frozen-lockfile
+    startCommand: pnpm --filter @quickbiz/api exec tsx src/server-node.ts
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_VERSION
+        value: 20
+      - key: ENVIRONMENT
+        value: production
+      - key: APP_VERSION
+        value: 0.1.0
+      # CORS allow-list: existing Pages origin + the Render static site.
+      - key: ALLOWED_ORIGINS
+        value: https://quickbiz-studio.pages.dev,https://quickbiz-studio-web.onrender.com
+      - key: RATE_LIMIT_ENABLED
+        value: 'true'
+      - key: RATE_LIMIT_WINDOW_SECONDS
+        value: '60'
+      - key: RATE_LIMIT_MAX_REQUESTS
+        value: '120'
+      # --- Secrets: set these in the Render dashboard (sync: false) ---
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_JWT_SECRET
+        sync: false
+      # Optional until each feature is enabled (all fail closed when unset):
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false
+      - key: PAYSTACK_SECRET_KEY
+        sync: false
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: AI_ENABLED
+        sync: false
+      - key: RESEND_API_KEY
+        sync: false
+      - key: RESEND_FROM_EMAIL
+        sync: false
+      - key: SENTRY_DSN
+        sync: false

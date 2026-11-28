@@ -20,8 +20,12 @@
  * offline in the browser that installed it.
  */
 
-const CACHE_NAME = 'quickbiz-v1';
-const APP_SHELL = ['/', '/favicon.svg', '/theme-init.js'];
+const CACHE_NAME = 'quickbiz-v2';
+// Only truly static, content-hashed assets belong in the cache-first shell.
+// The HTML document ('/') is intentionally EXCLUDED: navigations must always be
+// revalidated against the network so a new deployment's index.html (and its new
+// bundle hashes) reaches returning visitors instead of a stale cached shell.
+const APP_SHELL = ['/favicon.svg', '/theme-init.js'];
 
 // Ordinary tool routes that are fully client-side and work offline.
 const OFFLINE_TOOLS = [
@@ -53,6 +57,8 @@ function isCacheable(url) {
 }
 
 self.addEventListener('install', (event) => {
+  // Pre-cache the static shell. The HTML document is fetched at runtime and
+  // cached on first navigation (network-first) so it is never stale.
   event.waitUntil(caches.open(CACHE_NAME).then((cache) => cache.addAll(APP_SHELL)));
   self.skipWaiting();
 });
@@ -83,6 +89,25 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
+  // HTML navigations: ALWAYS network-first so a new deployment's index.html and
+  // its new bundle hashes reach returning visitors. Only fall back to the cached
+  // shell when the network is unavailable (offline). This must run before the
+  // cache-first asset branch, otherwise '/' would be served stale forever.
+  if (request.mode === 'navigate') {
+    event.respondWith(
+      fetch(request)
+        .then((response) => {
+          if (response.ok) {
+            const clone = response.clone();
+            caches.open(CACHE_NAME).then((cache) => cache.put('/', clone));
+          }
+          return response;
+        })
+        .catch(() => caches.match('/')),
+    );
+    return;
+  }
+
   if (isCacheable(url)) {
     event.respondWith(
       caches.match(request).then((cached) => {
@@ -96,13 +121,6 @@ self.addEventListener('fetch', (event) => {
         });
       }),
     );
-    return;
-  }
-
-  // HTML navigations: network first, fall back to index.html so the SPA
-  // router can render the right tool page offline.
-  if (request.mode === 'navigate') {
-    event.respondWith(fetch(request).catch(() => caches.match('/')));
     return;
   }
 

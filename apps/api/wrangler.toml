@@ -21,8 +21,19 @@ enabled = true
 
 [env.preview.vars]
 ENVIRONMENT = "preview"
+APP_VERSION = "0.1.0"
+# Preview branches are served from per-branch *.pages.dev URLs; allow the
+# production Pages origin plus localhost for local preview.
+ALLOWED_ORIGINS = "https://quickbiz-studio.pages.dev,http://localhost:5173,http://127.0.0.1:5173"
+RATE_LIMIT_ENABLED = "true"
+RATE_LIMIT_WINDOW_SECONDS = "60"
 RATE_LIMIT_MAX_REQUESTS = "60"
 
 [env.production.vars]
 ENVIRONMENT = "production"
-# ALLOWED_ORIGINS is set in the dashboard for the real frontend domain.
+APP_VERSION = "0.1.0"
+# The real frontend origin. Add a custom domain here later if one is attached.
+ALLOWED_ORIGINS = "https://quickbiz-studio.pages.dev"
+RATE_LIMIT_ENABLED = "true"
+RATE_LIMIT_WINDOW_SECONDS = "60"
+RATE_LIMIT_MAX_REQUESTS = "120"

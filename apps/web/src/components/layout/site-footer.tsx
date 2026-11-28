@@ -1,4 +1,3 @@
-import { ArrowUpRight, Code2 } from 'lucide-react';
 import { Link } from 'react-router';
 import { BRAND } from '@quickbiz/shared';
 import { Badge } from '../ui/badge';
@@ -17,8 +16,6 @@ const RESOURCE_LINKS = [
   { label: 'Trust and security', href: '#trust' },
   { label: 'Questions', href: '#questions' },
 ] as const;
-
-const SOURCE_URL = 'https://github.com/pra-y104/quickbiz-studio';
 
 function LinkColumn({
   title,
@@ -79,18 +76,6 @@ export function SiteFooter() {
                 >
                   Design system
                 </Link>
-              </li>
-              <li>
-                <a
-                  href={SOURCE_URL}
-                  target="_blank"
-                  rel="noreferrer noopener"
-                  className="inline-flex items-center gap-1.5 text-sm text-ink-muted transition-colors hover:text-ink"
-                >
-                  <Code2 className="size-3.5" aria-hidden="true" />
-                  Source code
-                  <ArrowUpRight className="size-3" aria-hidden="true" />
-                </a>
               </li>
             </ul>
             <ul className="mt-5 space-y-1.5 text-xs">

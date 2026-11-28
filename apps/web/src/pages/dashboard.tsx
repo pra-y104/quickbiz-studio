@@ -8,6 +8,7 @@ import {
   IdCard,
   LayoutGrid,
   MailWarning,
+  Search,
   Share2,
   Sparkles,
   UserRound,
@@ -19,11 +20,13 @@ import { Alert } from '../components/ui/alert';
 import { Badge } from '../components/ui/badge';
 import { Button } from '../components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
+import { Input } from '../components/ui/input';
 import { AccountShell } from '../components/account/account-shell';
 import { useAuth } from '../lib/auth/auth-context';
 import { messageForAuthError } from '../lib/auth/messages';
 import { emailCallbackUrl } from '../lib/auth/urls';
-import { formatDate } from '@quickbiz/shared';
+import { formatDate, listToolsByKind } from '@quickbiz/shared';
+import { ToolIcon } from '../components/tools/tool-icon';
 
 function formatTimestamp(value: string | null): string | null {
   if (!value) return null;
@@ -51,6 +54,68 @@ const WORKSPACE_LINKS = [
   { to: '/referral', label: 'Referrals', hint: 'Invite and earn', icon: Share2 },
   { to: '/profile', label: 'Profile and settings', hint: 'Your account details', icon: UserRound },
 ] as const;
+
+/**
+ * Immediate tool discovery: a search box over the live catalogue so a customer
+ * can start working without navigating away. Only live tools are shown; AI tools
+ * are labelled and route to their (honestly unavailable) pages.
+ */
+function QuickAccess() {
+  const [query, setQuery] = useState('');
+  const tools = listToolsByKind('utility').filter((tool) => tool.status === 'live');
+  const search = query.trim().toLowerCase();
+  const filtered = search
+    ? tools.filter((tool) =>
+        `${tool.name} ${tool.summary} ${tool.category}`.toLowerCase().includes(search),
+      )
+    : tools;
+
+  return (
+    <Card as="section" aria-label="Quick access" className="mb-4">
+      <CardContent className="p-4 sm:p-5">
+        <label htmlFor="dash-tool-search" className="text-sm font-medium text-ink">
+          Find a tool
+        </label>
+        <div className="relative mt-1.5">
+          <Search
+            className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-ink-subtle"
+            aria-hidden="true"
+          />
+          <Input
+            id="dash-tool-search"
+            type="search"
+            value={query}
+            onChange={(event) => setQuery(event.target.value)}
+            placeholder="Search calculators, converters, invoices…"
+            className="pl-9"
+            autoComplete="off"
+          />
+        </div>
+        {filtered.length === 0 ? (
+          <p className="mt-3 text-sm text-ink-muted">No tool matches that search.</p>
+        ) : (
+          <ul className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4">
+            {filtered.map((tool) => (
+              <li key={tool.slug}>
+                <Link
+                  to={`/tools/${tool.slug}`}
+                  className="group flex h-full items-center gap-2 rounded-card border border-border bg-surface p-2.5 transition-all hover:-translate-y-0.5 hover:border-brand-300 hover:shadow-elev-1"
+                >
+                  <span className="inline-flex size-7 shrink-0 items-center justify-center rounded-lg bg-primary-soft text-primary">
+                    <ToolIcon name={tool.icon} />
+                  </span>
+                  <span className="min-w-0 text-xs font-medium leading-snug text-ink">
+                    {tool.name}
+                  </span>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
 
 export function DashboardPage() {
   const { session, gateway } = useAuth();
@@ -107,6 +172,7 @@ export function DashboardPage() {
       title={AUTH_COPY.dashboard.title}
       description={`${AUTH_COPY.dashboard.welcome}, ${displayName}.`}
     >
+      <QuickAccess />
       <div className="grid gap-4 lg:grid-cols-[1.15fr_0.85fr]">
         <div className="space-y-4">
           <Card>

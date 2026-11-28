@@ -95,7 +95,7 @@ export function AuthShell({
 
       <footer className="border-t border-border">
         <Container className="flex flex-col gap-1 py-4 text-[11px] text-ink-subtle sm:flex-row sm:items-center sm:justify-between">
-          <p>Pre-launch build · Accounts are real, tools arrive in later stages.</p>
+          <p>Free tools are live now · AI tools and payments are being enabled.</p>
           <p>All account data stays behind Supabase row-level security.</p>
         </Container>
       </footer>

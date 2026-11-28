@@ -63,4 +63,19 @@ describe('DashboardPage', () => {
     expect(within(workspace).getByRole('link', { name: /Wallet and credits/ })).toBeInTheDocument();
     expect(within(workspace).getByRole('link', { name: /Referrals/ })).toBeInTheDocument();
   });
+
+  it('lets the customer search and open a tool from the dashboard', async () => {
+    const gateway = new FakeAuthGateway({ session: makeSession() });
+    renderWithAuth(dashboardRoutes(), { gateway, initialEntries: ['/dashboard'] });
+    const user = userEvent.setup();
+
+    await screen.findByRole('heading', { level: 1, name: 'Your account' });
+    const quick = screen.getByRole('region', { name: 'Quick access' });
+    const search = within(quick).getByRole('searchbox', { name: 'Find a tool' });
+    await user.type(search, 'invoice');
+
+    const link = within(quick).getByRole('link', { name: /Invoice Maker/ });
+    expect(link).toHaveAttribute('href', '/tools/invoice-maker');
+    expect(within(quick).queryByRole('link', { name: /Calculator/ })).not.toBeInTheDocument();
+  });
 });

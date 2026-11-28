@@ -134,7 +134,7 @@ export function AccountShell({ children, title, description }: AccountShellProps
           <p>
             &copy; {new Date().getUTCFullYear()} {BRAND.name}
           </p>
-          <p>Pre-launch build · Account foundation only</p>
+          <p>Free tools are live · AI tools and payments are being enabled</p>
         </Container>
       </footer>
     </div>

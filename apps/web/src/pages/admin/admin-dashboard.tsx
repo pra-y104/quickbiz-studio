@@ -1,7 +1,7 @@
 /* eslint-disable react-hooks/set-state-in-effect -- the admin console loads from the API on mount
    and when the section changes; state only reflects an already-known request result. */
 import { useCallback, useEffect, useState, type ReactNode } from 'react';
-import { Link } from 'react-router';
+import { Link, useNavigate } from 'react-router';
 import {
   AlertTriangle,
   ArrowRight,
@@ -10,6 +10,7 @@ import {
   Cpu,
   Info,
   Lock,
+  LogOut,
   RefreshCw,
   ShieldAlert,
   Wrench,
@@ -18,11 +19,13 @@ import { ApiRequestError } from '../../lib/api-client';
 import { useAuth } from '../../lib/auth/auth-context';
 import {
   getAdminAiStatus,
+  getAdminIdentity,
   getAdminOverview,
   getAdminSection,
   getAdminSettings,
   getAdminTools,
   type AdminAiStatus,
+  type AdminIdentity,
   type AdminOverview,
   type AdminSectionState,
   type AdminSettings,
@@ -86,29 +89,57 @@ async function loadSection(section: AdminSection, token: string | null): Promise
 
 type LoadState =
   | { status: 'loading' }
+  | { status: 'unauthenticated' }
   | { status: 'forbidden' }
   | { status: 'error'; message: string }
-  | { status: 'ready'; result: SectionData };
+  | { status: 'ready'; result: SectionData; identity: AdminIdentity };
 
 export function AdminPage({ section }: { section: AdminSection }) {
-  const { status, session, gateway } = useAuth();
+  const { status, session, gateway, signOut } = useAuth();
+  const navigate = useNavigate();
   const [state, setState] = useState<LoadState>({ status: 'loading' });
   const meta = SECTION_META[section];
 
   const load = useCallback(async () => {
-    if (status !== 'ready' || !session) return;
+    if (status !== 'ready' || !session) {
+      setState({ status: 'unauthenticated' });
+      return;
+    }
     setState({ status: 'loading' });
     try {
       const token = await gateway.getAccessToken();
       if (!token) {
-        setState({ status: 'forbidden' });
+        setState({ status: 'unauthenticated' });
         return;
       }
+
+      // Verify identity first: this is the authoritative answer to "who is the
+      // token actually for?" and distinguishes 401 (bad/expired session) from
+      // 403 (valid session, not an admin).
+      let identity: AdminIdentity;
+      try {
+        identity = await getAdminIdentity(token);
+      } catch (caught) {
+        if (caught instanceof ApiRequestError && caught.status === 403) {
+          setState({ status: 'forbidden' });
+          return;
+        }
+        if (caught instanceof ApiRequestError && caught.status === 401) {
+          setState({ status: 'unauthenticated' });
+          return;
+        }
+        throw caught;
+      }
+
       const result = await loadSection(section, token);
-      setState({ status: 'ready', result });
+      setState({ status: 'ready', result, identity });
     } catch (caught) {
       if (caught instanceof ApiRequestError && caught.status === 403) {
         setState({ status: 'forbidden' });
+        return;
+      }
+      if (caught instanceof ApiRequestError && caught.status === 401) {
+        setState({ status: 'unauthenticated' });
         return;
       }
       setState({
@@ -122,9 +153,17 @@ export function AdminPage({ section }: { section: AdminSection }) {
     void load();
   }, [load]);
 
+  async function handleSignOut() {
+    await signOut();
+    navigate('/login', { replace: true });
+  }
+
+  const identity = state.status === 'ready' ? state.identity : null;
+
   return (
-    <AdminShell title={meta.title} description={meta.description}>
+    <AdminShell title={meta.title} description={meta.description} identity={identity}>
       {state.status === 'loading' ? <LoadingState /> : null}
+      {state.status === 'unauthenticated' ? <Unauthenticated onSignOut={handleSignOut} /> : null}
       {state.status === 'forbidden' ? <AccessDenied /> : null}
       {state.status === 'error' ? <ErrorState message={state.message} onRetry={load} /> : null}
       {state.status === 'ready' ? <SectionView section={section} result={state.result} /> : null}
@@ -142,6 +181,43 @@ function LoadingState() {
       <RefreshCw className="size-5 animate-spin text-brand-400" aria-hidden="true" />
       Loading admin data…
     </div>
+  );
+}
+
+function Unauthenticated({ onSignOut }: { onSignOut: () => void }) {
+  return (
+    <AdminCard className="mx-auto max-w-lg text-center">
+      <div className="flex flex-col items-center gap-3 py-6">
+        <span
+          className="flex size-12 items-center justify-center rounded-2xl bg-warning/15 text-warning"
+          aria-hidden="true"
+        >
+          <ShieldAlert className="size-6" />
+        </span>
+        <h2 className="text-lg font-semibold text-white">Please sign in again</h2>
+        <p className="max-w-sm text-sm text-navy-300">
+          The server could not verify your session, so it may have expired. Sign in again with the
+          administrator account to continue.
+        </p>
+        <div className="mt-2 flex flex-wrap items-center justify-center gap-2">
+          <Link
+            to="/login"
+            className="inline-flex items-center gap-1.5 rounded-lg bg-brand-500 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-brand-600"
+          >
+            Sign in again
+            <ArrowRight className="size-4" aria-hidden="true" />
+          </Link>
+          <button
+            type="button"
+            onClick={onSignOut}
+            className="inline-flex items-center gap-1.5 rounded-lg border border-navy-700 bg-navy-900 px-4 py-2 text-sm font-medium text-navy-200 transition-colors hover:bg-navy-800 hover:text-white"
+          >
+            <LogOut className="size-4" aria-hidden="true" />
+            Sign out
+          </button>
+        </div>
+      </div>
+    </AdminCard>
   );
 }
 

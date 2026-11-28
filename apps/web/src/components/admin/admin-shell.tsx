@@ -41,6 +41,12 @@ interface AdminShellProps {
   children: ReactNode;
   title: string;
   description?: string;
+  /**
+   * Identity of the account whose token the API actually verified (from
+   * `GET /api/v1/admin/me`). This is authoritative; the client session is only a
+   * fallback while loading.
+   */
+  identity?: { email: string | null; userId: string } | null;
 }
 
 /**
@@ -48,9 +54,14 @@ interface AdminShellProps {
  * with QuickBiz Studio branding. The palette is fixed to the brand navy so the
  * admin area reads as a distinct, focused console in both site themes.
  */
-export function AdminShell({ children, title, description }: AdminShellProps) {
+export function AdminShell({ children, title, description, identity }: AdminShellProps) {
   const { session, signOut } = useAuth();
   const navigate = useNavigate();
+
+  // Prefer the API-verified identity (the account the token actually belongs to);
+  // fall back to the client session only while the admin check is in flight.
+  const displayEmail = identity?.email ?? session?.user.email ?? null;
+  const displayUserId = identity?.userId ?? session?.user.id ?? null;
 
   async function handleSignOut() {
     await signOut();
@@ -160,7 +171,8 @@ export function AdminShell({ children, title, description }: AdminShellProps) {
             &copy; {new Date().getUTCFullYear()} {BRAND.name} · Admin
           </p>
           <p className="truncate">
-            {session?.user.email ? `Signed in as ${session.user.email}` : 'Admin console'}
+            {displayEmail ? `Signed in as ${displayEmail}` : 'Admin console'}
+            {displayUserId ? <span className="hidden sm:inline"> · {displayUserId}</span> : null}
           </p>
         </div>
       </footer>

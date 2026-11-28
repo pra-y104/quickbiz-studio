@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { LayoutDashboard, LogOut, Share2, UserRound, Wallet } from 'lucide-react';
+import { LayoutDashboard, LogOut, Share2, ShieldCheck, UserRound, Wallet } from 'lucide-react';
 import { Link, NavLink, useNavigate } from 'react-router';
 import { BRAND } from '@quickbiz/shared';
 import { AUTH_COPY } from '../../content/auth';
@@ -9,6 +9,7 @@ import { Container } from '../ui/container';
 import { ThemeToggle } from '../ui/theme-toggle';
 import { LocaleMenu } from '../layout/locale-menu';
 import { useAuth } from '../../lib/auth/auth-context';
+import { useIsAdmin } from '../../lib/admin/use-is-admin';
 import { cn } from '../../lib/cn';
 
 const NAV = [
@@ -17,6 +18,9 @@ const NAV = [
   { to: '/wallet', label: AUTH_COPY.account.wallet, icon: Wallet },
   { to: '/profile', label: AUTH_COPY.account.profile, icon: UserRound },
 ] as const;
+
+/** Admin-only entry, appended for accounts the server confirms as admins. */
+const ADMIN_NAV_ITEM = { to: '/admin', label: 'Admin', icon: ShieldCheck } as const;
 
 export interface AccountShellProps {
   children: ReactNode;
@@ -27,7 +31,12 @@ export interface AccountShellProps {
 /** Chrome for signed-in screens: account navigation, identity and sign out. */
 export function AccountShell({ children, title, description }: AccountShellProps) {
   const { session, signOut } = useAuth();
+  const isAdmin = useIsAdmin();
   const navigate = useNavigate();
+
+  // The Admin entry is shown only to accounts the server confirms are admins.
+  // Ordinary customers never see it, and the server still enforces access.
+  const navItems = isAdmin === 'admin' ? [...NAV, ADMIN_NAV_ITEM] : NAV;
 
   async function handleSignOut() {
     await signOut();
@@ -49,7 +58,7 @@ export function AccountShell({ children, title, description }: AccountShellProps
             </Link>
 
             <nav aria-label="Account" className="hidden items-center gap-1 sm:flex">
-              {NAV.map((item) => (
+              {navItems.map((item) => (
                 <NavLink
                   key={item.to}
                   to={item.to}
@@ -88,7 +97,7 @@ export function AccountShell({ children, title, description }: AccountShellProps
           aria-label="Account"
           className="flex gap-1 overflow-x-auto border-t border-border px-4 py-2 sm:hidden"
         >
-          {NAV.map((item) => (
+          {navItems.map((item) => (
             <NavLink
               key={item.to}
               to={item.to}

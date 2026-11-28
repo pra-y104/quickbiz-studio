@@ -11,7 +11,12 @@ import { Alert } from '../components/ui/alert';
 import { Spinner } from '../components/ui/spinner';
 import { AccountShell } from '../components/account/account-shell';
 import { useAuth } from '../lib/auth/auth-context';
-import { fetchWallet, WalletUnavailableError, type WalletView } from '../lib/wallet/client';
+import {
+  fetchWallet,
+  WalletNotProvisionedError,
+  WalletUnavailableError,
+  type WalletView,
+} from '../lib/wallet/client';
 import {
   createCheckout,
   paymentStatus,
@@ -53,7 +58,9 @@ const CREDIT_PACKS: ReadonlyArray<{
 export function WalletPage() {
   const { session, status, gateway } = useAuth();
   const [wallet, setWallet] = useState<WalletView | null>(null);
-  const [state, setState] = useState<'loading' | 'ready' | 'empty' | 'error'>('loading');
+  const [state, setState] = useState<'loading' | 'ready' | 'empty' | 'unprovisioned' | 'error'>(
+    'loading',
+  );
   const [error, setError] = useState<string | null>(null);
   const [payments, setPayments] = useState<{
     readonly configured: boolean;
@@ -84,6 +91,11 @@ export function WalletPage() {
       setWallet(result);
       setState(result ? 'ready' : 'empty');
     } catch (caught) {
+      if (caught instanceof WalletNotProvisionedError) {
+        setError(caught.message);
+        setState('unprovisioned');
+        return;
+      }
       setError(
         caught instanceof WalletUnavailableError ? caught.message : 'Could not load your wallet.',
       );
@@ -212,6 +224,23 @@ export function WalletPage() {
             Try again
           </Button>
         </Alert>
+      ) : state === 'unprovisioned' ? (
+        <Card>
+          <CardContent className="flex flex-col items-center gap-3 px-6 py-12 text-center">
+            <div
+              className="flex size-12 items-center justify-center rounded-2xl bg-primary-soft text-primary"
+              aria-hidden="true"
+            >
+              <WalletIcon className="size-6" />
+            </div>
+            <h2 className="text-base font-semibold text-ink">Wallet setup pending</h2>
+            <p className="max-w-md text-sm text-ink-muted">{error}</p>
+            <p className="max-w-md text-xs text-ink-subtle">
+              Free tools and your account continue to work. Paid AI and top-ups are disabled until
+              the wallet service is enabled.
+            </p>
+          </CardContent>
+        </Card>
       ) : state === 'empty' || !wallet ? (
         <Card>
           <CardContent className="flex flex-col items-center gap-3 px-6 py-12 text-center">

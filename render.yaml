@@ -3,6 +3,8 @@
 # Provisions two services from the existing code on Render's free tiers:
 #   1. quickbiz-studio-web  — static site (the existing React/Vite frontend,
 #      unchanged design/routes/assets) with SPA rewrite for client-side routing.
+#      Render models a static site as type: web + runtime: static (there is no
+#      "type: static"); static sites have NO compute plan.
 #   2. quickbiz-studio-api  — Node web service running the existing Hono API via
 #      the thin src/server-node.ts entry (same app as before, no rewrite).
 #
@@ -12,15 +14,13 @@
 services:
   # --- Frontend: existing Vite build as a Render Static Site ---
   - type: web
-    name: quickbiz-studio-web
     runtime: static
-    plan: free
+    name: quickbiz-studio-web
     branch: stage-6-p1-templates
     autoDeploy: true
     rootDir: .
     buildCommand: pnpm install --frozen-lockfile && pnpm --filter @quickbiz/web build
     staticPublishPath: apps/web/dist
-    pullRequestPreviewsEnabled: false
     envVars:
       - key: NODE_VERSION
         value: 20
@@ -61,11 +61,11 @@ services:
         name: Permissions-Policy
         value: 'camera=(), microphone=(self), geolocation=()'
 
-  # --- Backend: existing Hono API as a Render Web Service ---
+  # --- Backend: existing Hono API as a Render Web Service (Node) ---
   - type: web
-    name: quickbiz-studio-api
     runtime: node
     plan: free
+    name: quickbiz-studio-api
     branch: stage-6-p1-templates
     autoDeploy: true
     rootDir: .
@@ -89,9 +89,12 @@ services:
       - key: RATE_LIMIT_MAX_REQUESTS
         value: '120'
       # --- Secrets: set these in the Render dashboard (sync: false) ---
+      # Required: enables Supabase JWKS verification (asymmetric keys).
       - key: SUPABASE_URL
         sync: false
-      - key: SUPABASE_JWT_SECRET
+      # Optional override only for non-standard deployments; leave blank to
+      # derive the JWKS URL from SUPABASE_URL.
+      - key: SUPABASE_JWKS_URL
         sync: false
       # Optional until each feature is enabled (all fail closed when unset):
       - key: SUPABASE_SERVICE_ROLE_KEY

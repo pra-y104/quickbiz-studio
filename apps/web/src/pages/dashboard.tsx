@@ -1,6 +1,18 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router';
-import { BadgeCheck, CalendarDays, IdCard, MailWarning, Sparkles } from 'lucide-react';
+import {
+  BadgeCheck,
+  CalendarDays,
+  Clapperboard,
+  FileText,
+  IdCard,
+  LayoutGrid,
+  MailWarning,
+  Share2,
+  Sparkles,
+  UserRound,
+  Wallet,
+} from 'lucide-react';
 import type { Profile } from '@quickbiz/shared';
 import { AUTH_COPY } from '../content/auth';
 import { Alert } from '../components/ui/alert';
@@ -19,6 +31,26 @@ function formatTimestamp(value: string | null): string | null {
   if (Number.isNaN(date.getTime())) return null;
   return formatDate(date.toISOString());
 }
+
+/**
+ * Workspace shortcuts. Every target is a real route in the app router; nothing
+ * here links to an unbuilt page. AI/free tools both live under the tools
+ * directory, which already separates them.
+ */
+const WORKSPACE_LINKS = [
+  { to: '/tools', label: 'All tools', hint: 'Free utilities and AI tools', icon: LayoutGrid },
+  { to: '/tools', label: 'AI writing tools', hint: 'Draft, translate, polish', icon: Sparkles },
+  {
+    to: '/studio',
+    label: 'Creative Studio',
+    hint: 'Design projects and templates',
+    icon: FileText,
+  },
+  { to: '/studio/video', label: 'Video Studio', hint: 'Video projects', icon: Clapperboard },
+  { to: '/wallet', label: 'Wallet and credits', hint: 'Balance and transactions', icon: Wallet },
+  { to: '/referral', label: 'Referrals', hint: 'Invite and earn', icon: Share2 },
+  { to: '/profile', label: 'Profile and settings', hint: 'Your account details', icon: UserRound },
+] as const;
 
 export function DashboardPage() {
   const { session, gateway } = useAuth();
@@ -113,18 +145,33 @@ export function DashboardPage() {
             )}
           </Card>
 
-          <Card>
+          <Card as="section" aria-label={AUTH_COPY.dashboard.workspaceTitle}>
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-base">
-                <Sparkles className="size-4 text-primary" aria-hidden="true" />
-                {AUTH_COPY.dashboard.nextTitle}
+                <LayoutGrid className="size-4 text-primary" aria-hidden="true" />
+                {AUTH_COPY.dashboard.workspaceTitle}
               </CardTitle>
-              <CardDescription>{AUTH_COPY.dashboard.nextBody}</CardDescription>
+              <CardDescription>{AUTH_COPY.dashboard.workspaceBody}</CardDescription>
             </CardHeader>
             <CardContent>
-              <Button asChild size="sm" variant="outline">
-                <Link to="/profile">{AUTH_COPY.dashboard.profileLink}</Link>
-              </Button>
+              <ul className="grid gap-2 sm:grid-cols-2">
+                {WORKSPACE_LINKS.map((item) => (
+                  <li key={item.label}>
+                    <Link
+                      to={item.to}
+                      className="group flex items-start gap-3 rounded-card border border-border bg-surface p-3 transition-all hover:-translate-y-0.5 hover:border-brand-300 hover:shadow-elev-1"
+                    >
+                      <span className="mt-0.5 inline-flex size-8 shrink-0 items-center justify-center rounded-lg bg-primary-soft text-primary">
+                        <item.icon className="size-4" aria-hidden="true" />
+                      </span>
+                      <span className="min-w-0">
+                        <span className="block text-sm font-medium text-ink">{item.label}</span>
+                        <span className="block text-xs text-ink-subtle">{item.hint}</span>
+                      </span>
+                    </Link>
+                  </li>
+                ))}
+              </ul>
             </CardContent>
           </Card>
         </div>

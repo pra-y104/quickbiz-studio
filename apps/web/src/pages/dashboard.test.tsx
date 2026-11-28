@@ -1,4 +1,4 @@
-import { screen } from '@testing-library/react';
+import { screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { Route, Routes } from 'react-router';
 import { describe, expect, it } from 'vitest';
@@ -51,12 +51,16 @@ describe('DashboardPage', () => {
     expect(gateway.signOutCalls).toBe(1);
   });
 
-  it('does not invent tool or wallet features that do not exist yet', async () => {
+  it('gives the account a real workspace with links to the main areas', async () => {
     const gateway = new FakeAuthGateway({ session: makeSession() });
     renderWithAuth(dashboardRoutes(), { gateway, initialEntries: ['/dashboard'] });
 
     await screen.findByRole('heading', { level: 1, name: 'Your account' });
-    expect(screen.getByText(/this dashboard is intentionally empty/i)).toBeInTheDocument();
-    expect(screen.queryByText(/credit balance/i)).not.toBeInTheDocument();
+    expect(screen.getByText('Your workspace')).toBeInTheDocument();
+    const workspace = screen.getByRole('region', { name: 'Your workspace' });
+    expect(within(workspace).getByRole('link', { name: /All tools/ })).toBeInTheDocument();
+    expect(within(workspace).getByRole('link', { name: /Creative Studio/ })).toBeInTheDocument();
+    expect(within(workspace).getByRole('link', { name: /Wallet and credits/ })).toBeInTheDocument();
+    expect(within(workspace).getByRole('link', { name: /Referrals/ })).toBeInTheDocument();
   });
 });

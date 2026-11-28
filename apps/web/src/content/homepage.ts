@@ -62,6 +62,20 @@ export interface HomepageContent {
     readonly audiences: readonly string[];
     readonly previewCaption: string;
   };
+  readonly discovery: {
+    readonly eyebrow: string;
+    readonly title: string;
+    readonly categoriesLabel: string;
+    readonly popularLabel: string;
+    readonly freePanel: { readonly title: string; readonly body: string; readonly cta: string };
+    readonly aiPanel: { readonly title: string; readonly body: string; readonly cta: string };
+    readonly account: {
+      readonly signIn: string;
+      readonly createAccount: string;
+      readonly workspace: string;
+      readonly workspaceHint: string;
+    };
+  };
   readonly aiTools: ToolSectionContent;
   readonly freeTools: ToolSectionContent;
   readonly howItWorks: SectionIntro & { readonly steps: readonly Step[] };
@@ -104,6 +118,28 @@ export const HOMEPAGE: HomepageContent = {
       'Small teams',
     ],
     previewCaption: 'Interface preview with sample content. Not a live generation.',
+  },
+  discovery: {
+    eyebrow: 'Everything, one tap away',
+    title: 'Jump straight to what you need',
+    categoriesLabel: 'Browse by category',
+    popularLabel: 'Popular free tools',
+    freePanel: {
+      title: 'Free tools',
+      body: 'Calculators, converters, invoices and text utilities. No account, no credits.',
+      cta: 'Open free tools',
+    },
+    aiPanel: {
+      title: 'AI writing tools',
+      body: 'Draft, translate and polish with AI. The credit cost is shown before you run.',
+      cta: 'See AI tools',
+    },
+    account: {
+      signIn: 'Sign in',
+      createAccount: 'Create account',
+      workspace: 'Open my workspace',
+      workspaceHint: 'Signed-in customers get a dashboard, wallet and saved work.',
+    },
   },
   aiTools: {
     eyebrow: 'AI tools',

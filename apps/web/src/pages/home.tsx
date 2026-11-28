@@ -1,6 +1,7 @@
 import { listToolsByKind } from '@quickbiz/shared';
 import { HOMEPAGE } from '../content/homepage';
 import { Hero } from '../components/marketing/hero';
+import { DiscoveryBand } from '../components/marketing/discovery-band';
 import { ToolShowcase } from '../components/marketing/tool-showcase';
 import { FaqSection } from '../components/marketing/sections/faq-section';
 import { FinalCtaSection } from '../components/marketing/sections/final-cta-section';
@@ -23,6 +24,7 @@ export function HomePage() {
   return (
     <>
       <Hero />
+      <DiscoveryBand />
       <ToolShowcase id="ai-tools" content={HOMEPAGE.aiTools} tools={aiTools} />
       <ToolShowcase id="free-tools" content={HOMEPAGE.freeTools} tools={freeTools} surface />
       <HowItWorksSection />

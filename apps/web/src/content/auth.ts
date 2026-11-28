@@ -103,9 +103,8 @@ export const AUTH_COPY = {
     unverifiedBody:
       'Confirm your email address to unlock the free AI allowance when AI tools open. Free utilities will never require it.',
     resend: 'Resend confirmation',
-    nextTitle: 'What happens next',
-    nextBody:
-      'Tool pages, the credit wallet and usage history arrive in the next build stages. This dashboard is intentionally empty until those exist.',
+    workspaceTitle: 'Your workspace',
+    workspaceBody: 'Jump to any area of QuickBiz Studio.',
     profileLink: 'Edit your profile',
     signOut: 'Sign out',
     accountDetails: 'Account details',

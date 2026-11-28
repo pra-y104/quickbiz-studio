@@ -79,6 +79,10 @@ describe('Homepage', () => {
       .map((anchor) => anchor.getAttribute('href') ?? '')
       .filter((href) => !href.startsWith('https://'));
 
+    // Internal destinations the homepage is allowed to link to. External links
+    // (https://…) are filtered out above and covered by the developer-link guard.
+    const allowedInternal = new Set(['/tools', '/login', '/register', '/dashboard']);
+
     expect(hrefs.length).toBeGreaterThan(0);
     for (const href of hrefs) {
       if (href.startsWith('#')) {
@@ -86,7 +90,25 @@ describe('Homepage', () => {
         continue;
       }
 
-      expect(href === '/tools' || TOOL_SLUGS.some((slug) => href === `/tools/${slug}`)).toBe(true);
+      const isAllowed =
+        allowedInternal.has(href) || TOOL_SLUGS.some((slug) => href === `/tools/${slug}`);
+      expect(isAllowed, `unexpected homepage link: ${href}`).toBe(true);
     }
+  });
+
+  it('surfaces the main product areas in the first-screen discovery band', () => {
+    renderHome();
+    expect(
+      screen.getByRole('heading', { level: 2, name: HOMEPAGE.discovery.title }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('link', { name: HOMEPAGE.discovery.account.signIn }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('link', { name: HOMEPAGE.discovery.account.createAccount }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('link', { name: HOMEPAGE.discovery.account.workspace }),
+    ).toBeInTheDocument();
   });
 });
